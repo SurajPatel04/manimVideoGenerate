@@ -19,6 +19,7 @@ The project is built around a two-stage pipeline: **Description Generation** and
 
 ![Workflow Diagram](manim_video_generation_pipeline.png)
 
+
 ### Part 1: Description Generation
 
 The goal of this stage is to convert a vague user idea into a precise, machine-readable description suitable for code generation.
@@ -60,14 +61,14 @@ Instructions on how to set up and run this project locally will be added here.
 ### Prerequisites
 
 - Python 3.9+
-- Node.js & npm
-- Git
+- FastApi
+- LLM Api Key
 
 ### Installation
 
 1.  Clone the repo
     ```sh
-    git clone <your-repository-url>
+    git clone https://github.com/SurajPatel04/mainVideoGenerate.git
     ```
 2.  Install backend dependencies
     ```sh
@@ -80,6 +81,3 @@ Instructions on how to set up and run this project locally will be added here.
     npm install
     ```
 
-## 📄 License
-
-Distributed under the MIT License. See `LICENSE` for more information.
