@@ -1,4 +1,3 @@
-# mainVideoGenerate
 # AI-Powered Manim Video Generator
 
 An intelligent pipeline that transforms simple text prompts into high-quality, 1080p animated videos using the Manim engine and generative AI.
@@ -44,15 +43,26 @@ This stage takes the approved description and handles all technical aspects of c
 
 ## 🛠️ Technology Stack
 
-- **Core Animation Engine**: [Manim](https://www.manim.community/)
-- **AI & Machine Learning**:
-  - Generative AI for Text & Code Generation (e.g., GPT-4, Gemini, or similar LLMs)
-- **Backend**:
-  - Python
-  - A web framework like FastAPI or Flask
-- **Storage**: [Supabase](https://supabase.io/)
-- **Frontend**:
-  - A modern JavaScript framework (e.g., React, Vue, Svelte)
+-   **Core Animation Engine**:
+    -   [Manim](https://www.manim.community/)
+
+-   **Backend**:
+    -   [Python](https://www.python.org/)
+    -   [FastAPI](https://fastapi.tiangolo.com/) for the web server
+    -   [Pydantic](https://pydantic.dev/) for data validation
+
+-   **AI & Orchestration**:
+    -   [LangChain](https://www.langchain.com/) & [LangGraph](https://langchain-ai.github.io/langgraph/) for building the agentic pipeline
+    -   [LangSmith](https://www.langchain.com/langsmith) for debugging and observability
+    -   Generative AI Models (e.g., GPT, Gemini)
+
+-   **Frontend**:
+    -   [React](https://react.dev/)
+    -   [Material-UI (MUI)](https://mui.com/) for UI components
+
+-   **Database & Storage**:
+    -   [PostgreSQL](https://www.postgresql.org/)
+    -   [Supabase](https://supabase.io/) for video storage and delivery
 
 ## 🚀 Getting Started
 
@@ -68,7 +78,7 @@ Instructions on how to set up and run this project locally will be added here.
 
 1.  Clone the repo
     ```sh
-    git clone https://github.com/SurajPatel04/mainVideoGenerate.git
+    git clone [https://github.com/SurajPatel04/mainVideoGenerate.git](https://github.com/SurajPatel04/mainVideoGenerate.git)
     ```
 2.  Install backend dependencies
     ```sh
@@ -80,4 +90,3 @@ Instructions on how to set up and run this project locally will be added here.
     cd ../frontend
     npm install
     ```
-
