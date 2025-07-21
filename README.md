@@ -17,7 +17,7 @@ This project automates the complex process of creating mathematical animations. 
 
 The project is built around a two-stage pipeline: **Description Generation** and **Manim Code Generation**.
 
-![Workflow Diagram](manium_video_generate_pipeline.png)
+![Workflow Diagram](manim_video_generation_pipeline.png)
 
 ### Part 1: Description Generation
 
