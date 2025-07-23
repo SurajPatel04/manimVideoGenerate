@@ -2,9 +2,12 @@ from graphForDescriptionGenerate import graph_for_description_generate
 from schema import DescriptionGenerationState, mainmState
 from graphForManimCodeGenerate import graph_for_mainm_code_generate
 
+
+
 def call_graph():
+    query = input("Enter your query for video generation: ")
     state=DescriptionGenerationState(
-        user_query="Genertae video of Hello World in 10 diffent-diffent language like ('Hindi', 'tamil' etc.)  with good animation",
+        user_query=query,
         descriptions=[],
         pickedOne="",
         DescriptionRefine=0,
@@ -25,7 +28,6 @@ def call_graph():
         execution_success = None,
         quality = "ql"
     )
-    print("******************* state1 description***********", stat1.description)
     result = graph_for_mainm_code_generate.invoke(stat1)
     print(result)
 

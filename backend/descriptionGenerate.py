@@ -135,6 +135,8 @@ Candidate Description:
 
     try:
         result = structured_llm.invoke(messages)
+        print("Description is good or not: ",result.is_this_good_descrription)
+        print("Description Error: ", result.pickedOneError)
         return state.model_copy(update={
             "is_good": result.is_this_good_descrription,
             "pickedOneError": result.pickedOneError

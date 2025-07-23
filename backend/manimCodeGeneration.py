@@ -10,10 +10,12 @@ import os
 import subprocess
 import uuid
 load_dotenv()
+
+MAX_REWRITE_ATTEMPTS = 3
 @tool
 def create_File_and_Write_mainm_Code(filename, content):
     """This tool is used to write a python code directly in a file for a Manim animation."""
-    print("****************** Creatinf a file ****************")
+    print("****************** Creating a file ****************")
     if not os.path.exists("./temp"):
         os.makedirs("./temp")
         
@@ -91,7 +93,7 @@ def agent_create_file(state: mainmState):
     tools = [create_File_and_Write_mainm_Code]
 
     system_prompt = """
-    You are a helpful AI assistant for creating manim code in and try it be good in one go
+    You are a helpful AI. You expert in creating manim code in and try it be good in one go and use manim v.19
     You can use only two tool 
     Your tasks are:
     1. Write Manim python code for an animation and save it to a file using the provided tool.
@@ -147,12 +149,13 @@ def agent_check_file_code(state: mainmState):
 
     **Instructions**
     1. Analyze the Python script provided below in the "Code is..." section.
+        1.1. Code is important. code should not produce any error in execution
     2. Compare its code and visual style with the description below. code is more important code should not break on the execution
     3. Return **one** JSON object with two keys:
     • "is_code_good"   – true / false  
     • "error_message"  – empty string if good, otherwise concise reason
     """
-    structured_llm = llmFlash.with_structured_output(CheckMaimCode)
+    structured_llm = llmPro.with_structured_output(CheckMaimCode)
     print("\n--- Checking Code file ---")
 
 
@@ -180,7 +183,7 @@ def agent_re_write_manim_code(state: mainmState):
 
     # 1. Define the prompt with placeholders for all variables.
     system_prompt = """
-    You are a helpful AI assistant and an expert in Manim code.
+    You are a helpful AI assistant and an expert in Manim code and use manim v.19
     Your task is to fix the error in the provided Manim code file.
 
     ERROR HANDLING:
@@ -233,30 +236,6 @@ def agent_run_manim_code(state: mainmState):
         state.execution_success = True
         state.error_message = ""
 
-#     system_prompt = f"""
-#     You are helpful ai aissitent who work is to first execute the mainm code through the tool (run_main_scene) if the execution got error then fix the with the help of tool [create_File_and_Write_mainm_Code]
-# 
-#     # ERROR HANDLING:
-#     # - If the `run_manim_scene` tool returns an error, **DO NOT** start from scratch.
-#     # - Your task is now to re write code
-#     # - Analyze the error message from the failed execution.
-#     # - Call `create_File_and_Write_mainm_Code` again, but this time with the **corrected code** to overwrite the faulty file. Repeat the debugging process until the execution is successful.
-# """
-#     
-#     prompt = ChatPromptTemplate.from_messages(
-#         [
-#             ("system", system_prompt),
-#             ("human", "{input}"),
-#             MessagesPlaceholder(variable_name="agent_scratchpad")
-#         ]
-#     )
-# 
-#     agent=create_tool_calling_agent(llmPro, tools=tools, prompt=prompt)
-#     agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=5)
-#     human_message=f"Execute the code file name is {filename}"
-#     result = agent_executor.invoke({"input": human_message})
-#     print("\n--- agent run manim code ---")
-#     print(result['output'])
     return state
 
 
@@ -281,4 +260,11 @@ def executionRouter(state: mainmState):
             return END
         print("❌ Manim execution failed. Routing to rewrite node.")
         return "fix"
+
+
+def handle_failure_and_reset(state: mainmState) -> mainmState:
+    """Resets the attempt counter to start the entire process over."""
+    print(f"❌ Maximum rewrite attempts reached. Resetting and starting over.")
+    state['rewrite_attempts'] = 0
+    return state
 
