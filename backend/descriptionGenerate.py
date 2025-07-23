@@ -1,24 +1,15 @@
-import os
 from dotenv import load_dotenv
 from langchain_core.tools import tool
 from langgraph.graph import StateGraph, START, END
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
-import logging
 from pydantic import ValidationError
 from schema import State, GenDescriptions, PickOneDescription, CheckPickedDescription
+from llm import llmPro, llmFlash
 
 load_dotenv()
 
-llmFlash = ChatGoogleGenerativeAI(
-    api_key = os.getenv("GOOGLE_API_KEY"),
-    model="gemini-2.5-flash",
-)
 
-llmPro = ChatGoogleGenerativeAI(
-    api_key = os.getenv("GOOGLE_API_KEY"),
-    model="gemini-2.5-pro",
-)
 
 def generate_Multiple_Description(state: State):
     """
