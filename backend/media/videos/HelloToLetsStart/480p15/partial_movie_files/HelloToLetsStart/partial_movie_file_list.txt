@@ -1,5 +1,0 @@
-# This file is used internally by FFMPEG.
-file 'file:/home/suraj-patel/Desktop/manimVideoGenerate/backend/media/videos/HelloToLetsStart/480p15/partial_movie_files/HelloToLetsStart/1185818338_2847924101_223132457.mp4'
-file 'file:/home/suraj-patel/Desktop/manimVideoGenerate/backend/media/videos/HelloToLetsStart/480p15/partial_movie_files/HelloToLetsStart/624642324_4217992463_675838010.mp4'
-file 'file:/home/suraj-patel/Desktop/manimVideoGenerate/backend/media/videos/HelloToLetsStart/480p15/partial_movie_files/HelloToLetsStart/624642324_963628721_720832325.mp4'
-file 'file:/home/suraj-patel/Desktop/manimVideoGenerate/backend/media/videos/HelloToLetsStart/480p15/partial_movie_files/HelloToLetsStart/624642324_4217992463_3549729013.mp4'
