@@ -78,7 +78,7 @@ Instructions on how to set up and run this project locally will be added here.
 
 1.  Clone the repo
     ```sh
-    git clone [https://github.com/SurajPatel04/mainVideoGenerate.git](https://github.com/SurajPatel04/mainVideoGenerate.git)
+    git clone https://github.com/SurajPatel04/mainVideoGenerate.git     
     ```
 2.  Install backend dependencies
     ```sh
