@@ -1,28 +1,25 @@
 from dotenv import load_dotenv
 from langchain_core.tools import tool
-from langgraph.graph import StateGraph, START, END
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langgraph.graph import END
 from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
 from pydantic import ValidationError
-from schema import State, GenDescriptions, PickOneDescription, CheckPickedDescription
+from schema import DescriptionGenerationState, GenDescriptions, PickOneDescription, CheckPickedDescription
 from llm import llmPro, llmFlash
+import logging
+
+
 
 load_dotenv()
 
 
-
-def generate_Multiple_Description(state: State):
+def generate_Multiple_Description(state: DescriptionGenerationState):
     """
     Generates three animation descriptions using the model's structured output feature.
     """
     print("****** Generating Three Descriptions (Structured Output) ********\n")
     user_query = state.user_query
 
-    # 1. Chain the LLM with the structured output model.
-    # This creates a new chain that will only output valid GenDescriptions JSON.
     structured_llm = llmFlash.with_structured_output(GenDescriptions)
-
-    # 2. The prompt now only needs to describe the task, not the format.
     system_prompt = """
 Your task is to generate **three candidate descriptions** that match the user's query.
 
@@ -32,7 +29,6 @@ Each description should be:
 - Technically descriptive
 - Written to be used later as input for generating **Manim** (Mathematical Animation Engine) code.
 """
-    # 3. Create the message list.
     msg = [
         SystemMessage(content=system_prompt),
         HumanMessage(content=user_query)
@@ -51,7 +47,7 @@ Each description should be:
         logging.exception("Description generation with structured output failed")
         raise
 
-def pick_One_Description_And_Generate_Detailed_Description(state: State):
+def pick_One_Description_And_Generate_Detailed_Description(state: DescriptionGenerationState):
     print("******Picked one description ********\n\n")
     user_query = state.user_query
     contnet = state.descriptions
@@ -64,6 +60,7 @@ You will be given:
 - Three AI-generated descriptions
 
 Your task:
+- All the frame should be center 
 - Pick the best description, OR
 - Merge them into a better one, OR
 - Create a new, clearer, more detailed version based on them.
@@ -90,7 +87,7 @@ This description will later be used to generate **Manim** (Mathematical Animatio
         logging.exception("pick_One_Description_And_Generate_Detailed_Description failed")
         raise
 
-def validate_Description(state: State):
+def validate_Description(state: DescriptionGenerationState):
     """ This function checks the description, 
     if the description is correct then True otherwise False """
     print("******Checking is this Correct or not ********\n\n")
@@ -147,7 +144,7 @@ Candidate Description:
         logging.exception("CheckPickedDescription parsing failed")
         raise
 
-def refineDescription(state: State):
+def refineDescription(state: DescriptionGenerationState):
     print("**** refineDescription *****")
     user_query = state.user_query
     description = state.pickedOne
@@ -205,47 +202,11 @@ Description Evaluation / Error:
         logging.exception("CheckPickedDescription parsing failed")
         raise
 
-def router(state: State) -> str:
-    if state.is_good is True:     # description accepted
+def router(state: DescriptionGenerationState) -> str:
+    if state.is_good is True:
         return END
     elif state.DescriptionRefine >= 2:
-        END
-    else:                         # None or False → need more work
+        return END
+    else: 
         return "refineDescription"
 
-
-
-graph_build = StateGraph(State)
-graph_build.add_node("generate_Multiple_Description", generate_Multiple_Description)
-graph_build.add_node("pick_One_Description_And_Generate_Detailed_Description", pick_One_Description_And_Generate_Detailed_Description)
-graph_build.add_node("validate_Description", validate_Description)
-graph_build.add_node("refineDescription", refineDescription)
-
-
-graph_build.add_edge(START, "generate_Multiple_Description")
-graph_build.add_edge("generate_Multiple_Description", "pick_One_Description_And_Generate_Detailed_Description")
-graph_build.add_edge("pick_One_Description_And_Generate_Detailed_Description", "validate_Description")
-graph_build.add_conditional_edges("validate_Description",router)
-graph_build.add_edge("refineDescription", "validate_Description")
-
-graph = graph_build.compile(
-)
-
-def call_graph():
-    state={
-        "user_query":"Tell me all the methods present in the linked list",
-        "descriptions":[],
-        "pickedOne":"",
-        "DescriptionRefine":0,
-        "AutoComplete":True,
-        "is_good": None,
-        "pickedOneError": None
-    }
-
-    result = graph.invoke(state)
-    print(result.get("is_good"))
-
-
-for i in range(1):
-    print("Running times: ",i+1)
-    call_graph()
