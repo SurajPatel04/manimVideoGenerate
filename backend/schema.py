@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, Field
+from typing import Optional, List
 
 
 # descriptionGenerate Schema
@@ -32,7 +32,10 @@ class mainmState(BaseModel):
     description: str
     is_code_good: Optional[bool] = None
     filename: str
-    error_message: Optional[str] = None
+    validation_error: Optional[str] = None
+    validation_error_history: List[str] = Field(default_factory=list)
+    execution_error_history: List[str] = Field(default_factory=list)
+    execution_error: Optional[str] = None
     rewrite_attempts: int = 0 
     execution_success: Optional[bool] = None
     quality: str = "ql"

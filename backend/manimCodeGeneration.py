@@ -13,7 +13,7 @@ load_dotenv()
 
 MAX_REWRITE_ATTEMPTS = 3
 @tool
-def create_File_and_Write_mainm_Code(filename, content):
+def create_file_and_write_mainm_code(filename, content):
     """This tool is used to write a python code directly in a file for a Manim animation."""
     print("****************** Creating a file ****************")
     if not os.path.exists("./temp"):
@@ -90,10 +90,13 @@ def run_manim_scene(filename, state: mainmState):
 
 
 def agent_create_file(state: mainmState):
-    tools = [create_File_and_Write_mainm_Code]
+    tools = [create_file_and_write_mainm_code]
 
     system_prompt = """
     You are a helpful AI. You expert in creating manim code in and try it be good in one go and use manim v.19
+
+    CRITICAL: You MUST write code that is compatible with Manim v0.19+ ONLY. Do NOT use any deprecated or removed methods.
+
     Your tasks are:
     1. Write Manim python code for an animation and save it to a file using the provided tool.
     2. The class name for the animation scene must be the same as the filename (without the .py extension).
@@ -110,6 +113,60 @@ def agent_create_file(state: mainmState):
     - NameError: name 'Text3D' is not defined
     - ValueError: latex error converting to dvi.
     - TypeError: Mobject.__getattr__.<locals>.getter() takes 1 positional argument but 2 were given
+    - Code.__init__() got an unexpected keyword argument 'code'
+    -- Also, prefer using `axes.plot()` instead of the older `axes.get_graph()`.
+    -- TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_range' 
+    - AttributeError: 'object' has no attribute 'to_center'. Always use the `.move_to(ORIGIN)` method instead of `.to_center()`.
+    -- latex error converting to dvi
+    -- Text object has no attribute 'to_center'
+    - In Manim v0.19 and newer versions, to_center() has been deprecated and removed. Instead, you should use:
+    # Old way (doesn't work in v0.19+): axes.to_center()
+    # New way (correct for v0.19+): axes.move_to(ORIGIN)
+
+
+    **CORRECT v0.19+ SYNTAX TO USE:**
+
+1. **Positioning:**
+   - Center objects: object.move_to(ORIGIN)
+   - Move to coordinates: object.move_to([x, y, z]) or object.move_to(np.array([x, y, z]))
+   - Edge positioning: object.to_edge(UP), object.to_edge(LEFT), etc.
+
+2. **Axes and Graphs:**
+   - Create axes: axes = Axes(x_range=[...], y_range=[...])
+   - Plot functions: graph = axes.plot(lambda x: x**2, color=BLUE)
+   - NOT: axes.get_graph() (deprecated)
+
+3. **Text and Math (CRITICAL - Prevents LaTeX DVI errors):**
+   - Plain text: Text("Hello World")
+   - Math expressions: MathTex(r"x^2 + y^2 = r^2")
+   - ALWAYS use raw strings (r"") with MathTex
+   - NEVER: MathTex("x^2") without raw string
+   - Code blocks: Code("your_code_here", language="python")
+   - NOT: Code(code="your_code_here") (wrong parameter name)
+
+4. **Colors:**
+   - Use: BLUE, RED, GREEN, YELLOW, etc. (modern constants)
+   - Or: "#FF5733" (hex colors)
+
+5. **Animations:**
+   - Use: Create(), Write(), Transform(), etc.
+   - Proper syntax: self.play(Create(object), run_time=2)
+
+6. **Imports:**
+   - Always use: from manim import *
+   - Or specific imports: from manim import Scene, Text, Create, etc.
+
+**MANDATORY CHECKLIST - VERIFY YOUR CODE:**
+✓ No .to_center() methods used
+✓ All positioning uses .move_to() or .to_edge()
+✓ Axes use .plot() not .get_graph()
+✓ Code objects use correct parameter syntax
+✓ Modern color constants used
+✓ Proper animation syntax
+✓ Compatible with Manim v0.19+
+✓ LATEX: All MathTex uses raw strings r""
+✓ LATEX: Plain text uses Text(), math uses MathTex()
+✓ LATEX: No LaTeX syntax in Text() objects
 
     """ 
 
@@ -131,7 +188,7 @@ def agent_create_file(state: mainmState):
     Use the filename "{unique_name}.py" and the class name "{unique_name}".
     """
 
-    agent = create_tool_calling_agent(llmPro, tools, prompt=prompt)
+    agent = create_tool_calling_agent(llmFlash, tools, prompt=prompt)
     agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
     
     print(f"--- Running agent with filename: {unique_name}.py ---")
@@ -163,7 +220,7 @@ def agent_check_file_code(state: mainmState):
     • "error_message"  – empty string if good, otherwise concise reason
 
     """
-    structured_llm = llmPro.with_structured_output(CheckMaimCode)
+    structured_llm = llmFlash.with_structured_output(CheckMaimCode)
     print("\n--- Checking Code file ---")
 
 
@@ -175,46 +232,132 @@ def agent_check_file_code(state: mainmState):
     evaluation_result = structured_llm.invoke(messages)
 
     state.is_code_good = evaluation_result.is_code_good
-    state.error_message = evaluation_result.error_message
+    if not evaluation_result.is_code_good:
+        state.validation_error = evaluation_result.error_message
+        state.validation_error_history.append(evaluation_result.error_message)
+    else:
+        state.validation_error = None
     print("\n--- Agent Final Answer (Structured Object) ---")
     print(f"Type of result: {type(evaluation_result)}")
     print(f"Is Code Good: {state.is_code_good}")
-    print(f"Error Message: {state.error_message}")
+    print(f"Error Message: {state.validation_error}")
     return state
 
 def agent_re_write_manim_code(state: mainmState):
-    tools = [create_File_and_Write_mainm_Code]
+    tools = [create_file_and_write_mainm_code]
     filename = state.filename
-    error_message = state.error_message
+    validation_error = state.validation_error
+    validation_error_history = state.validation_error_history
+    execution_error_history = state.execution_error_history
+    execution_error = state.execution_error
     description = state.description
     state.rewrite_attempts += 1 
     code = read_file(filename)
 
     # 1. Define the prompt with placeholders for all variables.
     system_prompt = """
-    You are a helpful AI assistant and an expert in Manim code and use manim v.19
-    Your task is to fix the error in the provided Manim code file.
+You are an expert Manim debugger and Python developer, using manim v0.19.
+Your sole task is to fix the provided Manim code file by analyzing all available error information.
 
-    ERROR HANDLING:
-    - If the `run_manim_scene` tool returns an error, **DO NOT** start from scratch.
-    - Your task is now to re write code
-    - Analyze the error message from the failed execution.
+CRITICAL: You MUST write code that is compatible with Manim v0.19+ ONLY. Do NOT use any deprecated or removed methods.
 
-    Note: 
-    - And all the content should be in frame. 
-    - if you are creating 3d then do it correctly
-        -- 2D Scenes use a camera.frame to control the view.
-        -- 3D Scenes use the camera object directly for control.
+---
+CONTEXT FOR THE FIX:
 
-    You got These error many time try to overcome these issue:
-        - TypeError: Code.__init__() got an unexpected keyword argument 'code'
-        - NameError: name 'Text3D' is not defined
-        - ValueError: latex error converting to dvi.
-        - TypeError: Mobject.__getattr__.<locals>.getter() takes 1 positional argument but 2 were given
-    File to fix: {filename}
-    code: {code}
-    Error message to address: {error_message}
-    """
+File to fix: {filename}
+
+Original User Description:
+{description}
+
+Code to fix:
+```python
+{code}
+```
+
+---
+ERROR ANALYSIS:
+
+You must fix all the errors listed below. Pay close attention to the histories to avoid repeating past mistakes.
+
+1. CURRENT EXECUTION ERROR (Highest Priority - Must Fix):
+{execution_error}
+
+2. CURRENT VALIDATION ERROR (High Priority - Also Fix):
+{validation_error}
+
+3. PREVIOUS FAILED EXECUTION ATTEMPTS (Do not repeat these runtime errors):
+{execution_error_history}
+
+4. PREVIOUS FAILED VALIDATION ATTEMPTS (Do not repeat these logical errors):
+{validation_error_history}
+
+---
+COMMON MISTAKES TO AVOID:
+- TypeError: Code.__init__() got an unexpected keyword argument 'code' (The code string should be the first argument, not a keyword).
+- NameError: name 'Text3D' is not defined.
+- ValueError: latex error converting to dvi.
+- TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_range' (Use `axes.plot()` instead of `axes.get_graph()`).
+- AttributeError: 'object' has no attribute 'to_center' (Always use the `.move_to(ORIGIN)` method instead).
+- latex error converting to dvi
+- Text object has no attribute 'to_center'
+- In Manim v0.19 and newer versions, to_center() has been deprecated and removed. Instead, you should use:
+  # Old way (doesn't work in v0.19+): axes.to_center()
+  # New way (correct for v0.19+): axes.move_to(ORIGIN)
+
+**CORRECT v0.19+ SYNTAX TO USE:**
+
+1. **Positioning:**
+   - Center objects: object.move_to(ORIGIN)
+   - Move to coordinates: object.move_to([x, y, z]) or object.move_to(np.array([x, y, z]))
+   - Edge positioning: object.to_edge(UP), object.to_edge(LEFT), etc.
+
+2. **Axes and Graphs:**
+   - Create axes: axes = Axes(x_range=[...], y_range=[...])
+   - Plot functions: graph = axes.plot(lambda x: x**2, color=BLUE)
+   - NOT: axes.get_graph() (deprecated)
+
+3. **Text and Math (CRITICAL - Prevents LaTeX DVI errors):**
+   - Plain text: Text("Hello World")
+   - Math expressions: MathTex(r"x^2 + y^2 = r^2")
+   - ALWAYS use raw strings (r"") with MathTex
+   - NEVER: MathTex("x^2") without raw string
+   - Code blocks: Code("your_code_here", language="python")
+   - NOT: Code(code="your_code_here") (wrong parameter name)
+
+4. **Colors:**
+   - Use: BLUE, RED, GREEN, YELLOW, etc. (modern constants)
+   - Or: "#FF5733" (hex colors)
+
+5. **Animations:**
+   - Use: Create(), Write(), Transform(), etc.
+   - Proper syntax: self.play(Create(object), run_time=2)
+
+6. **Imports:**
+   - Always use: from manim import *
+   - Or specific imports: from manim import Scene, Text, Create, etc.
+
+**MANDATORY CHECKLIST - VERIFY YOUR CODE:**
+✓ No .to_center() methods used
+✓ All positioning uses .move_to() or .to_edge()
+✓ Axes use .plot() not .get_graph()
+✓ Code objects use correct parameter syntax
+✓ Modern color constants used
+✓ Proper animation syntax
+✓ Compatible with Manim v0.19+
+✓ LATEX: All MathTex uses raw strings r""
+✓ LATEX: Plain text uses Text(), math uses MathTex()
+✓ LATEX: No LaTeX syntax in Text() objects
+
+
+---
+TOOL USAGE INSTRUCTIONS (VERY IMPORTANT):
+
+After you have generated the corrected code, you will call the `create_file_and_write_mainm_code` tool.
+When you call this tool, you **MUST** provide **BOTH** of the following arguments:
+1.  `filename`: The name of the file to write to. Use the exact filename provided in the context above: {filename}.
+2.  `content`: The complete and corrected Python code as a single string.
+"""
+
 
     prompt = ChatPromptTemplate.from_messages(
         [
@@ -224,7 +367,7 @@ def agent_re_write_manim_code(state: mainmState):
         ]
     )
     
-    agent = create_tool_calling_agent(llmPro, tools, prompt)
+    agent = create_tool_calling_agent(llmFlash, tools, prompt)
     agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=5)
     
     human_message = f"Please fix the error in the code based on the error message provided. and i want this {description}"
@@ -234,7 +377,11 @@ def agent_re_write_manim_code(state: mainmState):
         "input": human_message,
         "filename": filename,
         "code":code,
-        "error_message": error_message
+        "description": description,
+        "validation_error_history":validation_error_history,
+        "validation_error": validation_error,
+        "execution_error_history": execution_error_history,
+        "execution_error":execution_error
     })
 
     print("\n--- re_write_manim_code ---")
@@ -248,10 +395,11 @@ def agent_run_manim_code(state: mainmState):
 
     if "MANIM EXECUTION FAILED" in result_message:
         state.execution_success = False
-        state.error_message = result_message
+        state.execution_error = result_message
+        state.execution_error_history.append(result_message)
     else:
         state.execution_success = True
-        state.error_message = ""
+        state.execution_error = ""
 
     return state
 

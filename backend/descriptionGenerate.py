@@ -51,27 +51,30 @@ def pick_One_Description_And_Generate_Detailed_Description(state: DescriptionGen
     print("******Picked one description ********\n\n")
     user_query = state.user_query
     contnet = state.descriptions
-    structured_llm = llmPro.with_structured_output(PickOneDescription)
+    structured_llm = llmFlash.with_structured_output(PickOneDescription)
     system_prompt = f"""
-You are a helpful AI assistant that generates a detailed and precise description from a Three AI-generated description.
+You are an expert technical writer and Manim script planner. Your sole task is to analyze three AI-generated animation concepts and produce ONE SINGLE, FINAL, highly-detailed description that is ready for a Manim coder to use.
 
-You will be given:
-- A human query
-- Three AI-generated descriptions
+You will be given a user's query and three candidate descriptions.
 
-Your task:
-- All the frame should be center 
-- Pick the best description, OR
-- Merge them into a better one, OR
-- Create a new, clearer, more detailed version based on them.
-- then create detailed description
-- Focused on structure, methods color size, or animations
+**Your Process:**
+1.  Analyze the strengths and weaknesses of all three descriptions.
+2.  Synthesize the best ideas. You can select the best description and enhance it, or you can combine the best parts of multiple descriptions.
+3.  Your final output MUST be the full, step-by-step, technically-rich description for the animation.
 
-This description will later be used to generate **Manim** (Mathematical Animation Engine) code, so it must be:
-- Precise
-- Technically descriptive
-- Focused on structure, methods color size, or animations
+**Output Requirements:**
+-   The output must be a complete, multi-step plan, not just a title or a summary.
+-   It must be technically descriptive (mentioning colors, positions, Manim animations like `Transform`, `FadeIn`, etc.).
+-   It must be precise and ready for a developer to turn into code.
 
+**Example of BAD output (What NOT to do):**
+"Description 1: Step-by-Step Derivation of the Quadratic Formula"
+
+**Example of GOOD output (What TO do):**
+"The animation will visually derive the quadratic formula...
+1. Initial State: Display the equation `ax^2 + bx + c = 0`...
+2. Isolate Constant Term: Animate `c` moving to the right...
+(and so on, providing the full detailed plan)"
 """
 
     msg = [
@@ -151,7 +154,7 @@ def refineDescription(state: DescriptionGenerationState):
     user_query = state.user_query
     description = state.pickedOne
     pickedDescriptionError = state.pickedOneError or "No specific error provided."
-    structured = llmPro.with_structured_output(PickOneDescription)
+    structured = llmFlash.with_structured_output(PickOneDescription)
     DescriptionRefine = state.DescriptionRefine + 1
     system_prompt = f"""
 You are a helpful AI assistant that generates high-quality, technically accurate descriptions. These descriptions will be used to generate **Manim** (Mathematical Animation Engine) code.

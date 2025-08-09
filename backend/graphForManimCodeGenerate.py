@@ -29,13 +29,8 @@ graph_build.add_conditional_edges(
     "agent_run_manim_code",
     executionRouter,
     {
-        # On execution failure, go to rewrite
-        "fix": "agent_re_write_manim_code",
-        
-        # On success ("done"), end the graph
+        "fix": "agent_re_write_manim_code",        
         "done": END, 
-        
-        # If the limit is hit after a run failure, go to the handler
         "limit": "handle_failure_node",
     },
 )
