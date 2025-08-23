@@ -1,45 +1,45 @@
 from langgraph.graph import StateGraph, START, END
 from schema import mainmState
-from manimCodeGeneration import agent_check_file_code, agent_create_file, agent_re_write_manim_code, agent_run_manim_code, manimRouter,executionRouter, should_start_over_router, handle_failure_and_reset
+from manimCodeGeneration import agentCheckFileCode, agentCreateFile, agentReWriteManimCode, agentRunManimCode, manimRouter,executionRouter, shouldStartOverRouter, handleFailureAndReset
 
 graph_build = StateGraph(mainmState)
 
-graph_build.add_node("agent_create_file", agent_create_file)
-graph_build.add_node("agent_check_file_code", agent_check_file_code)
-graph_build.add_node("agent_re_write_manim_code", agent_re_write_manim_code)
-graph_build.add_node("agent_run_manim_code", agent_run_manim_code)
-graph_build.add_node("handle_failure_node", handle_failure_and_reset)
+graph_build.add_node("agentCreateFile", agentCreateFile)
+graph_build.add_node("agentCheckFileCode", agentCheckFileCode)
+graph_build.add_node("agentReWriteManimCode", agentReWriteManimCode)
+graph_build.add_node("agentRunManimCode", agentRunManimCode)
+graph_build.add_node("handleFailureAndReset", handleFailureAndReset)
 
 
-graph_build.add_edge(START, "agent_create_file")
-graph_build.add_edge("agent_create_file", "agent_check_file_code")
-graph_build.add_edge("agent_re_write_manim_code", "agent_check_file_code")
+graph_build.add_edge(START, "agentCreateFile")
+graph_build.add_edge("agentCreateFile", "agentCheckFileCode")
+graph_build.add_edge("agentReWriteManimCode", "agentCheckFileCode")
 
 graph_build.add_conditional_edges(
-    "agent_check_file_code",
+    "agentCheckFileCode",
     manimRouter,
     {
-        "agent_run_manim_code": "agent_run_manim_code",
-        "agent_re_write_manim_code": "agent_re_write_manim_code",
-        END: "handle_failure_node",
+        "agentRunManimCode": "agentRunManimCode",
+        "agentReWriteManimCode": "agentReWriteManimCode",
+        END: "handleFailureAndReset",
     },
 )
 
 graph_build.add_conditional_edges(
-    "agent_run_manim_code",
+    "agentRunManimCode",
     executionRouter,
     {
-        "fix": "agent_re_write_manim_code",        
+        "fix": "agentReWriteManimCode",        
         "done": END, 
-        "limit": "handle_failure_node",
+        "limit": "handleFailureAndReset",
     },
 )
 
 graph_build.add_conditional_edges(
-    "handle_failure_node",
-    should_start_over_router,
+    "handleFailureAndReset",
+    shouldStartOverRouter,
     {
-        "agent_create_file": "agent_create_file", 
+        "agentCreateFile": "agentCreateFile", 
         END: END,
     },
 )

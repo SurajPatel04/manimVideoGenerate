@@ -12,7 +12,7 @@ import logging
 load_dotenv()
 
 
-def generate_Multiple_Description(state: DescriptionGenerationState):
+def generateMultipleDescription(state: DescriptionGenerationState):
     """
     Generates three animation descriptions using the model's structured output feature.
     """
@@ -47,20 +47,18 @@ Each description should be:
         logging.exception("Description generation with structured output failed")
         raise
 
-def pick_One_Description_And_Generate_Detailed_Description(state: DescriptionGenerationState):
-    print("******Picked one description ********\n\n")
+def generateDetailedDescription(state: DescriptionGenerationState):
+    print("******Generating detailed description ********\n\n")
     user_query = state.user_query
-    contnet = state.descriptions
+    # contnet = state.descriptions
     structured_llm = llmFlash.with_structured_output(PickOneDescription)
     system_prompt = f"""
-You are an expert technical writer and Manim script planner. Your sole task is to analyze three AI-generated animation concepts and produce ONE SINGLE, FINAL, highly-detailed description that is ready for a Manim coder to use.
+You are an expert technical writer and Manim script planner. Your task is to analyze three AI-generated animation concepts and produce one single, final, highly detailed description that is ready for a Manim coder to use. Ensure that all text and shapes are arranged clearly, with no overlaps.
 
-You will be given a user's query and three candidate descriptions.
+You will be given a user's query
 
 **Your Process:**
-1.  Analyze the strengths and weaknesses of all three descriptions.
-2.  Synthesize the best ideas. You can select the best description and enhance it, or you can combine the best parts of multiple descriptions.
-3.  Your final output MUST be the full, step-by-step, technically-rich description for the animation.
+1. Your fOutput MUST be the full, step-by-step, technically-rich description for the animation.
 
 **Output Requirements:**
 -   The output must be a complete, multi-step plan, not just a title or a summary.
@@ -80,7 +78,7 @@ You will be given a user's query and three candidate descriptions.
     msg = [
         SystemMessage(content=system_prompt),
         HumanMessage(content=user_query),
-        AIMessage(content="\n".join(contnet))
+        
     ]
     try:
         result = structured_llm.invoke(msg)
@@ -90,7 +88,7 @@ You will be given a user's query and three candidate descriptions.
         logging.exception("pick_One_Description_And_Generate_Detailed_Description failed")
         raise
 
-def validate_Description(state: DescriptionGenerationState):
+def validateDescription(state: DescriptionGenerationState):
     """ This function checks the description, 
     if the description is correct then True otherwise False """
     print("******Checking is this Correct or not ********\n\n")

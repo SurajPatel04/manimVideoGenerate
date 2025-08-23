@@ -11,9 +11,213 @@ import subprocess
 import uuid
 load_dotenv()
 
+critical = """
+<CRITICAL>: You MUST write code that is compatible with Manim v0.19+ ONLY. Do NOT use any deprecated or removed methods. Also, ensure that text and objects do not overlap.
+
+in Manim v0.19+, you should import everything directly from the top-level manim package. like this from manim import , DirectionalLight,
+
+    This includes:
+
+    Scene types: Scene, ThreeDScene
+
+    3D objects: Cube, Sphere, ParametricSurface
+
+    Lights: DirectionalLight, 
+
+    2D objects: Circle, Square, Text, MathTex, etc.
+
+    Animations: Create, Write, FadeIn, Transform, etc.
+
+    Axes & plots: Axes, NumberPlane
+
+    Removed in v0.19+
+        Lighting Classes:
+            AmbientLight
+            PointLight
+            DirectionalLight
+            All classes from manim.mobject.three_d.light
+
+        Scene Method:
+            set_background
+
+
+    What's New
+        Camera Lighting: Lighting is now handled automatically by the camera.
+        Setting Background Color: Use self.camera.background_color = <color> to set the background color.
+        Directional Lighting: For custom lighting effects, you can use DirectionalLight.
+
+            Example usage:
+            from manim import *
+
+            class MyScene(ThreeDScene):
+                def construct(self):
+                    self.set_camera_orientation(phi=75 * DEGREES, theta=30 * DEGREES)
+                    self.begin_ambient_camera_rotation(rate=0.05)
+                    self.camera.background_color = BLACK
+                    self.renderer.camera.light_source.move_to([0, 0, 5])
+
+        Automatic Lighting:
+            Lighting is now handled automatically by the camera.
+            You can adjust the light direction using:
+            self.renderer.camera.light_source.move_to([x, y, z])
+
+        Background Color:
+            Set the background color using:
+            self.camera.background_color = BLACK
+
+        Scene Setup:
+            Use self.set_camera_orientation and self.begin_ambient_camera_rotation for camera positioning and rotation.
+
+    -- TypeError: Mobject.__init__() got an unexpected keyword argument 'disappearing_time'
+        How to fix: The TracedPath API changed. In earlier versions, TracedPath had a disappearing_time argument. In v0.19+, it no longer exists.
+            Instead of disappearing_time, use the new dissipating_time argument:
+            Example 
+            
+            from manim import TracedPath, BLUE, RED
+
+            trace1 = TracedPath(bob1, stroke_width=2, color=BLUE, dissipating_time=3)
+            trace2 = TracedPath(bob2, stroke_width=2, color=RED, dissipating_time=3)
+
+            self.add(trace1, trace2)
+
+    -- TypeError: TracedPath.__init__() missing 1 required positional argument: 'traced_point_func'
+
+        Old version: TracedPath(bob1, ...) — passed the mobject directly.
+        New version (v0.19+): TracedPath(traced_point_func=...) — you must give a function returning the point to trace.
+        dissipating_time replaces disappearing_time.
+
+        **CORRECT v0.19+ SYNTAX TO USE:**
+
+    Your tasks are:
+    1.  Before writing the main body of the code, write a commented-out "Layout Plan" that describes how you will position the main elements on the screen to avoid overlap.
+    2.  Write the complete Manim python code for the animation.
+    3.  The class name for the animation scene MUST be the same as the filename (without the .py extension).
+    4.  Use the provided tool to save the final code to a file.
+    
+    Note:
+    
+    - And all the content should be in frame.
+    - if you are creating 3d then do it correctly
+        -- 2D Scenes use a camera.frame to control the view.
+        -- 3D Scenes use the camera object directly for control.
+
+    You got These error many time try to overcome these issue:
+    - TypeError: Code.__init__() got an unexpected keyword argument 'code'
+    - NameError: name 'Text3D' is not defined
+    - ValueError: latex error converting to dvi.
+    - TypeError: Mobject.__getattr__.<locals>.getter() takes 1 positional argument but 2 were given
+    - Code.__init__() got an unexpected keyword argument 'code'
+    -- Also, prefer using `axes.plot()` instead of the older `axes.get_graph()`.
+    -- TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_range' 
+    - AttributeError: 'object' has no attribute 'to_center'. Always use the `.move_to(ORIGIN)` method instead of `.to_center()`.
+    -- latex error converting to dvi
+    -- Text object has no attribute 'to_center'
+    - In Manim v0.19 and newer versions, to_center() has been deprecated and removed. Instead, you should use:
+    # Old way (doesn't work in v0.19+): axes.to_center()
+    # New way (correct for v0.19+): axes.move_to(ORIGIN)
+
+    -- TypeError: Mobject.__init__() got an unexpected keyword argument 'x_label'
+    -- AttributeError: 'ThreeDCamera' object has no attribute 'animate'
+    --TypeError: Unexpected argument None passed to Scene.play().
+    --- The `NameError` for `ParametricSurface` was incorrectly "fixed" by explicitly importing it from `manim.mobject.three_d.three_dimensions`.  
+
+        In Manim v0.19+, this import path is invalid and causes:
+        ImportError: cannot import name 'ParametricSurface' from 'manim.mobject.three_d.three_dimensions'
+
+         Correct usage: `from manim import ParametricSurface`
+
+        Additionally, the animation for axes and labels should use `FadeIn` for smooth entrance rather than appearing instantly.
+
+        The corrected file `Animation_b9cf9c45.py` failed due to the bad import and must be fixed as described.
+
+    -- AttributeError: 'MoveAlongPath' object has no attribute 'submobjects'
+        Mobjects (like Cube(), Sphere()) have submobjects.
+        Animations (like MoveAlongPath(obj, path)) do not have submobjects.
+
+    -- AttributeError: 'Animation_ed282dad' object has no attribute 'add_ambient_camera_rotation'
+        cube = Cube()
+        anim = Rotate(cube, angle=PI/4)
+
+        anim.add_ambient_camera_rotation(rate=0.1)  # ❌ WRONG
+
+        Correct usage:
+            class MyScene(ThreeDScene):
+            def construct(self):
+                cube = Cube()
+                self.add(cube)
+                self.add_ambient_camera_rotation(rate=0.1)  # ✅ add rotation to the scene
+                self.play(Rotate(cube, angle=PI/4))
+                self.wait(2)
+    -- AttributeError: 'Animation_b79f245b' object has no attribute 'set_background'
+        How to fix:
+            Use self.camera.background_color instead:
+                Replace any line like: self.set_background(BLACK)
+                With: self.camera.background_color = BLACK
+
+    -- TypeError: .scene_updater() missing 1 required positional argument: 'dt_scene'
+        Note:
+            Always include dt for any updater function.
+            dt is the time delta since the last frame — use it to make animations frame-rate independent.
+            Works for both 2D and 3D scenes.
+
+    -- AttributeError: 'ThreeDCamera' object has no attribute 'animate'
+        In Manim v0.19+, you cannot use self.camera.animate.
+        Replace: self.camera.animate.set_theta(-45 * DEGREES) 
+        with either: self.set_camera_orientation(theta=-45 * DEGREES)  # instant
+        or --> self.move_camera(theta=-45 * DEGREES, run_time=8)  # smooth
+
+    -- TypeError: Mobject.__init__() got an unexpected keyword argument 'start_vector'
+        In Manim v0.19+, Angle no longer accepts start_vector or other_angle.
+        Use only:Angle(line1, line2, radius=..., color=...)
+
+    -- TypeError: Unexpected argument None passed to Scene.play()
+        The error happens because you passed self.move_camera(...) to self.play().
+        self.move_camera() returns None, so play() sees None → error.
+        Fix: Either animate the camera with .animate inside play():
+        self.play(
+            phase_tracker.animate.set_value(4 * PI),
+            self.camera.frame.animate.set_phi(self.camera.get_phi() + 10 * DEGREES)
+        )
+        or call move_camera() separately:
+        self.play(phase_tracker.animate.set_value(4 * PI))
+        self.move_camera(phi=self.camera.get_phi() + 10 * DEGREES, run_time=2)
+        Never pass move_camera() directly into play().
+
+    </CRITICAL>
+"""
+
+important = """
+<IMPORTANT>: Always import all Manim classes directly from top-level `manim` package.
+Do NOT use any deprecated paths such as `manim.mobjects` or `manim.mobject`.
+Example correct imports:
+from manim import Scene, ThreeDScene, Cube, Sphere, Text, MathTex, ParametricSurface, PointLight</IMPORTANT>
+
+"""
+
+mandatoryChecklist = """**MANDATORY CHECKLIST - VERIFY YOUR CODE:**
+✓ No .to_center() methods used
+✓ All positioning uses .move_to() or .to_edge()
+✓ Layout: Uses .next_to() or .arrange() to prevent overlapping objects.
+✓ Axes use .plot() not .get_graph()
+✓ Code objects use correct parameter syntax
+✓ Modern color constants used
+✓ Proper animation syntax
+✓ Compatible with Manim v0.19+
+✓ LATEX: All MathTex uses raw strings r""
+✓ LATEX: Plain text uses Text(), math uses MathTex()
+✓ LATEX: No LaTeX syntax in Text() objects
+✓ in Manim v0.19+, you should import everything directly from the top-level manim package. like this from manim import AmbientLight, DirectionalLight, PointLight
+    This includes:
+        Scene types: Scene, ThreeDScene
+        3D objects: Cube, Sphere, ParametricSurface
+        Lights: AmbientLight, DirectionalLight, PointLight
+        2D objects: Circle, Square, Text, MathTex, etc.
+        Animations: Create, Write, FadeIn, Transform, etc.
+        Axes & plots: Axes, NumberPlane"""
+
 MAX_REWRITE_ATTEMPTS = 3
 @tool
-def create_file_and_write_mainm_code(filename, content):
+def createFileAndWriteMainmCode(filename, content):
     """This tool is used to write a python code directly in a file for a Manim animation."""
     print("****************** Creating a file ****************")
     if not os.path.exists("./temp"):
@@ -89,54 +293,94 @@ def run_manim_scene(filename, state: mainmState):
 
 
 
-def agent_create_file(state: mainmState):
-    tools = [create_file_and_write_mainm_code]
+def agentCreateFile(state: mainmState):
+    tools = [createFileAndWriteMainmCode]
 
     system_prompt = """
     You are a helpful AI. You expert in creating manim code in and try it be good in one go and use manim v.19
 
-    CRITICAL: You MUST write code that is compatible with Manim v0.19+ ONLY. Do NOT use any deprecated or removed methods.
 
-    Your tasks are:
-    1. Write Manim python code for an animation and save it to a file using the provided tool.
-    2. The class name for the animation scene must be the same as the filename (without the .py extension).
-    
-    Note:
-    - Add the text "Developed by Suraj Patel" in a very small font to the bottom right corner of the scene. like Watermark
-    - And all the content should be in frame.
-    - if you are creating 3d then do it correctly
-        -- 2D Scenes use a camera.frame to control the view.
-        -- 3D Scenes use the camera object directly for control.
 
-    You got These error many time try to overcome these issue:
-    - TypeError: Code.__init__() got an unexpected keyword argument 'code'
-    - NameError: name 'Text3D' is not defined
-    - ValueError: latex error converting to dvi.
-    - TypeError: Mobject.__getattr__.<locals>.getter() takes 1 positional argument but 2 were given
-    - Code.__init__() got an unexpected keyword argument 'code'
-    -- Also, prefer using `axes.plot()` instead of the older `axes.get_graph()`.
-    -- TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_range' 
-    - AttributeError: 'object' has no attribute 'to_center'. Always use the `.move_to(ORIGIN)` method instead of `.to_center()`.
-    -- latex error converting to dvi
-    -- Text object has no attribute 'to_center'
-    - In Manim v0.19 and newer versions, to_center() has been deprecated and removed. Instead, you should use:
-    # Old way (doesn't work in v0.19+): axes.to_center()
-    # New way (correct for v0.19+): axes.move_to(ORIGIN)
+{important}
 
+{critical}
 
     **CORRECT v0.19+ SYNTAX TO USE:**
 
-1. **Positioning:**
+Create a Scene class named MainScene that follows these requirements:
+
+1. Scene Setup:
+   - For 3D concepts: Use ThreeDScene with appropriate camera angles
+        -- Always import lights and 3D objects directly from manim (e.g., from manim import ThreeDScene, Cube, Sphere, DirectionalLight).
+        -- ❌ camera.animate → not supported
+
+            ✅ Use:
+
+            self.set_camera_orientation(...) → instant camera position
+
+            self.move_camera(..., run_time=...) → smooth transition
+
+            self.begin_3dillusion_camera_rotation(rate=...) / self.stop_3dillusion_camera_rotation() → auto rotation
+   - For 2D concepts: Use Scene with NumberPlane when relevant
+   - Add title and clear mathematical labels
+
+2. Mathematical Elements:
+   - Use MathTex for equations with proper LaTeX syntax
+   - Include step-by-step derivations when showing formulas
+   - Add mathematical annotations and explanations
+   - Show key points and important relationships
+
+3. Visual Elements:
+   - Create clear geometric shapes and diagrams
+   - Use color coding to highlight important parts
+   - Add arrows or lines to show relationships
+   - Include coordinate axes when relevant
+
+4. Animation Flow:
+   - Break down complex concepts into simple steps
+   - Use smooth transitions between steps
+   - Add pauses (self.wait()) at key moments
+   - Use transform animations to show changes
+
+5. Specific Requirements:
+   - For equations: Show step-by-step solutions
+   - For theorems: Visualize proof steps
+   - For geometry: Show construction process
+   - For 3D: Include multiple camera angles
+   - For graphs: Show coordinate system and gridlines
+
+6. Code Structure:
+   - Import required Manim modules
+   - Use proper class inheritance
+   - Define clear animation sequences
+
+
+7. **Positioning:**
    - Center objects: object.move_to(ORIGIN)
    - Move to coordinates: object.move_to([x, y, z]) or object.move_to(np.array([x, y, z]))
    - Edge positioning: object.to_edge(UP), object.to_edge(LEFT), etc.
 
-2. **Axes and Graphs:**
+8. **Axes and Graphs:**
    - Create axes: axes = Axes(x_range=[...], y_range=[...])
    - Plot functions: graph = axes.plot(lambda x: x**2, color=BLUE)
    - NOT: axes.get_graph() (deprecated)
 
-3. **Text and Math (CRITICAL - Prevents LaTeX DVI errors):**
+9. Before writing the main body of the code, write a commented-out "Layout Plan" that describes how you will position the main elements on the screen to avoid overlap.
+Example 
+class MyScene(Scene):
+    def construct(self):
+        # Layout Plan:
+        # 1. Main title will be at the top of the screen (to_edge(UP)).
+        # 2. A circle will be placed on the left side.
+        # 3. An explanation text block will be placed to the right of the circle using .next_to().
+        # 4. The final formula will appear below everything, centered.
+
+        title = Text("My Animation").to_edge(UP)
+        my_circle = Circle().move_to(LEFT * 3)
+        explanation = Text("This circle is an example.").next_to(my_circle, RIGHT, buff=0.5)
+        # ... rest of the code ...
+
+10. **Text and Math (CRITICAL - Prevents LaTeX DVI errors):**
    - Plain text: Text("Hello World")
    - Math expressions: MathTex(r"x^2 + y^2 = r^2")
    - ALWAYS use raw strings (r"") with MathTex
@@ -144,35 +388,46 @@ def agent_create_file(state: mainmState):
    - Code blocks: Code("your_code_here", language="python")
    - NOT: Code(code="your_code_here") (wrong parameter name)
 
-4. **Colors:**
+11. **Colors:**
    - Use: BLUE, RED, GREEN, YELLOW, etc. (modern constants)
    - Or: "#FF5733" (hex colors)
 
-5. **Animations:**
+12. **Animations:**
    - Use: Create(), Write(), Transform(), etc.
    - Proper syntax: self.play(Create(object), run_time=2)
 
-6. **Imports:**
+13. **Imports:**
    - Always use: from manim import *
    - Or specific imports: from manim import Scene, Text, Create, etc.
 
-**MANDATORY CHECKLIST - VERIFY YOUR CODE:**
-✓ No .to_center() methods used
-✓ All positioning uses .move_to() or .to_edge()
-✓ Axes use .plot() not .get_graph()
-✓ Code objects use correct parameter syntax
-✓ Modern color constants used
-✓ Proper animation syntax
-✓ Compatible with Manim v0.19+
-✓ LATEX: All MathTex uses raw strings r""
-✓ LATEX: Plain text uses Text(), math uses MathTex()
-✓ LATEX: No LaTeX syntax in Text() objects
+14. **Layout and Spacing Rules (CRITICAL - Prevents Overlapping)**
+   - To prevent objects from overlapping, you MUST use Manim's relative positioning tools. Do NOT position everything manually at absolute coordinates unless you are certain they won't clash.
+
+   - **Rule A: Use `.next_to()` for single objects.** This is the primary tool for placing a label or object next to another.
+     - **Example:** `label = Text("My Circle").next_to(my_circle, UP, buff=0.5)`
+     - This places `label` above `my_circle` with a gap (`buff`) of 0.5 units.
+
+   - **Rule B: Use `.arrange()` for groups of objects.** This is the best way to line up multiple items in a row or column with even spacing.
+     - **Example:** `my_group = VGroup(circle, square, text).arrange(RIGHT, buff=1)`
+     - This arranges the objects horizontally with a gap of 1 unit between each.
+
+   - **Rule C: Use `VGroup` and `.move_to()` for layout blocks.** For complex scenes, group related items together, and then position the entire group. This is safer than positioning many individual items.
+     - **Example:**
+       `diagram = VGroup(circle, arrow, square).move_to(LEFT * 3)`
+       `explanation = Text("...").move_to(RIGHT * 3)`
+
+{mandatoryChecklist}
 
     """ 
 
+
     prompt = ChatPromptTemplate.from_messages(
         [
-            ("system", system_prompt),
+            ("system", system_prompt.format(
+                critical=critical,
+                important=important,
+                mandatoryChecklist=mandatoryChecklist
+            )),
             ("human", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad")
         ]
@@ -192,7 +447,9 @@ def agent_create_file(state: mainmState):
     agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
     
     print(f"--- Running agent with filename: {unique_name}.py ---")
-    result = agent_executor.invoke({"input": human_message})
+    result = agent_executor.invoke({
+        "input": human_message,
+        })
     print("\n--- Agent Final Answer ---")
     print(result['output'])
     print(f"{unique_name}.py")
@@ -201,24 +458,85 @@ def agent_create_file(state: mainmState):
     return state
 
 
-def agent_check_file_code(state: mainmState):
+def agentCheckFileCode(state: mainmState):
     code=read_file(state.filename)
     message = state.description
-    system_prompt = f"""
+    system_prompt = """
     You are an expert Manim developer...
 
+    {critical}
+    
     Code is 
     {code} 
 
     **Instructions**
     1. Analyze the Python script provided below in the "Code is..." section.
-        1.1. Code is important. code should not produce any error in execution
+        1.1. Code is important. code should not produce any error in execution check the all syntax 
         1.2. And all the content should be in frame. 
+        1.3. text or anything should not overlap to each other
     2. Compare its code and visual style with the description below. code is more important code should not break on the execution
     3. Return **one** JSON object with two keys:
     • "is_code_good"   – true / false  
     • "error_message"  – empty string if good, otherwise concise reason
 
+       You got These error many time try to overcome these issue:
+    - TypeError: Code.__init__() got an unexpected keyword argument 'code'
+    - NameError: name 'Text3D' is not defined
+    - ValueError: latex error converting to dvi.
+    - TypeError: Mobject.__getattr__.<locals>.getter() takes 1 positional argument but 2 were given
+    - Code.__init__() got an unexpected keyword argument 'code'
+    -- Also, prefer using `axes.plot()` instead of the older `axes.get_graph()`.
+    -- TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_range' 
+    - AttributeError: 'object' has no attribute 'to_center'. Always use the `.move_to(ORIGIN)` method instead of `.to_center()`.
+    -- latex error converting to dvi
+    -- Text object has no attribute 'to_center'
+    - In Manim v0.19 and newer versions, to_center() has been deprecated and removed. Instead, you should use:
+    # Old way (doesn't work in v0.19+): axes.to_center()
+    # New way (correct for v0.19+): axes.move_to(ORIGIN)
+
+    -- TypeError: Mobject.__init__() got an unexpected keyword argument 'x_label'
+    -- AttributeError: 'ThreeDCamera' object has no attribute 'animate'
+    --TypeError: Unexpected argument None passed to Scene.play().
+    --- The `NameError` for `ParametricSurface` was incorrectly "fixed" by explicitly importing it from `manim.mobject.three_d.three_dimensions`.  
+
+        In Manim v0.19+, this import path is invalid and causes:
+        ImportError: cannot import name 'ParametricSurface' from 'manim.mobject.three_d.three_dimensions'
+
+        Correct usage: `from manim import ParametricSurface`
+
+        Additionally, the animation for axes and labels should use `FadeIn` for smooth entrance rather than appearing instantly.
+
+        The corrected file `Animation_b9cf9c45.py` failed due to the bad import and must be fixed as described.
+
+    -- AttributeError: 'MoveAlongPath' object has no attribute 'submobjects'
+        Mobjects (like Cube(), Sphere()) have submobjects.
+        Animations (like MoveAlongPath(obj, path)) do not have submobjects.
+
+    -- AttributeError: 'Animation_ed282dad' object has no attribute 'add_ambient_camera_rotation'
+        cube = Cube()
+        anim = Rotate(cube, angle=PI/4)
+
+        anim.add_ambient_camera_rotation(rate=0.1)  # ❌ WRONG
+        Correct usage:
+            class MyScene(ThreeDScene):
+            def construct(self):
+                cube = Cube()
+                self.add(cube)
+                self.add_ambient_camera_rotation(rate=0.1)  # ✅ add rotation to the scene
+                self.play(Rotate(cube, angle=PI/4))
+                self.wait(2)
+    -- AttributeError: 'Animation_b79f245b' object has no attribute 'set_background'
+        How to fix:
+            Use self.camera.background_color instead:
+                Replace any line like: self.set_background(BLACK)
+                With: self.camera.background_color = BLACK
+    -- TypeError: .scene_updater() missing 1 required positional argument: 'dt_scene'
+        Note:
+            Always include dt for any updater function.
+            dt is the time delta since the last frame — use it to make animations frame-rate independent.
+            Works for both 2D and 3D scenes.
+
+{mandatoryChecklist}
     """
     structured_llm = llmFlash.with_structured_output(CheckMaimCode)
     print("\n--- Checking Code file ---")
@@ -226,7 +544,11 @@ def agent_check_file_code(state: mainmState):
 
 
     messages = [
-        SystemMessage(content=system_prompt),
+        SystemMessage(content=system_prompt.format(
+        critical=critical,
+        mandatoryChecklist=mandatoryChecklist,
+        code=code
+        )),
         HumanMessage(content=f"{message}")
     ]
     evaluation_result = structured_llm.invoke(messages)
@@ -243,8 +565,8 @@ def agent_check_file_code(state: mainmState):
     print(f"Error Message: {state.validation_error}")
     return state
 
-def agent_re_write_manim_code(state: mainmState):
-    tools = [create_file_and_write_mainm_code]
+def agentReWriteManimCode(state: mainmState):
+    tools = [createFileAndWriteMainmCode]
     filename = state.filename
     validation_error = state.validation_error
     validation_error_history = state.validation_error_history
@@ -259,8 +581,9 @@ def agent_re_write_manim_code(state: mainmState):
 You are an expert Manim debugger and Python developer, using manim v0.19.
 Your sole task is to fix the provided Manim code file by analyzing all available error information.
 
-CRITICAL: You MUST write code that is compatible with Manim v0.19+ ONLY. Do NOT use any deprecated or removed methods.
+{critical}
 
+{important}
 ---
 CONTEXT FOR THE FIX:
 
@@ -292,31 +615,84 @@ You must fix all the errors listed below. Pay close attention to the histories t
 {validation_error_history}
 
 ---
-COMMON MISTAKES TO AVOID:
-- TypeError: Code.__init__() got an unexpected keyword argument 'code' (The code string should be the first argument, not a keyword).
-- NameError: name 'Text3D' is not defined.
-- ValueError: latex error converting to dvi.
-- TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_range' (Use `axes.plot()` instead of `axes.get_graph()`).
-- AttributeError: 'object' has no attribute 'to_center' (Always use the `.move_to(ORIGIN)` method instead).
-- latex error converting to dvi
-- Text object has no attribute 'to_center'
-- In Manim v0.19 and newer versions, to_center() has been deprecated and removed. Instead, you should use:
-  # Old way (doesn't work in v0.19+): axes.to_center()
-  # New way (correct for v0.19+): axes.move_to(ORIGIN)
 
-**CORRECT v0.19+ SYNTAX TO USE:**
+    **CORRECT v0.19+ SYNTAX TO USE:**
 
-1. **Positioning:**
+Create a Scene class named MainScene that follows these requirements:
+
+1. Scene Setup:
+   - For 3D concepts: Use ThreeDScene with appropriate camera angles
+        -- Always import lights and 3D objects directly from manim (e.g., from manim import ThreeDScene, Cube, Sphere, DirectionalLight).
+        -- ❌ camera.animate → not supported
+
+            ✅ Use:
+
+            self.set_camera_orientation(...) → instant camera position
+
+            self.move_camera(..., run_time=...) → smooth transition
+
+            self.begin_3dillusion_camera_rotation(rate=...) / self.stop_3dillusion_camera_rotation() → auto rotation
+
+   - For 2D concepts: Use Scene with NumberPlane when relevant
+   - Add title and clear mathematical labels
+
+2. Mathematical Elements:
+   - Use MathTex for equations with proper LaTeX syntax
+   - Include step-by-step derivations when showing formulas
+   - Add mathematical annotations and explanations
+   - Show key points and important relationships
+
+3. Visual Elements:
+   - Create clear geometric shapes and diagrams
+   - Use color coding to highlight important parts
+   - Add arrows or lines to show relationships
+   - Include coordinate axes when relevant
+
+4. Animation Flow:
+   - Break down complex concepts into simple steps
+   - Use smooth transitions between steps
+   - Add pauses (self.wait()) at key moments
+   - Use transform animations to show changes
+
+5. Specific Requirements:
+   - For equations: Show step-by-step solutions
+   - For theorems: Visualize proof steps
+   - For geometry: Show construction process
+   - For 3D: Include multiple camera angles
+   - For graphs: Show coordinate system and gridlines
+
+6. Code Structure:
+   - Import required Manim modules
+   - Use proper class inheritance
+   - Define clear animation sequences
+
+
+7. **Positioning:**
    - Center objects: object.move_to(ORIGIN)
    - Move to coordinates: object.move_to([x, y, z]) or object.move_to(np.array([x, y, z]))
    - Edge positioning: object.to_edge(UP), object.to_edge(LEFT), etc.
 
-2. **Axes and Graphs:**
+8. **Axes and Graphs:**
    - Create axes: axes = Axes(x_range=[...], y_range=[...])
    - Plot functions: graph = axes.plot(lambda x: x**2, color=BLUE)
    - NOT: axes.get_graph() (deprecated)
 
-3. **Text and Math (CRITICAL - Prevents LaTeX DVI errors):**
+9. Before writing the main body of the code, write a commented-out "Layout Plan" that describes how you will position the main elements on the screen to avoid overlap.
+Example 
+class MyScene(Scene):
+    def construct(self):
+        # Layout Plan:
+        # 1. Main title will be at the top of the screen (to_edge(UP)).
+        # 2. A circle will be placed on the left side.
+        # 3. An explanation text block will be placed to the right of the circle using .next_to().
+        # 4. The final formula will appear below everything, centered.
+
+        title = Text("My Animation").to_edge(UP)
+        my_circle = Circle().move_to(LEFT * 3)
+        explanation = Text("This circle is an example.").next_to(my_circle, RIGHT, buff=0.5)
+        # ... rest of the code ...
+
+10. **Text and Math (CRITICAL - Prevents LaTeX DVI errors):**
    - Plain text: Text("Hello World")
    - Math expressions: MathTex(r"x^2 + y^2 = r^2")
    - ALWAYS use raw strings (r"") with MathTex
@@ -324,44 +700,58 @@ COMMON MISTAKES TO AVOID:
    - Code blocks: Code("your_code_here", language="python")
    - NOT: Code(code="your_code_here") (wrong parameter name)
 
-4. **Colors:**
+11. **Colors:**
    - Use: BLUE, RED, GREEN, YELLOW, etc. (modern constants)
    - Or: "#FF5733" (hex colors)
 
-5. **Animations:**
+12. **Animations:**
    - Use: Create(), Write(), Transform(), etc.
    - Proper syntax: self.play(Create(object), run_time=2)
 
-6. **Imports:**
+13. **Imports:**
    - Always use: from manim import *
    - Or specific imports: from manim import Scene, Text, Create, etc.
 
-**MANDATORY CHECKLIST - VERIFY YOUR CODE:**
-✓ No .to_center() methods used
-✓ All positioning uses .move_to() or .to_edge()
-✓ Axes use .plot() not .get_graph()
-✓ Code objects use correct parameter syntax
-✓ Modern color constants used
-✓ Proper animation syntax
-✓ Compatible with Manim v0.19+
-✓ LATEX: All MathTex uses raw strings r""
-✓ LATEX: Plain text uses Text(), math uses MathTex()
-✓ LATEX: No LaTeX syntax in Text() objects
+14. **Layout and Spacing Rules (CRITICAL - Prevents Overlapping)**
+   - To prevent objects from overlapping, you MUST use Manim's relative positioning tools. Do NOT position everything manually at absolute coordinates unless you are certain they won't clash.
 
+   - **Rule A: Use `.next_to()` for single objects.** This is the primary tool for placing a label or object next to another.
+     - **Example:** `label = Text("My Circle").next_to(my_circle, UP, buff=0.5)`
+     - This places `label` above `my_circle` with a gap (`buff`) of 0.5 units.
 
+   - **Rule B: Use `.arrange()` for groups of objects.** This is the best way to line up multiple items in a row or column with even spacing.
+     - **Example:** `my_group = VGroup(circle, square, text).arrange(RIGHT, buff=1)`
+     - This arranges the objects horizontally with a gap of 1 unit between each.
+
+   - **Rule C: Use `VGroup` and `.move_to()` for layout blocks.** For complex scenes, group related items together, and then position the entire group. This is safer than positioning many individual items.
+     - **Example:**
+       `diagram = VGroup(circle, arrow, square).move_to(LEFT * 3)`
+       `explanation = Text("...").move_to(RIGHT * 3)`
+
+{mandatoryChecklist}
 ---
 TOOL USAGE INSTRUCTIONS (VERY IMPORTANT):
 
-After you have generated the corrected code, you will call the `create_file_and_write_mainm_code` tool.
+After you have generated the corrected code, you will call the `createFileAndWriteMainmCode` tool.
 When you call this tool, you **MUST** provide **BOTH** of the following arguments:
 1.  `filename`: The name of the file to write to. Use the exact filename provided in the context above: {filename}.
 2.  `content`: The complete and corrected Python code as a single string.
 """
 
-
     prompt = ChatPromptTemplate.from_messages(
         [
-            ("system", system_prompt),
+            ("system", system_prompt.format(
+                    critical=critical,
+                    important=important,
+                    mandatoryChecklist=mandatoryChecklist,
+                    filename=filename,
+                    code=code,
+                    description=description,
+                    validation_error_history=validation_error_history,
+                    validation_error=validation_error,
+                    execution_error_history=execution_error_history,
+                    execution_error=execution_error
+            )),
             ("human", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad")
         ]
@@ -375,20 +765,13 @@ When you call this tool, you **MUST** provide **BOTH** of the following argument
     # 2. Provide all required variables in the .invoke() call.
     result = agent_executor.invoke({
         "input": human_message,
-        "filename": filename,
-        "code":code,
-        "description": description,
-        "validation_error_history":validation_error_history,
-        "validation_error": validation_error,
-        "execution_error_history": execution_error_history,
-        "execution_error":execution_error
     })
 
     print("\n--- re_write_manim_code ---")
     print(result['output'])
     return state
 
-def agent_run_manim_code(state: mainmState):
+def agentRunManimCode(state: mainmState):
     result_message = run_manim_scene(filename=state.filename, state=state)
     print(f"Execution Result: {result_message}")
 
@@ -401,17 +784,21 @@ def agent_run_manim_code(state: mainmState):
         state.execution_success = True
         state.execution_error = ""
 
+        state.execution_error_history.clear()
+        state.validation_error_history.clear()
+        state.validation_error = None
+
     return state
 
 
 def manimRouter(state: mainmState):
     if state.is_code_good is True:
-        return "agent_run_manim_code"
+        return "agentRunManimCode"
     elif state.rewrite_attempts >= 3:
         print("❌ Rewrite limit reached. Ending graph.")
         return END
     else: 
-        return "agent_re_write_manim_code"
+        return "agentReWriteManimCode"
     
 def executionRouter(state: mainmState):
     """Routes the graph after a Manim execution attempt."""
@@ -427,7 +814,7 @@ def executionRouter(state: mainmState):
         return "fix"
 
 
-def handle_failure_and_reset(state: mainmState) -> mainmState:
+def handleFailureAndReset(state: mainmState) -> mainmState:
     """Resets the attempt counter to start the entire process over."""
     if state.create_again >= 1:
         return END
@@ -437,13 +824,13 @@ def handle_failure_and_reset(state: mainmState) -> mainmState:
         state.create_again += 1
         return state
 
-def should_start_over_router(state: mainmState):
+def shouldStartOverRouter(state: mainmState):
     """Checks the 'create_again' flag to decide the next step."""
     
     # CORRECT: Check if this is the first and only time we are starting over.
     if state.create_again == 1:
         print("✅ Starting the process over one time.")
-        return "agent_create_file" # Loop back to the beginning
+        return "agentCreateFile" # Loop back to the beginning
     else:
         # If create_again is > 1, the single retry has already been used.
         print("❌ Full retry and start-over process failed. Ending.")

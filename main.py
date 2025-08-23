@@ -32,6 +32,4 @@ def call_graph():
     result = graph_for_mainm_code_generate.invoke(stat1)
     print(result)
 
-for i in range(1):
-    print("Running times: ",i+1)
-    call_graph()
+call_graph()
