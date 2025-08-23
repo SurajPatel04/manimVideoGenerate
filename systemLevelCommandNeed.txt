@@ -1,4 +1,4 @@
 sudo apt update
 sudo apt install -y libcairo2-dev pkg-config python3-dev libffi-dev
-
+sudo apt install texlive-full
 sudo apt install -y libcairo2-dev libpango1.0-dev pkg-config python3-dev
