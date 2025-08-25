@@ -1,42 +1,45 @@
 from manim import *
 import numpy as np
 
-class FourierSeriesApprox(Scene):
+class SineWaveTunnel(ThreeDScene):
     def construct(self):
-        # Axes
-        axes = Axes(
-            x_range=[-2*PI, 2*PI, PI/2],
-            y_range=[-1.5, 1.5, 0.5],
-            axis_config={"color": WHITE},
-        )
-        labels = axes.get_axis_labels(x_label="x", y_label="f(x)")
-        self.play(Create(axes), Write(labels))
+        # Set initial camera orientation
+        self.set_camera_orientation(phi=75 * DEGREES, theta=-45 * DEGREES)
 
-        # Original square wave (target function)
-        def square_wave(x):
-            return 1 if (x % (2*PI)) < PI else -1
+        # Parameters for tunnel
+        n_waves = 80       # number of sine rings
+        wave_length = 0.5  # distance between rings
+        radius = 3
 
-        square_graph = axes.plot(lambda x: square_wave(x), color=GRAY)
-        self.play(Create(square_graph))
+        # Create sine-wave tunnel rings
+        tunnel = VGroup()
+        for i in range(n_waves):
+            z = -i * wave_length
+            ring = ParametricFunction(
+                lambda t: np.array([
+                    (radius + 0.5 * np.sin(3 * t + i * 0.3)) * np.cos(t),
+                    (radius + 0.5 * np.sin(3 * t + i * 0.3)) * np.sin(t),
+                    z
+                ]),
+                t_range=[0, TAU],
+                color=interpolate_color(BLUE, PURPLE, i / n_waves),
+                stroke_width=2
+            )
+            tunnel.add(ring)
 
-        # Fourier series function
-        def fourier_series(x, n_terms):
-            result = 0
-            for n in range(1, n_terms+1, 2):  # odd terms only
-                result += (4/PI) * (1/n) * np.sin(n*x)
-            return result
+        self.add(tunnel)
 
-        # Term counts to show
-        term_counts = [1, 3, 5, 10]
-        colors = [BLUE, GREEN, YELLOW, RED]
+        # Animate tunnel moving towards camera (z shift)
+        def update_tunnel(mob, dt):
+            mob.shift([0, 0, 1 * dt])  # move forward
+            # recycle rings to simulate infinite tunnel
+            for ring in mob:
+                if ring.get_center()[2] > 1:
+                    ring.shift([0, 0, -n_waves * wave_length])
+        
+        tunnel.add_updater(update_tunnel)
 
-        # Animate successive approximations
-        for n, c in zip(term_counts, colors):
-            approx_graph = axes.plot(lambda x: fourier_series(x, n), color=c)
-            label = Tex(f"N = {n} terms").to_corner(UL).scale(0.7)
-
-            self.play(Create(approx_graph), Write(label))
-            self.wait(2)
-            self.play(FadeOut(label))
-
-        self.wait(3)
+        # Camera slow forward fly
+        self.begin_ambient_camera_rotation(rate=0.05)  # slow rotation
+        self.move_camera(phi=65*DEGREES, theta=-30*DEGREES, run_time=10)
+        self.wait(10)

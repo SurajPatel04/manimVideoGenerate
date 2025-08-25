@@ -12,22 +12,15 @@ import uuid
 load_dotenv()
 
 critical = """
-<CRITICAL>: You MUST write code that is compatible with Manim v0.19+ ONLY. Do NOT use any deprecated or removed methods. Also, ensure that text and objects do not overlap.
+<CRITICAL>:Ensure that text and objects do not overlap. You MUST write code that is compatible with Manim v0.19+ ONLY. Do NOT use any deprecated or removed methods..
 
-in Manim v0.19+, you should import everything directly from the top-level manim package. like this from manim import , DirectionalLight,
-
+in Manim v0.19+, you should import directly below mention from the top-level manim package. like this from manim import , DirectionalLight,
     This includes:
-
     Scene types: Scene, ThreeDScene
-
     3D objects: Cube, Sphere, ParametricSurface
-
     Lights: DirectionalLight, 
-
     2D objects: Circle, Square, Text, MathTex, etc.
-
     Animations: Create, Write, FadeIn, Transform, etc.
-
     Axes & plots: Axes, NumberPlane
 
     Removed in v0.19+
@@ -36,6 +29,7 @@ in Manim v0.19+, you should import everything directly from the top-level manim 
             PointLight
             DirectionalLight
             All classes from manim.mobject.three_d.light
+            In Manim v0.19, ParametricSurface was renamed to Surface.
 
         Scene Method:
             set_background
@@ -183,6 +177,64 @@ in Manim v0.19+, you should import everything directly from the top-level manim 
         self.move_camera(phi=self.camera.get_phi() + 10 * DEGREES, run_time=2)
         Never pass move_camera() directly into play().
 
+    -- TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'u_range'
+        Fix: Remove u_range from Circle, Line, Square, or Scene.play() calls. Use it only with parametric objects.
+        Example:
+        # Correct
+        curve = ParametricFunction(lambda t: np.array([t, t**2, 0]), t_range=[0,1])
+        self.play(Create(curve))
+        # Wrong
+        circle = Circle(u_range=[0,1])  # causes your error
+
+    -- ImportError: cannot import name 'ParametricSurface' from 'manim' 
+        In Manim v0.19, ParametricSurface was renamed to Surface.
+
+        Fix the import:
+
+        from manim import Surface
+
+
+        Example usage:
+
+        surface = Surface(
+            lambda u, v: np.array([np.cos(u)*np.cos(v), np.cos(u)*np.sin(v), u]),
+            u_range=[-PI, PI],
+            v_range=[0, TAU],
+            resolution=(8, 8)
+        )
+    
+    -- TypeError: Mobject.__init__() got an unexpected keyword argument 'opacity'
+        opacity is not a constructor argument.
+        Instead, set it after creating the object using .set_opacity().
+
+    -- NameError: name 'ShowCreation' is not defined
+        ShowCreation was removed. Replace it with Create:
+
+
+    -- Important: In v0.19, there’s no built-in 3D text class—you must use to 2D Text
+        You create 2D text and then use the .extrude() method on it.
+
+    --  from manim.animation.rate_functions import linear ModuleNotFoundError: No module named 'manim.animation.rate_functions'
+        In Manim v0.19+, LINEAR was moved.
+        from manim.animation.rate_functions import linear
+        All rate functions (like linear, smooth, there_and_back, etc.) live in the top-level manim module now:
+
+    -- AttributeError: 'ThreeDCamera' object has no attribute 'animate'
+        3D camera (ThreeDCamera) has no .animate.
+
+        Fix use this
+        Use self.move_camera(phi=…, theta=…, run_time=…) in ThreeDScene.
+        Do not pass move_camera to self.play() or Succession; it schedules animation internally.
+
+    -- AttributeError: 'ThreeDCamera' object has no attribute 'get_position'
+        Fix use this
+        Use self.camera.frame_center or self.camera.frame.get_center() to get the camera’s position.
+
+    -- NameError: name 'EASE_IN_OUT' is not defined
+        Use this In Manim 0.19+, EASE_IN_OUT doesn’t exist. Use the function ease_in_out instead
+    
+    -- AttributeError: ParametricFunction object has no attribute 'scene'
+        In Manim 0.19+, you can’t call scene on a Mobject. Instead, add it to the scene using self.add() or self.play().
     </CRITICAL>
 """
 
@@ -310,19 +362,17 @@ def agentCreateFile(state: mainmState):
 Create a Scene class named MainScene that follows these requirements:
 
 1. Scene Setup:
-   - For 3D concepts: Use ThreeDScene with appropriate camera angles
-        -- Always import lights and 3D objects directly from manim (e.g., from manim import ThreeDScene, Cube, Sphere, DirectionalLight).
-        -- ❌ camera.animate → not supported
-
-            ✅ Use:
-
-            self.set_camera_orientation(...) → instant camera position
-
-            self.move_camera(..., run_time=...) → smooth transition
-
-            self.begin_3dillusion_camera_rotation(rate=...) / self.stop_3dillusion_camera_rotation() → auto rotation
-   - For 2D concepts: Use Scene with NumberPlane when relevant
-   - Add title and clear mathematical labels
+    For 3D concepts: Use ThreeDScene.
+        - Always import lights and 3D objects directly: Cube, Sphere, DirectionalLight, etc.
+        - Position objects explicitly in 3D space with x, y, z coordinates: object.move_to([x, y, z]) or object.move_to(np.array([x, y, z])).
+        - Use self.set_camera_orientation(...) for initial camera angles.
+        - Use self.move_camera(..., run_time=...) for smooth transitions.
+        - Use self.begin_3dillusion_camera_rotation(rate=...) / self.stop_3dillusion_camera_rotation() for automatic rotation.
+        - Ensure objects are spaced along z-axis to prevent overlaps.
+        - Add lights (DirectionalLight, PointLight) to illuminate all objects, creating shadows for depth.
+        - Camera must provide a clear view where all objects are visible; avoid default top-down flattening.
+    - For 2D concepts: Use Scene with NumberPlane when relevant.
+    - Add titles and clear labels for all mathematical or visual elements.
 
 2. Mathematical Elements:
    - Use MathTex for equations with proper LaTeX syntax
@@ -740,18 +790,7 @@ When you call this tool, you **MUST** provide **BOTH** of the following argument
 
     prompt = ChatPromptTemplate.from_messages(
         [
-            ("system", system_prompt.format(
-                    critical=critical,
-                    important=important,
-                    mandatoryChecklist=mandatoryChecklist,
-                    filename=filename,
-                    code=code,
-                    description=description,
-                    validation_error_history=validation_error_history,
-                    validation_error=validation_error,
-                    execution_error_history=execution_error_history,
-                    execution_error=execution_error
-            )),
+            ("system", system_prompt),
             ("human", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad")
         ]
@@ -765,6 +804,17 @@ When you call this tool, you **MUST** provide **BOTH** of the following argument
     # 2. Provide all required variables in the .invoke() call.
     result = agent_executor.invoke({
         "input": human_message,
+        "filename":filename,
+        "critical":critical,
+        "important":important,
+        "mandatoryChecklist":mandatoryChecklist,
+        "code":code,
+        "description":description,
+        "validation_error_history":validation_error_history,
+        "validation_error":validation_error,
+        "execution_error_history":execution_error_history,
+        "execution_error":execution_error
+
     })
 
     print("\n--- re_write_manim_code ---")
