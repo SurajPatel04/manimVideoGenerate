@@ -14,6 +14,11 @@ load_dotenv()
 critical = """
 <CRITICAL>:Ensure that text and objects do not overlap. You MUST write code that is compatible with Manim v0.19+ ONLY. Do NOT use any deprecated or removed methods..
 
+If in a Graph there is decimal number need then it should be 2 decimal only
+All written texy in the 2d in the screen way 
+If try to write what is happing if needed
+All text and the scene should remain in the frame. The text and scene transitions should be smooth.
+
 in Manim v0.19+, you should import directly below mention from the top-level manim package. like this from manim import , DirectionalLight,
     This includes:
     Scene types: Scene, ThreeDScene
@@ -231,10 +236,69 @@ in Manim v0.19+, you should import directly below mention from the top-level man
         Use self.camera.frame_center or self.camera.frame.get_center() to get the camera’s position.
 
     -- NameError: name 'EASE_IN_OUT' is not defined
-        Use this In Manim 0.19+, EASE_IN_OUT doesn’t exist. Use the function ease_in_out instead
+        Use this In Manim 0.19+, first import, from manim.rate_functions import ease_in_out then Use the function ease_in_out instead
     
     -- AttributeError: ParametricFunction object has no attribute 'scene'
         In Manim 0.19+, you can’t call scene on a Mobject. Instead, add it to the scene using self.add() or self.play().
+
+    -- TypeError: Mobject.__getattr__.<locals>.setter() takes 2 positional arguments but 3 were given
+        Use this In Manim 0.19+, mobj.set_fill(color=WHITE, opacity=1)
+
+    -- AttributeError: NumberPlane object has no attribute 'center_on_screen'
+        Use this In Manim 0.19+, plane.move_to(ORIGIN) 
+
+    -- AttributeError: 'ThreeDCamera' object has no attribute 'set_field_of_view'
+        Use this In Manim 0.19+ self.camera.frame.set(width=10) 
+    
+    -- TypeError: Mobject.__getattr__.<locals>.setter() got an unexpected keyword argument 'ambient_coefficient'
+        Use this In Manim 0.19+, shading params like ambient_coefficient, diffuse_coefficient, specular_coefficient no longer exist — use only set_fill, set_stroke, and set_color.
+    -- AttributeError: CubicBezier object has no attribute 'add_tip'
+        Fix: In Manim v0.19+, CubicBezier has no add_tip(). Use a separate Arrow or CurvedArrow instead.
+    -- NameError: name 'LIGHT_BLUE' is not defined fix: LIGHT_BLUE is undefined in Manim v0.19+; use BLUE_E or define it with Color("#ADD8E6").
+
+    -- TypeError: Mobject.apply_points_function_about_point() got an unexpected keyword argument 'scale_tips'
+        Fix: Remove scale_tips and, if you need arrow tip scaling, set it separately with arrow.set_tip_length() or use Arrow/Vector with custom tip size.
+
+    -- TypeError: Unexpected argument None passed to Scene.play().
+        Fix: don’t put it inside self.play().
+            Example:
+            self.play(LaggedStart(*[GrowArrow(a) for a in arrows]))
+            self.move_camera(phi=new_phi, theta=-45*DEGREES, run_time=2)
+
+    -- TypeError: Mobject.__init__() got an unexpected keyword argument 'vector'
+        If you want to place it: dot = Dot(point=RIGHT)   # use 'point' instead of 'vector'
+        or
+        If you meant an arrow/vector: arrow = Vector(RIGHT)   # or Arrow(ORIGIN, RIGHT)
+
+
+    -- TypeError: Mobject.apply_points_function_about_point() got an unexpected keyword argument 'scale_tips' 
+        fix: Remove it and instead use: arrow.set_tip_length(0.3)
+
+    -- Exception: Cannot call Mobject.get_start for a Mobject with no points
+        Fix: Make sure the Mobject is not empty—use a proper shape or add points before calling get_start()
+            Example:
+                line = Line(LEFT, RIGHT)
+                print(line.get_start()) 
+
+    -- TypeError: NumberLine.add_numbers() got multiple values for argument 'x_values'
+        x_values was removed in Manim v0.19+.
+        line = NumberLine(x_range=[0, 10, 1])
+        line.add_numbers(numbers=[0,1,2,3,4,5,6,7,8,9,10])
+        Or auto-generate:
+        line.add_numbers()
+
+    -- Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'y_values'
+        # ax = Axes(x_range=[-5, 5, 1], y_range=[-5, 5, 1])
+        # graph = ax.plot(lambda x: x**2)  # no y_values
+
+    -- TypeError: Mobject.__init__() got an unexpected keyword argument 'numbers'
+        Manim objects don’t accept custom arguments in __init__().
+
+    -- TypeError: Mobject.__init__() got an unexpected keyword argument 'line_config'
+        line_config is removed in Manim v0.19.
+        Pass styling directly using stroke_color, stroke_width, etc.
+
+
     </CRITICAL>
 """
 
@@ -258,14 +322,15 @@ mandatoryChecklist = """**MANDATORY CHECKLIST - VERIFY YOUR CODE:**
 ✓ LATEX: All MathTex uses raw strings r""
 ✓ LATEX: Plain text uses Text(), math uses MathTex()
 ✓ LATEX: No LaTeX syntax in Text() objects
-✓ in Manim v0.19+, you should import everything directly from the top-level manim package. like this from manim import AmbientLight, DirectionalLight, PointLight
+✓ In Manim v0.19+, you should import directly from the top-level manim package. For example: from manim import DirectionalLight.
     This includes:
         Scene types: Scene, ThreeDScene
-        3D objects: Cube, Sphere, ParametricSurface
-        Lights: AmbientLight, DirectionalLight, PointLight
+        3D objects: Cube, Sphere, Surface (formerly ParametricSurface)
+        Lights: DirectionalLight
         2D objects: Circle, Square, Text, MathTex, etc.
         Animations: Create, Write, FadeIn, Transform, etc.
-        Axes & plots: Axes, NumberPlane"""
+        Axes & plots: Axes, NumberPlane
+"""
 
 MAX_REWRITE_ATTEMPTS = 3
 @tool

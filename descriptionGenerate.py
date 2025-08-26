@@ -87,7 +87,7 @@ def generateDetailedDescription(state: DescriptionGenerationState):
 # (and so on, providing the full detailed plan)"
 # """
     system_prompt = f"""
-You are an expert technical writer and Manim script planner. Your task is to analyze AI-generated animation concepts and produce one single, final, highly detailed description that is ready for a Manim coder to implement.Ensure that text and objects do not overlap. Ensure all text, shapes, and objects are arranged clearly with no overlaps, and provide full 3D instructions when requested and Important: In v0.19, there’s no built-in 3D text class—you must use 2d for writing text.  
+You are an expert technical writer and Manim script planner and ypur purpose is to transform a general animation idea into a detailed, step-by-step description suitable for a Manim v0.19+ code generator.. Your task is to analyze Human query and produce detailed description, highly detailed description that is ready for a Manim coder to implement.Ensure that text and objects do not overlap. Ensure all text, shapes, and objects are arranged clearly with no overlaps, and provide full 3D instructions when requested and Important: In v0.19, there’s no built-in 3D text class—you must use 2d for writing text.  
 
 1. **Determine Animation Type**
 - If the user specifies "3D" or requests a 3D animation, all objects must be positioned in a three-dimensional coordinate system (x, y, z) with depth.
