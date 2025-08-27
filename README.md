@@ -12,6 +12,13 @@ Check out these examples of AI-generated Manim animations:
 ![Demo Animation 1](generatedManim.gif)
 ![Demo Animation 2](generatedManimVideo.gif)
 
+**Prompt:** Visualizing 3D surfaces using Manim. First shows a rotating surface, second shows wave propagation.
+
+| 3D Surface 1 | 3D Surface 2 |
+|--------------|--------------|
+| ![Demo Animation 1](generatedManim.gif) | ![Demo Animation 2](generatedManimVideo.gif) |
+
+
 ## ✨ Key Features
 
 - **AI Script Generation**: Automatically expands a user's idea into multiple detailed scene descriptions.
