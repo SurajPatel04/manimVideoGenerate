@@ -4,6 +4,16 @@ An intelligent pipeline that transforms simple text prompts into high-quality, 1
 
 This project automates the complex process of creating mathematical animations. It takes a user's initial idea, refines it through an AI-powered validation loop to create a detailed script, generates the corresponding Python code for Manim, and renders the final video.
 
+## 🎬 Demo
+
+Check out these examples of AI-generated Manim animations:
+
+**Demo Video:**
+![Demo Video](generatedManimVideo.mp4)
+
+**Demo GIF:**
+![Demo Animation](generatedManim.gif)
+
 ## ✨ Key Features
 
 - **AI Script Generation**: Automatically expands a user's idea into multiple detailed scene descriptions.
