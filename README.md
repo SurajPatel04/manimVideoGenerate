@@ -8,11 +8,9 @@ This project automates the complex process of creating mathematical animations. 
 
 Check out these examples of AI-generated Manim animations:
 
-**Demo Video:**
-![Demo Video](generatedManimVideo.mp4)
-
 **Demo GIF:**
-![Demo Animation](generatedManim.gif)
+![Demo Animation 1](generatedManim.gif)
+![Demo Animation 2](generatedManimVideo.gif)
 
 ## ✨ Key Features
 
