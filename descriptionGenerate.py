@@ -48,7 +48,7 @@ load_dotenv()
 #         raise
 
 def generateDetailedDescription(state: DescriptionGenerationState):
-    print("******Generating detailed description ********\n\n")
+    print("\n******Generating detailed description ********\n")
     user_query = state.user_query
     # contnet = state.descriptions
     structured_llm = llmFlash.with_structured_output(PickOneDescription)
@@ -162,7 +162,7 @@ You are an expert technical writer and Manim script planner and ypur purpose is 
 def validateDescription(state: DescriptionGenerationState):
     """ This function checks the description, 
     if the description is correct then True otherwise False """
-    print("******Checking is this Correct or not ********\n\n")
+    print("\n******Checking is this Correct or not ********\n")
     picked_description = state.pickedOne
     user_query = state.user_query
 

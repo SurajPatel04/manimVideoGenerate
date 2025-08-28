@@ -9,10 +9,15 @@ from langgraph.graph import END
 import os
 import subprocess
 import uuid
+from subprocess import TimeoutExpired
+
+
 load_dotenv()
 
+MANIM_RENDER_TIMEOUT = 1000
 critical = """
 <CRITICAL>:Ensure that text and objects do not overlap. You MUST write code that is compatible with Manim v0.19+ ONLY. Do NOT use any deprecated or removed methods..
+
 
 If in a Graph there is decimal number need then it should be 2 decimal only
 All written texy in the 2d in the screen way 
@@ -66,6 +71,8 @@ in Manim v0.19+, you should import directly below mention from the top-level man
 
         Scene Setup:
             Use self.set_camera_orientation and self.begin_ambient_camera_rotation for camera positioning and rotation.
+    
+    Error you got most and should avoid bello is the error--
 
     -- TypeError: Mobject.__init__() got an unexpected keyword argument 'disappearing_time'
         How to fix: The TracedPath API changed. In earlier versions, TracedPath had a disappearing_time argument. In v0.19+, it no longer exists.
@@ -298,6 +305,49 @@ in Manim v0.19+, you should import directly below mention from the top-level man
         line_config is removed in Manim v0.19.
         Pass styling directly using stroke_color, stroke_width, etc.
 
+    -- TypeError: Mobject.__init__() got an unexpected keyword argument 'x_range'
+        Fix
+        # from manim import NumberLine
+        # line = NumberLine(x_range=[-5, 5, 1])
+
+    -- TypeError: Mobject.__init__() got an unexpected keyword argument 'color_map'
+        Correct way
+        surface = Surface(func, x_range=[-3, 3], y_range=[-3, 3])
+        surface.set_fill_by_value(axes=axes, colors=colors)  # or use set_color method
+
+    -- TypeError: Surface.set_fill_by_value() missing 1 required positional argument: 'axes'
+        Correc Way: axes must be provided to set_fill_by_value.
+        surface = Surface(func, x_range=[-3, 3], y_range=[-3, 3])
+        surface.set_fill_by_value(axes=axes, colors=colors)
+
+    -- ValueError: Unsupported keyword argument(s): min_value, max_value
+        Error: min_value / max_value are not valid for set_fill_by_value() in surface.
+        Correct Way:  
+        surface.set_fill_by_value(
+            axes=axes,
+            colorscale=[(BLUE, -1), (GREEN, 0), (RED, 1)],  # map color to specific z-values
+            axis=2  
+        )
+
+
+    -- ValueError: Unsupported keyword argument(s): h_range
+        Correct Way: Replace h_range, replaces h_range, v_min, v_max with axis set_fill_by_value.
+            Example:
+                surface.set_fill_by_value(
+                    axes=axes,
+                    colorscale=[(BLUE, -1), (GREEN, 0), (RED, 1)],  # (color, value) pairs
+                    axis=2  # use z-axis for coloring
+                )
+                surface.set_opacity(0.8)
+
+    -- TypeError: Mobject.__init__() got an unexpected keyword argument 'z_range'
+        Use only x_range and y_range
+
+    -- ValueError: operands could not be broadcast together with shapes (16,) (3,) (16,)
+        Your func must return 3D coords, not just z.
+        def func(x, y):
+            return np.array([x, y, np.sin(x) * np.cos(y)])
+
 
     </CRITICAL>
 """
@@ -370,11 +420,12 @@ def run_manim_scene(filename, state: mainmState):
     flags=f"--progress_bar display -{state.quality}"
     filepath = f"./temp/{filename}"
     scene_name = filename.replace(".py", "")
+    output_format=state.format
 
     if not os.path.exists(filepath):
         return f"Error: File '{filepath}' not found."
 
-    command = ["manim", "render", filepath, scene_name]
+    command = ["manim", "render", filepath, scene_name, "--format", output_format]
     command.extend(flags.split())
 
     print(f"--- Running Manim Command: {' '.join(command)} ---")
@@ -403,6 +454,58 @@ def run_manim_scene(filename, state: mainmState):
 
     except FileNotFoundError:
         return "Error: 'manim' command not found. Is Manim installed and in your PATH?"
+
+# def run_manim_scene(filename, state: mainmState):
+#     print("****************** running a manim file ****************")
+#     flags = f"-{state.quality}" # Removed progress bar for cleaner logs
+#     filepath = f"./temp/{filename}"
+#     scene_name = filename.replace(".py", "")
+#     output_format = state.format
+
+#     if not os.path.exists(filepath):
+#         return f"Error: File '{filepath}' not found."
+
+#     command = ["manim", "render", filepath, scene_name, "--format", output_format]
+#     command.extend(flags.split())
+
+#     print(f"--- Running Manim Command with a {MANIM_RENDER_TIMEOUT}s timeout: {' '.join(command)} ---")
+    
+#     try:
+#         # Use subprocess.run for simplicity and timeout support
+#         process = subprocess.run(
+#             command,
+#             capture_output=True,  # Capture stdout and stderr
+#             text=True,            # Decode output as text
+#             timeout=MANIM_RENDER_TIMEOUT # <-- THE MOST IMPORTANT CHANGE
+#         )
+
+#         # Combine stdout and stderr for full context
+#         full_output = process.stdout + "\n" + process.stderr
+
+#         if process.returncode != 0:
+#             # Manim exited with an error code
+#             print("--- Manim process failed with an error. ---")
+#             # The full output will contain the traceback from Manim
+#             return f"MANIM EXECUTION FAILED. The file '{filename}' has an error. Review output below:\n\n{full_output}"
+
+#         print("--- Finished rendering successfully ---")
+#         return f"Manim render completed for {filename}."
+
+#     except TimeoutExpired:
+#         # This block executes if the process takes too long
+#         print(f"--- Manim process timed out after {MANIM_RENDER_TIMEOUT} seconds. ---")
+#         error_message = (
+#             f"MANIM EXECUTION FAILED: Process timed out after {MANIM_RENDER_TIMEOUT} seconds.\n"
+#             f"This usually means the generated code has an infinite loop (e.g., self.wait() with no duration) "
+#             f"or is too computationally expensive. The animation must be simplified."
+#         )
+#         return error_message
+
+#     except FileNotFoundError:
+#         return "Error: 'manim' command not found. Is Manim installed and in your PATH?"
+#     except Exception as e:
+#         return f"An unexpected error occurred: {e}"
+
 
 # @tool
 # def remove_file(filename):
@@ -559,7 +662,7 @@ class MyScene(Scene):
     """
 
     agent = create_tool_calling_agent(llmFlash, tools, prompt=prompt)
-    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=10)
     
     print(f"--- Running agent with filename: {unique_name}.py ---")
     result = agent_executor.invoke({
@@ -690,6 +793,7 @@ def agentReWriteManimCode(state: mainmState):
     description = state.description
     state.rewrite_attempts += 1 
     code = read_file(filename)
+
 
     # 1. Define the prompt with placeholders for all variables.
     system_prompt = """
@@ -862,7 +966,7 @@ When you call this tool, you **MUST** provide **BOTH** of the following argument
     )
     
     agent = create_tool_calling_agent(llmFlash, tools, prompt)
-    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=5)
+    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=10)
     
     human_message = f"Please fix the error in the code based on the error message provided. and i want this {description}"
 
@@ -882,7 +986,8 @@ When you call this tool, you **MUST** provide **BOTH** of the following argument
 
     })
 
-    print("\n--- re_write_manim_code ---")
+    print("\n--- re_write_manim_code ---\n")
+    # print(f"______________________ execution_error____________________ {execution_error}")
     print(result['output'])
     return state
 
