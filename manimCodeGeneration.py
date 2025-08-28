@@ -9,8 +9,6 @@ from langgraph.graph import END
 import os
 import subprocess
 import uuid
-from subprocess import TimeoutExpired
-
 
 load_dotenv()
 
@@ -123,6 +121,7 @@ in Manim v0.19+, you should import directly below mention from the top-level man
     # New way (correct for v0.19+): axes.move_to(ORIGIN)
 
     -- TypeError: Mobject.__init__() got an unexpected keyword argument 'x_label'
+        
     -- AttributeError: 'ThreeDCamera' object has no attribute 'animate'
     --TypeError: Unexpected argument None passed to Scene.play().
     --- The `NameError` for `ParametricSurface` was incorrectly "fixed" by explicitly importing it from `manim.mobject.three_d.three_dimensions`.  
@@ -347,6 +346,12 @@ in Manim v0.19+, you should import directly below mention from the top-level man
         Your func must return 3D coords, not just z.
         def func(x, y):
             return np.array([x, y, np.sin(x) * np.cos(y)])
+    
+    --TypeError: Mobject.__getattr__.<locals>.setter() got an unexpected keyword argument 'x_label'
+        Fix: Don’t pass x_label in the constructor; instead, add it after creating the axes:
+        axes = Axes(x_range=[-5,5,1], y_range=[-3,3,1])
+        x_label = axes.get_x_axis_label("x")
+        self.add(axes, x_label)
 
 
     </CRITICAL>
