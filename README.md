@@ -8,11 +8,11 @@ This project automates the complex process of creating mathematical animations. 
 
 Check out these examples of AI-generated Manim animations:
 
-**Surface 1 Prompt:** Visualizing 3D surfaces using Manim. First shows a rotating surface, second shows wave propagation
+**Surface 1 Prompt:** Create a 3D surface plot of the function z = sin(x) * cos(y) using a grid. Animate the camera zooming in and rotating around the surface.
 
-**Surface 2 Prompt:** Show a 3D surface plot for sin(x) + cos(y) and then animate the camera to look at it from directly above
+**Surface 2 Prompt:** Show a 3D surface plot for sin(x) + cos(y)
 
-| 3D Surface 1 | 3D Surface 2 |
+| Surface 1 | Surface 2 |
 |--------------|--------------|
 | ![Demo Animation 1](generatedManim.gif) | ![Demo Animation 2](generatedManimVideo.gif) |
 
