@@ -11,6 +11,8 @@ class DescriptionGenerationState(BaseModel):
     is_good: bool | None = None 
     AutoComplete: bool
     pickedOneError: Optional[str] = None
+    format: str = Field(default="Red", description="The render file format")
+
 class GenDescriptions(BaseModel):
     descriptions: list[str]
 
@@ -32,6 +34,7 @@ class mainmState(BaseModel):
     description: str
     is_code_good: Optional[bool] = None
     filename: str
+    format: str = Field(default="Red", description="The render file format")
     validation_error: Optional[str] = None
     validation_error_history: List[str] = Field(default_factory=list)
     execution_error_history: List[str] = Field(default_factory=list)

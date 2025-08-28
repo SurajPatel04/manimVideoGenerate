@@ -13,7 +13,8 @@ def call_graph():
         DescriptionRefine=0,
         AutoComplete=True,
         is_good=None,
-        pickedOneError= None
+        pickedOneError= None,
+        format = "mp4"
     )
 
     
@@ -22,6 +23,7 @@ def call_graph():
     stat1 = mainmState(
         description=result.get("pickedOne"),
         is_code_good=None,
+        format=state.format,
         error_message="",
         rewrite_attempts=0,
         filename="",
