@@ -3,14 +3,72 @@ from langchain_core.tools import tool
 from langgraph.graph import END
 from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
 from pydantic import ValidationError
-from schema import DescriptionGenerationState, GenDescriptions, PickOneDescription, CheckPickedDescription
+from schema import DescriptionGenerationState, GenDescriptions, DetailDescription, CheckPickedDescription, CodeGenPossibility
 from llm import llmPro, llmFlash
 import logging
 
-
-
 load_dotenv()
 
+def isUserQueryPossible(state: DescriptionGenerationState):
+    userQuery = state.userQuery
+    print("\n\n\n Checking User Query \n\n\n")
+    structuredLlm = llmFlash.with_structured_output(CodeGenPossibility)
+    systemPrompt = """
+You are a meticulous and highly analytical 'Manim Feasibility Expert'. Your primary goal is to provide a structured, accurate assessment of a user's request for a video animation based on the capabilities of the Python Manim library.
+
+Step 1: Understand Your Role and Constraints**
+You must strictly adhere to the known capabilities and limitations of Manim.
+Capabilities:Mathematical animations (graphs, equations, geometry), algorithm visualization, text/LaTeX manipulation, and object transformations.
+
+Limitations:No photorealism, no complex character animation, no external assets (logos, specific images)
+
+Step 2: Follow a Chain of Thought (Internal Monologue)
+For the user's query provided, first perform an internal analysis:
+1.  Deconstruct: Break down the user's request into its core components and entities (e.g., objects, actions, concepts).
+2.  Analyze: For each component, evaluate if it falls within Manim's capabilities or its limitations.
+3.  Synthesize: Based on your analysis, form a final conclusion on the overall feasibility.
+4.  Formulate: Craft a clear, concise reason and, if necessary, an actionable suggestion for the user.
+
+Step 3: Provide Final Output**
+After your internal analysis, your final output MUST be a single, raw JSON object and nothing else. Do not include your chain of thought or any other conversational text in the final response.
+
+The JSON object must conform to this exact structure:
+{
+  "isFesible": <boolean>,
+  "reason": "<string>",
+  "chatName": "<string>"
+}
+
+- `isFeasible`: `true` if the core request is achievable, otherwise `false`.
+- `reason`: A single, clear sentence explaining the verdict.
+- `chatName`: Provide a short chat name 
+"""
+
+    msg = [
+        SystemMessage(content=systemPrompt),
+        HumanMessage(content=userQuery)
+    ]
+
+    try:
+        result = structuredLlm.invoke(msg)
+        print(f"isFesible {result.isFesible} \n reason: {result.reason} \n chatName: {result.chatName}")
+        return state.model_copy(update={
+            "isFesible":result.isFesible,
+            "reason": result.reason,
+            "chatName": result.chatName
+            })
+    except (ValidationError, RuntimeError) as err:
+        logging.exception("isUserQueryPossible failed", err)
+        raise
+
+def feasibilityRouter(state: DescriptionGenerationState):
+    """
+    Routes based on whether the user's query is feasible in Manim.
+    """
+    if state.isFesible is True:
+        return "generateDetailedDescription"
+    else:
+        return "END"
 
 # def generateMultipleDescription(state: DescriptionGenerationState):
 #     """
@@ -49,9 +107,9 @@ load_dotenv()
 
 def generateDetailedDescription(state: DescriptionGenerationState):
     print("\n******Generating detailed description ********\n")
-    user_query = state.user_query
+    userQuery = state.userQuery
     # contnet = state.descriptions
-    structured_llm = llmFlash.with_structured_output(PickOneDescription)
+    structuredLlm = llmFlash.with_structured_output(DetailDescription)
 #     system_prompt = f"""
 # You are an expert technical writer and Manim script planner. Your task is to analyze three AI-generated animation concepts and produce one single, final, highly detailed description that is ready for a Manim coder to use. Ensure that all text and shapes are arranged clearly, with no overlaps And generate description for the 3d when user mention 3d.
 
@@ -86,7 +144,7 @@ def generateDetailedDescription(state: DescriptionGenerationState):
 # 2. Isolate Constant Term: Animate `c` moving to the right...
 # (and so on, providing the full detailed plan)"
 # """
-    system_prompt = f"""
+    systemPrompt = f"""
 You are an expert technical writer and Manim script planner and ypur purpose is to transform a general animation idea into a detailed, step-by-step description suitable for a Manim v0.19+ code generator.. Your task is to analyze Human query and produce detailed description, highly detailed description that is ready for a Manim coder to implement.Ensure that text and objects do not overlap. Ensure all text, shapes, and objects are arranged clearly with no overlaps, and provide full 3D instructions when requested and Important: In v0.19, there’s no built-in 3D text class—you must use 2d for writing text.  
 
 1. **Determine Animation Type**
@@ -147,24 +205,23 @@ You are an expert technical writer and Manim script planner and ypur purpose is 
     # 3. Divide by 'a': Show the entire equation being divided by 'a', with the 'a' appearing in the denominator of each term."
     # """
     msg = [
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=user_query),
-        
+        SystemMessage(content=systemPrompt),
+        HumanMessage(content=userQuery),
     ]
     try:
-        result = structured_llm.invoke(msg)
+        result = structuredLlm.invoke(msg)
         print(result.description)
         return state.model_copy(update={"pickedOne": result.description})
     except (ValidationError, RuntimeError) as err:
-        logging.exception("pick_One_Description_And_Generate_Detailed_Description failed")
+        logging.exception("generateDetailedDescription failed", err)
         raise
 
 def validateDescription(state: DescriptionGenerationState):
     """ This function checks the description, 
     if the description is correct then True otherwise False """
     print("\n******Checking is this Correct or not ********\n")
-    picked_description = state.pickedOne
-    user_query = state.user_query
+    pickedDescription = state.pickedOne
+    userQuery = state.userQuery
 
     
     structured_llm = llmFlash.with_structured_output(CheckPickedDescription)
@@ -174,21 +231,21 @@ Evaluate if the candidate description is detailed and accurate enough to create 
 Respond `true` if it is good. Respond `false` and provide a concise reason in `pickedOneError` if it is not.
 
 Candidate Description:
-{picked_description}
+{pickedDescription}
 
 """
 
     messages = [
         SystemMessage(content=system_prompt),
-        HumanMessage(content=user_query)
+        HumanMessage(content=userQuery)
     ]
 
     try:
         result = structured_llm.invoke(messages)
-        print("Description is good or not: ",result.is_this_good_descrription)
+        print("Description is good or not: ",result.isThisGoodDescrription)
         print("Description Error: ", result.pickedOneError)
         return state.model_copy(update={
-            "is_good": result.is_this_good_descrription,
+            "isGood": result.isThisGoodDescrription,
             "pickedOneError": result.pickedOneError
         })
 
@@ -198,12 +255,12 @@ Candidate Description:
 
 def refineDescription(state: DescriptionGenerationState):
     print("**** refineDescription *****")
-    user_query = state.user_query
+    userQuery = state.userQuery
     description = state.pickedOne
     pickedDescriptionError = state.pickedOneError or "No specific error provided."
-    structured = llmFlash.with_structured_output(PickOneDescription)
+    structured = llmFlash.with_structured_output(DetailDescription)
     DescriptionRefine = state.DescriptionRefine + 1
-    system_prompt = f"""
+    systemPrompt = f"""
 You are a helpful AI assistant that generates high-quality, technically accurate descriptions. These descriptions will be used to generate **Manim** (Mathematical Animation Engine) code.
 
 You will be given:
@@ -241,8 +298,8 @@ Description Evaluation / Error:
 {pickedDescriptionError}
 """
     messages = [
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=user_query),
+        SystemMessage(content=systemPrompt),
+        HumanMessage(content=userQuery),
     ]
     try:
         result = structured.invoke(messages)
@@ -251,14 +308,14 @@ Description Evaluation / Error:
             "DescriptionRefine": DescriptionRefine
             })
     except (ValidationError, ValueError) as e:
-        logging.exception("CheckPickedDescription parsing failed")
+        logging.exception("CheckPickedDescription parsing failed", e)
         raise
 
 def router(state: DescriptionGenerationState) -> str:
-    if state.is_good is True:
-        return END
+    if state.isGood is True:
+        return "END"
     elif state.DescriptionRefine >= 10:
-        return END
+        return "END"
     else: 
         return "refineDescription"
 

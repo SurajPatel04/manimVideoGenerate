@@ -21,7 +21,7 @@ graph_build.add_conditional_edges(
     {
         "agentRunManimCode": "agentRunManimCode",
         "agentReWriteManimCode": "agentReWriteManimCode",
-        END: "handleFailureAndReset",
+        "limit_reached": "handleFailureAndReset",
     },
 )
 
@@ -40,7 +40,7 @@ graph_build.add_conditional_edges(
     shouldStartOverRouter,
     {
         "agentCreateFile": "agentCreateFile", 
-        END: END,
+        "stop": END,
     },
 )
 

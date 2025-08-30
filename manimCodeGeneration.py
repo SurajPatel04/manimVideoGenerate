@@ -521,7 +521,7 @@ def run_manim_scene(filename, state: mainmState):
 def agentCreateFile(state: mainmState):
     tools = [createFileAndWriteMainmCode]
 
-    system_prompt = """
+    systemPrompt = """
     You are a helpful AI. You expert in creating manim code in and try it be good in one go and use manim v.19
 
 
@@ -646,7 +646,7 @@ class MyScene(Scene):
 
     prompt = ChatPromptTemplate.from_messages(
         [
-            ("system", system_prompt.format(
+            ("system", systemPrompt.format(
                 critical=critical,
                 important=important,
                 mandatoryChecklist=mandatoryChecklist
@@ -684,7 +684,7 @@ class MyScene(Scene):
 def agentCheckFileCode(state: mainmState):
     code=read_file(state.filename)
     message = state.description
-    system_prompt = """
+    systemPrompt = """
     You are an expert Manim developer...
 
     {critical}
@@ -767,41 +767,41 @@ def agentCheckFileCode(state: mainmState):
 
 
     messages = [
-        SystemMessage(content=system_prompt.format(
+        SystemMessage(content=systemPrompt.format(
         critical=critical,
         mandatoryChecklist=mandatoryChecklist,
         code=code
         )),
         HumanMessage(content=f"{message}")
     ]
-    evaluation_result = structured_llm.invoke(messages)
+    evaluationResult = structured_llm.invoke(messages)
 
-    state.is_code_good = evaluation_result.is_code_good
-    if not evaluation_result.is_code_good:
-        state.validation_error = evaluation_result.error_message
-        state.validation_error_history.append(evaluation_result.error_message)
+    state.isCodeGood = evaluationResult.isCodeGood
+    if not evaluationResult.isCodeGood:
+        state.validationError = evaluationResult.error_message
+        state.validationErrorHistory.append(evaluationResult.error_message)
     else:
-        state.validation_error = None
+        state.validationError = None
     print("\n--- Agent Final Answer (Structured Object) ---")
-    print(f"Type of result: {type(evaluation_result)}")
-    print(f"Is Code Good: {state.is_code_good}")
-    print(f"Error Message: {state.validation_error}")
+    print(f"Type of result: {type(evaluationResult)}")
+    print(f"Is Code Good: {state.isCodeGood}")
+    print(f"Error Message: {state.validationError}")
     return state
 
 def agentReWriteManimCode(state: mainmState):
     tools = [createFileAndWriteMainmCode]
     filename = state.filename
-    validation_error = state.validation_error
-    validation_error_history = state.validation_error_history
-    execution_error_history = state.execution_error_history
-    execution_error = state.execution_error
+    validationError = state.validationError
+    validationErrorHistory = state.validationErrorHistory
+    executionErrorHistory = state.executionErrorHistory
+    executionError = state.executionError
     description = state.description
-    state.rewrite_attempts += 1 
+    state.rewriteAttempts += 1 
     code = read_file(filename)
 
 
     # 1. Define the prompt with placeholders for all variables.
-    system_prompt = """
+    systemPrompt = """
 You are an expert Manim debugger and Python developer, using manim v0.19.
 Your sole task is to fix the provided Manim code file by analyzing all available error information.
 
@@ -827,16 +827,16 @@ ERROR ANALYSIS:
 You must fix all the errors listed below. Pay close attention to the histories to avoid repeating past mistakes.
 
 1. CURRENT EXECUTION ERROR (Highest Priority - Must Fix):
-{execution_error}
+{executionError}
 
 2. CURRENT VALIDATION ERROR (High Priority - Also Fix):
-{validation_error}
+{validationError}
 
 3. PREVIOUS FAILED EXECUTION ATTEMPTS (Do not repeat these runtime errors):
-{execution_error_history}
+{executionErrorHistory}
 
 4. PREVIOUS FAILED VALIDATION ATTEMPTS (Do not repeat these logical errors):
-{validation_error_history}
+{validationErrorHistory}
 
 ---
 
@@ -964,19 +964,19 @@ When you call this tool, you **MUST** provide **BOTH** of the following argument
 
     prompt = ChatPromptTemplate.from_messages(
         [
-            ("system", system_prompt),
+            ("system", systemPrompt),
             ("human", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad")
         ]
     )
     
     agent = create_tool_calling_agent(llmFlash, tools, prompt)
-    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=10)
+    agentExecutor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=10)
     
     human_message = f"Please fix the error in the code based on the error message provided. and i want this {description}"
 
     # 2. Provide all required variables in the .invoke() call.
-    result = agent_executor.invoke({
+    result = agentExecutor.invoke({
         "input": human_message,
         "filename":filename,
         "critical":critical,
@@ -984,10 +984,10 @@ When you call this tool, you **MUST** provide **BOTH** of the following argument
         "mandatoryChecklist":mandatoryChecklist,
         "code":code,
         "description":description,
-        "validation_error_history":validation_error_history,
-        "validation_error":validation_error,
-        "execution_error_history":execution_error_history,
-        "execution_error":execution_error
+        "validation_error_history":validationErrorHistory,
+        "validation_error":ValueError,
+        "execution_error_history":executionErrorHistory,
+        "execution_error":executionError
 
     })
 
@@ -997,42 +997,43 @@ When you call this tool, you **MUST** provide **BOTH** of the following argument
     return state
 
 def agentRunManimCode(state: mainmState):
-    result_message = run_manim_scene(filename=state.filename, state=state)
-    print(f"Execution Result: {result_message}")
+    resultMessage = run_manim_scene(filename=state.filename, state=state)
+    print(f"Execution Result: {resultMessage}")
 
 
-    if "MANIM EXECUTION FAILED" in result_message:
-        state.execution_success = False
-        state.execution_error = result_message
-        state.execution_error_history.append(result_message)
+    if "MANIM EXECUTION FAILED" in resultMessage:
+        state.executionSuccess = False
+        state.executionError = resultMessage
+        state.executionErrorHistory.append(resultMessage)
     else:
-        state.execution_success = True
-        state.execution_error = ""
+        state.executionSuccess = True
+        state.executionError = ""
 
-        state.execution_error_history.clear()
-        state.validation_error_history.clear()
-        state.validation_error = None
+        state.executionErrorHistory.clear()
+        state.validationErrorHistory.clear()
+        state.validationError = None
 
     return state
 
 
 def manimRouter(state: mainmState):
-    if state.is_code_good is True:
+    if state.isCodeGood is True:
         return "agentRunManimCode"
-    elif state.rewrite_attempts >= 3:
+    elif state.rewriteAttempts >= 3:
         print("❌ Rewrite limit reached. Ending graph.")
-        return END
+        # return END
+        return "limit_reached"
     else: 
         return "agentReWriteManimCode"
     
 def executionRouter(state: mainmState):
     """Routes the graph after a Manim execution attempt."""
-    if state.execution_success:
+    if state.executionSuccess:
         print("✅ Manim execution successful. Ending graph.")
         return "done"
     else:
         # Prevent infinite loops
-        if state.rewrite_attempts >= 3:
+        if state.rewriteAttempts >= 3:
             print("❌ Rewrite limit reached after execution failure. Ending graph.")
             return "limit"
         print("❌ Manim execution failed. Routing to rewrite node.")
@@ -1041,22 +1042,22 @@ def executionRouter(state: mainmState):
 
 def handleFailureAndReset(state: mainmState) -> mainmState:
     """Resets the attempt counter to start the entire process over."""
-    if state.create_again >= 1:
+    if state.createAgain >= 1:
         return END
     else:
         print(f"❌ Maximum rewrite attempts reached. Resetting and starting over.")
-        state.rewrite_attempts  = 0
-        state.create_again += 1
+        state.rewriteAttempts  = 0
+        state.createAgain += 1
         return state
 
 def shouldStartOverRouter(state: mainmState):
-    """Checks the 'create_again' flag to decide the next step."""
+    """Checks the 'createAgain' flag to decide the next step."""
     
     # CORRECT: Check if this is the first and only time we are starting over.
-    if state.create_again == 1:
+    if state.createAgain == 1:
         print("✅ Starting the process over one time.")
         return "agentCreateFile" # Loop back to the beginning
     else:
         # If create_again is > 1, the single retry has already been used.
         print("❌ Full retry and start-over process failed. Ending.")
-        return END
+        return "stop"

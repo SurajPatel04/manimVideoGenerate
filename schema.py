@@ -3,12 +3,20 @@ from typing import Optional, List
 
 
 # descriptionGenerate Schema
+class CodeGenPossibility(BaseModel):
+    isFesible: bool
+    reason: str
+    chatName: str
+
 class DescriptionGenerationState(BaseModel):
-    user_query:str
+    userQuery:str
+    isFesible: bool | None = None
+    reason: Optional[str] = None
+    chatName: Optional[str] = None
     descriptions:list[str] = []
     pickedOne: str
     DescriptionRefine: int
-    is_good: bool | None = None 
+    isGood: bool | None = None 
     AutoComplete: bool
     pickedOneError: Optional[str] = None
     format: str = Field(default="Red", description="The render file format")
@@ -16,30 +24,30 @@ class DescriptionGenerationState(BaseModel):
 class GenDescriptions(BaseModel):
     descriptions: list[str]
 
-class PickOneDescription(BaseModel):
+class DetailDescription(BaseModel):
     description: str
 
 class CheckPickedDescription(BaseModel):
-    is_this_good_descrription: bool
+    isThisGoodDescrription: bool
     pickedOneError: str
 
 
 # manimCodeGeneration Schema
 class CheckMaimCode(BaseModel):
-    is_code_good: bool
-    error_message: str
+    isCodeGood: bool
+    errorMessage: str
 
 
 class mainmState(BaseModel):
     description: str
-    is_code_good: Optional[bool] = None
+    isCodeGood: Optional[bool] = None
     filename: str
     format: str = Field(default="Red", description="The render file format")
-    validation_error: Optional[str] = None
-    validation_error_history: List[str] = Field(default_factory=list)
-    execution_error_history: List[str] = Field(default_factory=list)
-    execution_error: Optional[str] = None
-    rewrite_attempts: int = 0 
-    execution_success: Optional[bool] = None
+    validationError: Optional[str] = None
+    validationErrorHistory: List[str] = Field(default_factory=list)
+    executionErrorHistory: List[str] = Field(default_factory=list)
+    executionError: Optional[str] = None
+    rewriteAttempts: int = 0 
+    executionSuccess: Optional[bool] = None
     quality: str = "ql"
-    create_again: int = 0
+    createAgain: int = 0
