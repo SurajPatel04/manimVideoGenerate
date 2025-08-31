@@ -984,10 +984,10 @@ When you call this tool, you **MUST** provide **BOTH** of the following argument
         "mandatoryChecklist":mandatoryChecklist,
         "code":code,
         "description":description,
-        "validation_error_history":validationErrorHistory,
-        "validation_error":ValueError,
-        "execution_error_history":executionErrorHistory,
-        "execution_error":executionError
+        "validationErrorHistory":validationErrorHistory,
+        "validationError":ValueError,
+        "executionErrorHistory":executionErrorHistory,
+        "executionError":executionError
 
     })
 
