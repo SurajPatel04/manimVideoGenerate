@@ -3,13 +3,13 @@ from langchain_core.tools import tool
 from langgraph.graph import END
 from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
 from pydantic import ValidationError
-from schema import DescriptionGenerationState, GenDescriptions, DetailDescription, CheckPickedDescription, CodeGenPossibility
-from llm import llmPro, llmFlash
+from app.schema.Manimschema import DescriptionGenerationState, GenDescriptions, DetailDescription, CheckPickedDescription, CodeGenPossibility
+from app.services.llm import llmPro, llmFlash
 import logging
 
 load_dotenv()
 
-def isUserQueryPossible(state: DescriptionGenerationState):
+async def isUserQueryPossible(state: DescriptionGenerationState):
     userQuery = state.userQuery
     print("\n\n\n Checking User Query \n\n\n")
     structuredLlm = llmFlash.with_structured_output(CodeGenPossibility)
@@ -50,18 +50,20 @@ The JSON object must conform to this exact structure:
     ]
 
     try:
-        result = structuredLlm.invoke(msg)
+        result = await structuredLlm.ainvoke(msg)
         print(f"isFesible {result.isFesible} \n reason: {result.reason} \n chatName: {result.chatName}")
-        return state.model_copy(update={
+        yield state.model_copy(update={
             "isFesible":result.isFesible,
             "reason": result.reason,
-            "chatName": result.chatName
+            "chatName": result.chatName,
+            "currentStage": "isUserQueryPossible",
+            "nextStage": "generateDetailedDescription"
             })
     except (ValidationError, RuntimeError) as err:
         logging.exception("isUserQueryPossible failed", err)
         raise
 
-def feasibilityRouter(state: DescriptionGenerationState):
+async def feasibilityRouter(state: DescriptionGenerationState):
     """
     Routes based on whether the user's query is feasible in Manim.
     """
@@ -105,7 +107,7 @@ def feasibilityRouter(state: DescriptionGenerationState):
 #         logging.exception("Description generation with structured output failed")
 #         raise
 
-def generateDetailedDescription(state: DescriptionGenerationState):
+async def generateDetailedDescription(state: DescriptionGenerationState):
     print("\n******Generating detailed description ********\n")
     userQuery = state.userQuery
     # contnet = state.descriptions
@@ -145,7 +147,7 @@ def generateDetailedDescription(state: DescriptionGenerationState):
 # (and so on, providing the full detailed plan)"
 # """
     systemPrompt = f"""
-You are an expert technical writer and Manim script planner and ypur purpose is to transform a general animation idea into a detailed, step-by-step description suitable for a Manim v0.19+ code generator.. Your task is to analyze Human query and produce detailed description, highly detailed description that is ready for a Manim coder to implement.Ensure that text and objects do not overlap. Ensure all text, shapes, and objects are arranged clearly with no overlaps, and provide full 3D instructions when requested and Important: In v0.19, there’s no built-in 3D text class—you must use 2d for writing text.  
+You are an expert technical writer and Manim script planner and ypur purpose is to transform a general animation idea highly detailed description that is ready for a Manim code to use, step-by-step description suitable for a Manim v0.19+ code generator.. Your task is to analyze Human query and produce detailed description, highly detailed description that is ready for a Manim coder to implement.Ensure that text and objects do not overlap. Ensure all text, shapes, and objects are arranged clearly with no overlaps, and provide full 3D instructions when requested and Important: In v0.19, there’s no built-in 3D text class—you must use 2d for writing text.  
 
 1. **Determine Animation Type**
 - If the user specifies "3D" or requests a 3D animation, all objects must be positioned in a three-dimensional coordinate system (x, y, z) with depth.
@@ -209,18 +211,22 @@ You are an expert technical writer and Manim script planner and ypur purpose is 
         HumanMessage(content=userQuery),
     ]
     try:
-        result = structuredLlm.invoke(msg)
+        result = await structuredLlm.ainvoke(msg)
         print(result.description)
-        return state.model_copy(update={"pickedOne": result.description})
+        yield state.model_copy(update={
+            "detailedDescription": result.description,
+            "currentStage":"generateDetailedDescription",
+            "nextStage": "validateDescription"
+            })
     except (ValidationError, RuntimeError) as err:
         logging.exception("generateDetailedDescription failed", err)
         raise
 
-def validateDescription(state: DescriptionGenerationState):
+async def validateDescription(state: DescriptionGenerationState):
     """ This function checks the description, 
     if the description is correct then True otherwise False """
     print("\n******Checking is this Correct or not ********\n")
-    pickedDescription = state.pickedOne
+    pickedDescription = state.detailedDescription
     userQuery = state.userQuery
 
     
@@ -228,7 +234,7 @@ def validateDescription(state: DescriptionGenerationState):
     system_prompt = f"""
 Evaluate if the candidate description is detailed and accurate enough to create a Manim animation for the user's query. Ensure that text and objects do not overlap
 
-Respond `true` if it is good. Respond `false` and provide a concise reason in `pickedOneError` if it is not.
+Respond `true` if it is good. Respond `false` and provide a concise reason in `detailedDescriptionError` if it is not.
 
 Candidate Description:
 {pickedDescription}
@@ -239,27 +245,33 @@ Candidate Description:
         SystemMessage(content=system_prompt),
         HumanMessage(content=userQuery)
     ]
-
+    nextStage = ""
     try:
-        result = structured_llm.invoke(messages)
+        result = await structured_llm.ainvoke(messages)
         print("Description is good or not: ",result.isThisGoodDescrription)
-        print("Description Error: ", result.pickedOneError)
-        return state.model_copy(update={
+        if result.isThisGoodDescrription:
+            nextStage="createFileAndWriteMainmCode"
+        else:
+            nextStage="refineDescription"
+        print("Description Error: ", result.detailedDescriptionError)
+        yield state.model_copy(update={
             "isGood": result.isThisGoodDescrription,
-            "pickedOneError": result.pickedOneError
+            "detailedDescriptionError": result.detailedDescriptionError,
+            "currentStage":"validateDescription",
+            "nextStage": nextStage
         })
 
     except (ValidationError, ValueError) as e:
         logging.exception("CheckPickedDescription parsing failed")
         raise
 
-def refineDescription(state: DescriptionGenerationState):
+async def refineDescription(state: DescriptionGenerationState):
     print("**** refineDescription *****")
     userQuery = state.userQuery
-    description = state.pickedOne
-    pickedDescriptionError = state.pickedOneError or "No specific error provided."
+    description = state.detailedDescription
+    pickedDescriptionError = state.detailedDescriptionError or "No specific error provided."
     structured = llmFlash.with_structured_output(DetailDescription)
-    DescriptionRefine = state.DescriptionRefine + 1
+    descriptionRefine = state.descriptionRefine + 1
     systemPrompt = f"""
 You are a helpful AI assistant that generates high-quality, technically accurate descriptions. These descriptions will be used to generate **Manim** (Mathematical Animation Engine) code.
 
@@ -302,19 +314,19 @@ Description Evaluation / Error:
         HumanMessage(content=userQuery),
     ]
     try:
-        result = structured.invoke(messages)
-        return state.model_copy(update={
-            "pickedOne":result.description,
-            "DescriptionRefine": DescriptionRefine
+        result = await structured.ainvoke(messages)
+        yield state.model_copy(update={
+            "detailedDescription":result.description,
+            "descriptionRefine": descriptionRefine
             })
     except (ValidationError, ValueError) as e:
         logging.exception("CheckPickedDescription parsing failed", e)
         raise
 
-def router(state: DescriptionGenerationState) -> str:
+async def router(state: DescriptionGenerationState) -> str:
     if state.isGood is True:
         return "END"
-    elif state.DescriptionRefine >= 10:
+    elif state.descriptionRefine >= 10:
         return "END"
     else: 
         return "refineDescription"

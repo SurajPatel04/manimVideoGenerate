@@ -1,6 +1,6 @@
-from schema import DescriptionGenerationState
+from app.schema.Manimschema import DescriptionGenerationState
 from langgraph.graph import StateGraph, START, END
-from descriptionGenerate import (
+from app.services.descriptionGenerate import (
     generateDetailedDescription,
     validateDescription,
     refineDescription,

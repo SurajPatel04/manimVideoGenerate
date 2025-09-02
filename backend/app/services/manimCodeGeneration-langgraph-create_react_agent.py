@@ -4,8 +4,8 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import SystemMessage, HumanMessage
 from langgraph.prebuilt import create_react_agent
 from langgraph.errors import GraphRecursionError
-from llm import llmPro, llmFlash
-from schema import mainmState, CheckMaimCode
+from app.services.llm import llmPro, llmFlash
+from backend.app.schema.Manimschema import mainmState, CheckMaimCode
 from dotenv import load_dotenv
 from langgraph.graph import END
 import os

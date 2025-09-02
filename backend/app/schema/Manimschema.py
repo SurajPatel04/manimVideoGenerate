@@ -14,11 +14,13 @@ class DescriptionGenerationState(BaseModel):
     reason: Optional[str] = None
     chatName: Optional[str] = None
     descriptions:list[str] = []
-    pickedOne: str
-    DescriptionRefine: int
+    detailedDescription: str
+    descriptionRefine: int
     isGood: bool | None = None 
     AutoComplete: bool
-    pickedOneError: Optional[str] = None
+    detailedDescriptionError: Optional[str] = None
+    currentStage: str
+    nextStage: Optional[str] = None
     format: str = Field(default="Red", description="The render file format")
 
 class GenDescriptions(BaseModel):
@@ -29,7 +31,7 @@ class DetailDescription(BaseModel):
 
 class CheckPickedDescription(BaseModel):
     isThisGoodDescrription: bool
-    pickedOneError: str
+    detailedDescriptionError: str
 
 
 # manimCodeGeneration Schema

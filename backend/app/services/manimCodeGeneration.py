@@ -2,8 +2,8 @@ from langchain_core.tools import tool
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import SystemMessage, HumanMessage
-from llm import llmPro, llmFlash
-from schema import mainmState, CheckMaimCode
+from app.services.llm import llmPro, llmFlash
+from app.schema.Manimschema import mainmState, CheckMaimCode
 from dotenv import load_dotenv
 from langgraph.graph import END
 import os
@@ -389,7 +389,7 @@ mandatoryChecklist = """**MANDATORY CHECKLIST - VERIFY YOUR CODE:**
 
 MAX_REWRITE_ATTEMPTS = 3
 @tool
-def createFileAndWriteMainmCode(filename, content):
+async def createFileAndWriteMainmCode(filename, content):
     """This tool is used to write a python code directly in a file for a Manim animation."""
     print("****************** Creating a file ****************")
     if not os.path.exists("./temp"):
@@ -404,7 +404,7 @@ def createFileAndWriteMainmCode(filename, content):
         return f"Error writing to file: {e}"
 
 
-def read_file(filename):
+async def read_file(filename):
     """This tool is used to read a file"""
     print("****************** reading a file ****************")
     filepath = f"./temp/{filename}"
@@ -420,7 +420,7 @@ def read_file(filename):
 import subprocess
 import os
 
-def run_manim_scene(filename, state: mainmState):
+async def run_manim_scene(filename, state: mainmState):
     print("****************** running a manim file ****************")
     flags=f"--progress_bar display -{state.quality}"
     filepath = f"./temp/{filename}"
@@ -518,7 +518,7 @@ def run_manim_scene(filename, state: mainmState):
 
 
 
-def agentCreateFile(state: mainmState):
+async def agentCreateFile(state: mainmState):
     tools = [createFileAndWriteMainmCode]
 
     systemPrompt = """
@@ -670,7 +670,7 @@ class MyScene(Scene):
     agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=10)
     
     print(f"--- Running agent with filename: {unique_name}.py ---")
-    result = agent_executor.invoke({
+    result = await agent_executor.ainvoke({
         "input": human_message,
         })
     print("\n--- Agent Final Answer ---")
@@ -678,11 +678,11 @@ class MyScene(Scene):
     print(f"{unique_name}.py")
     print(f"statte ************************* {state.filename} ")
 
-    return state
+    yield state
 
 
-def agentCheckFileCode(state: mainmState):
-    code=read_file(state.filename)
+async def agentCheckFileCode(state: mainmState):
+    code=await read_file(state.filename)
     message = state.description
     systemPrompt = """
     You are an expert Manim developer...
@@ -774,7 +774,7 @@ def agentCheckFileCode(state: mainmState):
         )),
         HumanMessage(content=f"{message}")
     ]
-    evaluationResult = structured_llm.invoke(messages)
+    evaluationResult = await structured_llm.ainvoke(messages)
 
     state.isCodeGood = evaluationResult.isCodeGood
     if not evaluationResult.isCodeGood:
@@ -788,7 +788,7 @@ def agentCheckFileCode(state: mainmState):
     print(f"Error Message: {state.validationError}")
     return state
 
-def agentReWriteManimCode(state: mainmState):
+async def agentReWriteManimCode(state: mainmState):
     tools = [createFileAndWriteMainmCode]
     filename = state.filename
     validationError = state.validationError
@@ -797,9 +797,10 @@ def agentReWriteManimCode(state: mainmState):
     executionError = state.executionError
     description = state.description
     state.rewriteAttempts += 1 
-    code = read_file(filename)
+    code = await read_file(filename)
 
-
+    print(executionErrorHistory)
+    print(validationErrorHistory)
     # 1. Define the prompt with placeholders for all variables.
     systemPrompt = """
 You are an expert Manim debugger and Python developer, using manim v0.19.
@@ -975,8 +976,8 @@ When you call this tool, you **MUST** provide **BOTH** of the following argument
     
     human_message = f"Please fix the error in the code based on the error message provided. and i want this {description}"
 
-    # 2. Provide all required variables in the .invoke() call.
-    result = agentExecutor.invoke({
+    # 2. Provide all required variables in the .ainvoke() call.
+    result = await agentExecutor.ainvoke({
         "input": human_message,
         "filename":filename,
         "critical":critical,
@@ -985,7 +986,7 @@ When you call this tool, you **MUST** provide **BOTH** of the following argument
         "code":code,
         "description":description,
         "validationErrorHistory":validationErrorHistory,
-        "validationError":ValueError,
+        "validationError":validationError,
         "executionErrorHistory":executionErrorHistory,
         "executionError":executionError
 
@@ -996,8 +997,8 @@ When you call this tool, you **MUST** provide **BOTH** of the following argument
     print(result['output'])
     return state
 
-def agentRunManimCode(state: mainmState):
-    resultMessage = run_manim_scene(filename=state.filename, state=state)
+async def agentRunManimCode(state: mainmState):
+    resultMessage = await run_manim_scene(filename=state.filename, state=state)
     print(f"Execution Result: {resultMessage}")
 
 
@@ -1016,7 +1017,7 @@ def agentRunManimCode(state: mainmState):
     return state
 
 
-def manimRouter(state: mainmState):
+async def manimRouter(state: mainmState):
     if state.isCodeGood is True:
         return "agentRunManimCode"
     elif state.rewriteAttempts >= 3:
@@ -1026,7 +1027,7 @@ def manimRouter(state: mainmState):
     else: 
         return "agentReWriteManimCode"
     
-def executionRouter(state: mainmState):
+async def executionRouter(state: mainmState):
     """Routes the graph after a Manim execution attempt."""
     if state.executionSuccess:
         print("✅ Manim execution successful. Ending graph.")
@@ -1040,7 +1041,7 @@ def executionRouter(state: mainmState):
         return "fix"
 
 
-def handleFailureAndReset(state: mainmState) -> mainmState:
+async def handleFailureAndReset(state: mainmState) -> mainmState:
     """Resets the attempt counter to start the entire process over."""
     if state.createAgain >= 1:
         return END
@@ -1050,7 +1051,7 @@ def handleFailureAndReset(state: mainmState) -> mainmState:
         state.createAgain += 1
         return state
 
-def shouldStartOverRouter(state: mainmState):
+async def shouldStartOverRouter(state: mainmState):
     """Checks the 'createAgain' flag to decide the next step."""
     
     # CORRECT: Check if this is the first and only time we are starting over.
