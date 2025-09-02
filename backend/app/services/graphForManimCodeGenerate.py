@@ -1,5 +1,5 @@
 from langgraph.graph import StateGraph, START, END
-from app.schema.Manimschema import mainmState
+from app.schema.ServiceSchema import mainmState
 from app.services.manimCodeGeneration import agentCheckFileCode, agentCreateFile, agentReWriteManimCode, agentRunManimCode, manimRouter,executionRouter, shouldStartOverRouter, handleFailureAndReset
 
 graph_build = StateGraph(mainmState)

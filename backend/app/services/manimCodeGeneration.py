@@ -2,8 +2,8 @@ from langchain_core.tools import tool
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import SystemMessage, HumanMessage
-from app.services.llm import llmPro, llmFlash
-from app.schema.Manimschema import mainmState, CheckMaimCode
+from app.core.llm import llmPro, llmFlash
+from app.schema.ServiceSchema import mainmState, CheckMaimCode
 from dotenv import load_dotenv
 from langgraph.graph import END
 import os
