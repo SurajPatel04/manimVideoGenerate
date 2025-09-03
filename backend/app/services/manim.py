@@ -1,6 +1,6 @@
-from .graphForDescriptionGenerate import graph_for_description_generate 
-from app.schema.Manimschema import DescriptionGenerationState, mainmState
-from .graphForManimCodeGenerate import graph_for_mainm_code_generate
+from app.services.graphForDescriptionGenerate import graph_for_description_generate 
+from app.schema.ServiceSchema import DescriptionGenerationState, mainmState
+from app.services.graphForManimCodeGenerate import graph_for_mainm_code_generate
 
 
 
@@ -26,11 +26,8 @@ async def call_graph(query):
         final_state=event
         yield event
 
-    print(type(final_state))
-    print(final_state)
-    print(final_state.get("validateDescription").get("detailedDescription"))
     if final_state.get("validateDescription").get("isFesible") is False:
-        print("❌ Request not feasible with Manim. Stopping here.")
+        print("Request not feasible with Manim. Stopping here.")
         return
 
     stat1 = mainmState(

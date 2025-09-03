@@ -17,7 +17,6 @@ def hello():
 async def generateManimVideo(query: MainmUserModel):
     async def event_generator():
         async for event in call_graph(query.userQuery):
-            # Convert each graph event into SSE format
             yield f"data: {json.dumps(event)}\n\n"
-
+        yield "event: end\ndata: [DONE]\n\n"
     return StreamingResponse(event_generator(), media_type="text/event-stream")

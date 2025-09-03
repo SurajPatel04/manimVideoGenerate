@@ -9,6 +9,7 @@ from langgraph.graph import END
 import os
 import subprocess
 import uuid
+from app.core.internalServerErrorHandle import retry
 
 load_dotenv()
 
@@ -353,7 +354,41 @@ in Manim v0.19+, you should import directly below mention from the top-level man
         x_label = axes.get_x_axis_label("x")
         self.add(axes, x_label)
 
+    -- AttributeError: 'ThreeDCamera' object has no attribute 'frame'
+        HOW TO FIX
+        In 3D scenes, don’t use .frame.
+        Use self.set_camera_orientation(...) or self.move_camera(...) instead.
+    
+    -- ValueError: Called Scene.play with no animations
+        Scene.play() must have at least one animation.
+        self.play() → error
+        self.play(Create(obj)) or self.play(FadeIn(obj)) → correct
 
+    -- 'ThreeDCamera' object has no attribute 'get_distance'
+        Use self.camera.distance to access or set the camera distance instead.
+
+    -- name 'QuadraticBezier' is not defined
+        How to fix
+        Manim 0.19+ → use Bezier([p0, p1, p2]) instead
+
+    -- Exception: Cannot call Mobject.point_from_proportion for a Mobject with no points
+        Only call point_from_proportion() on mobjects with a path (like Line, Circle, Bezier).
+        circle = Circle()
+        dot = Dot(circle.point_from_proportion(0.25))
+
+    -- Unexpected argument None passed to Scene.play().
+        Correct way:
+        self.play(obj.animate.shift(RIGHT))  # no None
+    -- name 'DirectionalLight' is not defined
+        Use AmbientLight or PointLight instead.
+
+    -- NameError: name 'PBRMaterial' is not defined
+        PBRMaterial doesn’t exist in Manim. 
+        Use instead:
+            sphere = Sphere()
+            sphere.set_fill(color=BLUE, opacity=0.8)
+            sphere.set_stroke(color=WHITE, width=1)
+        Replace material=PBRMaterial() with .set_fill(...) / .set_stroke(...).
     </CRITICAL>
 """
 
@@ -524,6 +559,10 @@ async def agentCreateFile(state: mainmState):
     systemPrompt = """
     You are a helpful AI. You expert in creating manim code in and try it be good in one go and use manim v.19
 
+    when you do graph write what you are ploting
+    Example: Plot y = x^2 on an axes with labels and animate the curve being drawn.
+    then write y=x^2 in the graph  and Face should be screen side not in 3d but 2d so user can see what is written
+
 
 
 {important}
@@ -670,9 +709,7 @@ class MyScene(Scene):
     agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=10)
     
     print(f"--- Running agent with filename: {unique_name}.py ---")
-    result = await agent_executor.ainvoke({
-        "input": human_message,
-        })
+    result = await retry(agent_executor, human_message)
     print("\n--- Agent Final Answer ---")
     print(result['output'])
     print(f"{unique_name}.py")
@@ -748,7 +785,7 @@ async def agentCheckFileCode(state: mainmState):
                 self.add_ambient_camera_rotation(rate=0.1)  # ✅ add rotation to the scene
                 self.play(Rotate(cube, angle=PI/4))
                 self.wait(2)
-    -- AttributeError: 'Animation_b79f245b' object has no attribute 'set_background'
+    -- AttributeError: object has no attribute 'set_background'
         How to fix:
             Use self.camera.background_color instead:
                 Replace any line like: self.set_background(BLACK)
@@ -758,6 +795,14 @@ async def agentCheckFileCode(state: mainmState):
             Always include dt for any updater function.
             dt is the time delta since the last frame — use it to make animations frame-rate independent.
             Works for both 2D and 3D scenes.
+
+    -- name 'BLACK' is not defined
+        Use the color parameter when creating or styling objects:
+        from manim import *
+
+            circle = Circle(color=BLACK)      # Using predefined color
+            square = Square(color="#00ff00")  # Using hex code
+            triangle = Triangle(color="blue") # Using color nam
 
 {mandatoryChecklist}
     """
@@ -805,6 +850,10 @@ async def agentReWriteManimCode(state: mainmState):
     systemPrompt = """
 You are an expert Manim debugger and Python developer, using manim v0.19.
 Your sole task is to fix the provided Manim code file by analyzing all available error information.
+
+    when you do graph write what you are ploting
+    Example: Plot y = x^2 on an axes with labels and animate the curve being drawn.
+    then write y=x^2 in the graph  and Face should be screen side not in 3d but 2d so user can see what is written
 
 {critical}
 
@@ -993,7 +1042,6 @@ When you call this tool, you **MUST** provide **BOTH** of the following argument
     })
 
     print("\n--- re_write_manim_code ---\n")
-    # print(f"______________________ execution_error____________________ {execution_error}")
     print(result['output'])
     return state
 
@@ -1021,7 +1069,7 @@ async def manimRouter(state: mainmState):
     if state.isCodeGood is True:
         return "agentRunManimCode"
     elif state.rewriteAttempts >= 3:
-        print("❌ Rewrite limit reached. Ending graph.")
+        print("Rewrite limit reached. Ending graph.")
         # return END
         return "limit_reached"
     else: 
@@ -1035,9 +1083,9 @@ async def executionRouter(state: mainmState):
     else:
         # Prevent infinite loops
         if state.rewriteAttempts >= 3:
-            print("❌ Rewrite limit reached after execution failure. Ending graph.")
+            print("Rewrite limit reached after execution failure. Ending graph.")
             return "limit"
-        print("❌ Manim execution failed. Routing to rewrite node.")
+        print("Manim execution failed. Routing to rewrite node.")
         return "fix"
 
 
@@ -1046,19 +1094,16 @@ async def handleFailureAndReset(state: mainmState) -> mainmState:
     if state.createAgain >= 1:
         return END
     else:
-        print(f"❌ Maximum rewrite attempts reached. Resetting and starting over.")
+        print(f"Maximum rewrite attempts reached. Resetting and starting over.")
         state.rewriteAttempts  = 0
         state.createAgain += 1
         return state
 
 async def shouldStartOverRouter(state: mainmState):
     """Checks the 'createAgain' flag to decide the next step."""
-    
-    # CORRECT: Check if this is the first and only time we are starting over.
     if state.createAgain == 1:
-        print("✅ Starting the process over one time.")
+        print("Starting the process over one time.")
         return "agentCreateFile" # Loop back to the beginning
     else:
-        # If create_again is > 1, the single retry has already been used.
-        print("❌ Full retry and start-over process failed. Ending.")
+        print("Full retry and start-over process failed. Ending.")
         return "stop"
