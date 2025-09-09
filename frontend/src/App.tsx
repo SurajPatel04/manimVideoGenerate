@@ -5,6 +5,7 @@ import './App.css'
 
 import { Button } from "@/components/ui/button"
 import { BackgroundBeams } from "@/components/ui/background-beams";
+// import Homepage from "@/components/  Homepage";
 
 function App() {
   const [count, setCount] = useState(0)
@@ -14,7 +15,7 @@ function App() {
       {/* Background Beams */}
       <BackgroundBeams className="z-0" />
       {/* Main Content */}
-
+      {/* <Homepage /> */}
     </div>
   )
 }
