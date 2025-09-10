@@ -10,9 +10,12 @@ class UserInput(BaseModel):
     password: str = Field(min_length=6)
     userName: str
 
-class Token(BaseModel):
+class TokenData(BaseModel):
     id: Optional[str]=None
 
 class LoginRequest(BaseModel):
     email: str
     password: str
+
+class RefreshTokenRequest(BaseModel):
+    refreshToken: str
