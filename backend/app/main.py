@@ -1,8 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from contextlib import asynccontextmanager
 from app.router import mainmGeneration, userRouter
 from app.core.db import init_db
-
+from app.utils.auth import getCurrentUser
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -13,6 +13,10 @@ async def lifespan(app: FastAPI):
         app.state.mongo_client.close()
 
 app = FastAPI(lifespan=lifespan)
+
+@app.get("/")
+def test( user_id: int=Depends(getCurrentUser)):
+    return {"data":"success"}
 
 app.include_router(mainmGeneration.router)
 app.include_router(userRouter.router)
