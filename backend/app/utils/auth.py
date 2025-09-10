@@ -42,11 +42,14 @@ def verifyAccessToken(token: str, credentialException):
     
     return tokenData
 
-def verifyRefreshToken(token: str, credential_exception):
+def verifyRefreshToken(token: str):
     """Verifies the refresh token. Raises exception if invalid."""
+    credential_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate refresh token",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
     try:
-        # CRITICAL FIX: Use the REFRESH_TOKEN_SECRET_KEY to decode the refresh token.
-        # Your original code was using the access token key, which would always fail.
         payload = jwt.decode(token, REFRESH_TOKEN_SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("user_id")
         if user_id is None:
@@ -61,7 +64,7 @@ def verifyRefreshToken(token: str, credential_exception):
 def getCurrentUser(token: str=Depends(oauth2Schema)):
     credentialException=HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED, 
-        detail="could not verfify",
+        detail="could not validate access token",
         headers={"WWW-authenticate":"Bearer"}
     )
     return verifyAccessToken(token, credentialException)
