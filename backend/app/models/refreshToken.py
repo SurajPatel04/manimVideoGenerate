@@ -1,0 +1,14 @@
+from beanie import Document, Indexed
+from typing import Annotated
+from pydantic import Field
+from datetime import datetime, timezone
+
+class RefreshToken(Document):
+    userId: Annotated[str, Indexed()]
+    token: Annotated[str, Indexed(unique=True)]
+    expiresAt: datetime
+    revoked: bool = Field(default=False)
+    createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    class Settings:
+        name = "refresh_tokens"
