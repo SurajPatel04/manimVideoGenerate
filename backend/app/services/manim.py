@@ -1,5 +1,8 @@
+from app.schema.ServiceSchema import (
+    DescriptionGenerationState, 
+    mainmState
+)
 from app.services.graphForDescriptionGenerate import graph_for_description_generate 
-from app.schema.ServiceSchema import DescriptionGenerationState, mainmState
 from app.services.graphForManimCodeGenerate import graph_for_mainm_code_generate
 
 

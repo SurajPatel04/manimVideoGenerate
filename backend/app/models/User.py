@@ -1,6 +1,18 @@
-from beanie import Document, before_event, Replace, Update, Indexed
-from pydantic import Field, EmailStr
-from datetime import datetime, timezone
+from beanie import (
+    Document, 
+    before_event, 
+    Replace, 
+    Update, 
+    Indexed
+)
+from pydantic import (
+    Field, 
+    EmailStr
+)
+from datetime import (
+    datetime, 
+    timezone
+)
 from typing import Annotated
 
 class Users(Document):

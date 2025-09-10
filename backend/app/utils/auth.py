@@ -1,7 +1,18 @@
-from jose import JWTError, jwt
-from datetime import datetime, timedelta, timezone
+from jose import (
+    JWTError, 
+    jwt
+)
+from datetime import (
+    datetime, 
+    timedelta, 
+    timezone
+)
 from fastapi.security import OAuth2PasswordBearer
-from fastapi import Depends, status, HTTPException
+from fastapi import (
+    Depends, 
+    status, 
+    HTTPException
+)
 from dotenv import load_dotenv
 from app.schema.UserSchema import TokenData
 import os

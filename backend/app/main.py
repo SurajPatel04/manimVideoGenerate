@@ -1,6 +1,9 @@
+from app.router import (
+    mainmGeneration, 
+    userRouter
+)
 from fastapi import FastAPI, Depends
 from contextlib import asynccontextmanager
-from app.router import mainmGeneration, userRouter
 from app.core.db import init_db
 from app.utils.auth import getCurrentUser
 

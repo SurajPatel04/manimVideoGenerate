@@ -1,4 +1,8 @@
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import (
+    BaseModel, 
+    Field, 
+    EmailStr
+)
 from typing import Optional
 
 class UserListOutput(BaseModel):
@@ -14,7 +18,7 @@ class TokenData(BaseModel):
     id: Optional[str]=None
 
 class LoginRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 class RefreshTokenRequest(BaseModel):

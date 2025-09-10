@@ -1,17 +1,31 @@
-from fastapi import APIRouter, status, HTTPException, Depends
+from fastapi import (
+    APIRouter, 
+    status, 
+    HTTPException, 
+)
 from app.schema.UserSchema import (
     UserListOutput, 
     UserInput, 
     LoginRequest, 
     RefreshTokenRequest
 )
+from app.utils.auth import (
+    createAccessToken, 
+    createRefreshToken, 
+    verifyRefreshToken
+)
+from app.utils.hashPassword import (
+    hash, 
+    verifyPassword
+)
+from datetime import (
+    datetime, 
+    timedelta, 
+    timezone
+)
 from app.models.User import Users
 from app.models.refreshToken import RefreshToken
-from datetime import datetime, timedelta, timezone
 from typing import List
-from app.utils.hashPassword import hash, verifyPassword
-from fastapi.security.oauth2 import OAuth2PasswordRequestForm
-from app.utils.auth import (createAccessToken, createRefreshToken, verifyRefreshToken)
 from dotenv import load_dotenv
 import os
 
@@ -29,7 +43,7 @@ async def allUser():
     return post
 
 
-@router.post("/", response_model=UserListOutput)
+@router.post("/", response_model=UserListOutput, status_code=status.HTTP_201_CREATED)
 async def createUser(user: UserInput):
     existsUser = await Users.find_one({
     "$or": [
@@ -54,7 +68,7 @@ async def createUser(user: UserInput):
     await data.insert()
     return data
 
-@router.post("/login")
+@router.post("/login", status_code=status.HTTP_200_OK)
 async def userLogin(userCredentials: LoginRequest):
     user = await Users.find_one({"email":userCredentials.email})
 
@@ -88,7 +102,7 @@ async def userLogin(userCredentials: LoginRequest):
         "tokenType": "bearer"
     }
 
-@router.post("/refreshToken")
+@router.post("/refreshToken", status_code=status.HTTP_201_CREATED)
 async def get_new_access_token(request: RefreshTokenRequest):
     userData = verifyRefreshToken(request.refreshToken)
     storedToken = await RefreshToken.find_one({

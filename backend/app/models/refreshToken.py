@@ -1,7 +1,14 @@
-from beanie import Document, Indexed
+from beanie import (
+    Document, 
+    Indexed
+)
+from datetime import (
+    datetime, 
+    timezone
+)
 from typing import Annotated
 from pydantic import Field
-from datetime import datetime, timezone
+
 
 class RefreshToken(Document):
     userId: Annotated[str, Indexed()]

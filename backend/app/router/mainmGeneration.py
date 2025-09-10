@@ -1,4 +1,8 @@
-from fastapi import APIRouter, status, HTTPException
+from fastapi import (
+    APIRouter, 
+    status, 
+    HTTPException
+)
 from app.schema.manimGenerationSchema import MainmUserModel
 from app.services.manim import call_graph
 from fastapi.responses import StreamingResponse
@@ -13,7 +17,7 @@ router = APIRouter(
 def hello():
     return {"data":"hello World"}
 
-@router.post("/generate")
+@router.post("/generate", status_code=status.HTTP_201_CREATED)
 async def generateManimVideo(query: MainmUserModel):
     async def event_generator():
         async for event in call_graph(query.userQuery):
