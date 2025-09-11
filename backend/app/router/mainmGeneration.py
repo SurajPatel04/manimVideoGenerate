@@ -1,12 +1,16 @@
 from fastapi import (
     APIRouter, 
     status, 
-    HTTPException
+    HTTPException,
+    Depends
 )
 from app.schema.manimGenerationSchema import MainmUserModel
 from app.services.manim import call_graph
 # from app.services.task import call_graph
 from fastapi.responses import StreamingResponse
+from app.utils.auth import getCurrentUser
+from celery.result import AsyncResult
+from app.core.queue import taskQueue
 import json
 
 router = APIRouter(
@@ -27,16 +31,40 @@ def hello():
 #     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
-@router.post("/")
-async def generate(query: MainmUserModel):
-    """
-    This endpoint now correctly queues the background task.
-    It receives a query, calls `.apply_async()` on the imported task,
-    and immediately returns a task ID to the client.
-    """
-    # Use .apply_async to send the task to the Celery queue.
-    # The `args` tuple must match the arguments of your task function.
-    task = call_graph.apply_async(args=[query.userQuery])
+@router.post("/", status_code=status.HTTP_202_ACCEPTED)
+async def generate(query: MainmUserModel, userId: int=Depends(getCurrentUser)):
     
-    # Return the task_id so the client can check the status later.
+    task = call_graph.apply_async(args=[query.userQuery,userId.id,query.quality, query.format])
     return {"task_id": task.id}
+
+
+@router.get("/result/{task_id}")
+async def get_result(task_id: str, userId: int = Depends(getCurrentUser)):
+    result = AsyncResult(task_id, app=taskQueue)
+    
+    if result.state == 'PROGRESS':
+        return {
+            "status": "in_progress",
+            "state": result.state,
+            "current_stage": result.info.get('current_stage'),
+            "progress": result.info.get('progress'),
+            "details": result.info.get('details'),
+            "timestamp": result.info.get('timestamp')
+        }
+    elif result.state == 'SUCCESS':
+        return {
+            "status": "completed",
+            "state": result.state,
+            "data": result.result
+        }
+    elif result.state == 'FAILURE':
+        return {
+            "status": "failed",
+            "state": result.state,
+            "error": str(result.info)
+        }
+    else:
+        return {
+            "status": "pending",
+            "state": result.state
+        }

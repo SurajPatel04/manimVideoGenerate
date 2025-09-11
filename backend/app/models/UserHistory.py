@@ -10,7 +10,7 @@ class Message(BaseModel):
     code: Optional[str] = None
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     link: Optional[str]=None
-    qality: Optional[str] = None
+    quality: Optional[str] = None
 
 class UsersHistory(Document):
     userId: Annotated[ObjectId, Indexed()]
