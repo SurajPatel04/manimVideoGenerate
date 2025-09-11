@@ -480,7 +480,7 @@ def run_manim_scene(filename, state: mainmState):
     if not os.path.exists(filepath):
         return f"Error: File '{filepath}' not found."
 
-    command = ["manim", "render", filepath, scene_name, "--format", output_format]
+    command = ["manim", "render", filepath, scene_name, "--format", output_format, "--custom_folders"]
     command.extend(flags.split())
 
     print(f"--- Running Manim Command: {' '.join(command)} ---")

@@ -9,7 +9,7 @@ class Message(BaseModel):
     description: Optional[str] = None
     code: Optional[str] = None
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    link: Optional[str]=None
+    filename: Optional[str]=None
     quality: Optional[str] = None
 
 class UsersHistory(Document):
