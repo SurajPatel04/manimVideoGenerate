@@ -6,13 +6,16 @@ from typing import Optional, List, Annotated
 
 class Message(BaseModel):
     userQuery: str
-    AiResponse: Optional[str] = None
+    description: Optional[str] = None
     code: Optional[str] = None
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     link: Optional[str]=None
-    qality: Optional[str] = str
+    qality: Optional[str] = None
 
 class UsersHistory(Document):
     userId: Annotated[ObjectId, Indexed()]
     chatName: Annotated[str, Indexed]
-    messages: List[Message] = []
+    messages: List[Message] = Field(default_factory=list)
+    model_config = {
+        "arbitrary_types_allowed": True
+    }

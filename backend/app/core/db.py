@@ -2,7 +2,7 @@ from pymongo import AsyncMongoClient
 from dotenv import load_dotenv
 from beanie import init_beanie
 from app.models.User import Users
-from app.models.refreshToken import RefreshToken
+from app.models.RefreshToken import RefreshToken
 import os
 load_dotenv()
 

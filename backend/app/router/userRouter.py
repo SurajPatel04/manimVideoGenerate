@@ -24,7 +24,7 @@ from datetime import (
     timezone
 )
 from app.models.User import Users
-from app.models.refreshToken import RefreshToken
+from app.models.RefreshToken import RefreshToken
 from typing import List
 from dotenv import load_dotenv
 import os

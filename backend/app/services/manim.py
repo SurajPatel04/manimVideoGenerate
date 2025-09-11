@@ -4,10 +4,12 @@ from app.schema.ServiceSchema import (
 )
 from app.services.graphForDescriptionGenerate import graph_for_description_generate 
 from app.services.graphForManimCodeGenerate import graph_for_mainm_code_generate
+from app.core.queue import taskQueue
+from app.models.UserHistory import Message
 
 
-
-async def call_graph(query):
+@taskQueue.task(name="call_graph_task")
+def call_graph(query):
     state=DescriptionGenerationState(
         userQuery=query,
         descriptions=[],
@@ -24,17 +26,15 @@ async def call_graph(query):
         reason=None
     )
 
-    final_state = None
-    async for event in graph_for_description_generate.astream(state):
-        final_state=event
-        yield event
+    result = graph_for_description_generate.invoke(state)
 
-    if final_state.get("validateDescription").get("isFesible") is False:
-        print("Request not feasible with Manim. Stopping here.")
-        return
+    if result.get("isFesiable") is False:
+        return "Not possible"
+
+    print(result)
 
     stat1 = mainmState(
-        description=final_state.get("validateDescription").get("detailedDescription"),
+        description= result.get("detailedDescription"),
         isCodeGood=None,
         format=state.format,
         error_message="",
@@ -45,5 +45,40 @@ async def call_graph(query):
         createAgain = 0
     )
 
-    async for event in graph_for_mainm_code_generate.astream(stat1):
-        yield event
+    manimGeneration = graph_for_mainm_code_generate.invoke(stat1)
+
+    code = manimGeneration.get('code')
+    userQuery = query
+    description = manimGeneration.get('description')
+    quality = manimGeneration.get('quality')
+
+
+    # message = Message(
+    #     userQuery=query,
+    #     AiResponse=result.get("detailedDescription"),
+    #     code: 
+
+    # )
+    print("___________last Message__________")
+    print(f"Description: {description}")
+    print(f"Filename: {manimGeneration.get('filename')}")
+    print(f"Is Code Good: {manimGeneration.get('isCodeGood')}")
+    print(f"Execution Success: {manimGeneration.get('executionSuccess')}")
+    print(f"Rewrite Attempts: {manimGeneration.get('rewriteAttempts')}")
+    print(f"Quality: {quality}")
+    print(f"Format: {manimGeneration.get('format')}")
+    print(f"Code: {code}")
+    # if hasattr(manimGeneration, 'code'):
+    #     print(f"Code Length: {len(manimGeneration.code) if manimGeneration.code else 0} characters")
+    # if hasattr(manimGeneration, 'validationError') and manimGeneration.validationError:
+    #     print(f"Validation Error: {manimGeneration.validationError}")
+    # if hasattr(manimGeneration, 'executionError') and manimGeneration.executionError:
+    #     print(f"Execution Error: {manimGeneration.executionError}")
+    
+    # # Print full state as dict (might be long)
+    # print("___________Complete State as Dict__________")
+    # if hasattr(manimGeneration, '__dict__'):
+    #     import pprint
+    #     pprint.pprint(vars(manimGeneration))
+
+    return (manimGeneration)
