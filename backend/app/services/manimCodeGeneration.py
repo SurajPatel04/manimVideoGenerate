@@ -1061,6 +1061,8 @@ When you call this tool, you **MUST** provide **BOTH** of the following argument
     return state
 
 async def agentRunManimCode(state: mainmState):
+    code = await read_file(state.filename)
+    state.code = code
     resultMessage = await run_manim_scene(filename=state.filename, state=state)
     print(f"Execution Result: {resultMessage}")
 

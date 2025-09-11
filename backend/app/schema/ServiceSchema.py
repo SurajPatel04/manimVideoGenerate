@@ -55,3 +55,4 @@ class mainmState(BaseModel):
     executionSuccess: Optional[bool] = None
     quality: str = "ql"
     createAgain: int = 0
+    code: Optional[str] = None
