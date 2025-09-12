@@ -11,7 +11,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <>{children}</> : <Navigate to="/auth" replace />;
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
 // Public Route Component (redirect to main if authenticated)
@@ -30,7 +30,7 @@ function AppContent() {
         <Routes>
           {/* Public Routes */}
           <Route 
-            path="/auth" 
+            path="/login" 
             element={
               <PublicRoute>
                 <div className="flex min-h-screen items-center justify-center p-4">
@@ -38,6 +38,20 @@ function AppContent() {
                 </div>
               </PublicRoute>
             } 
+          />
+          <Route 
+            path="/signup" 
+            element={
+              <PublicRoute>
+                <div className="flex min-h-screen items-center justify-center p-4">
+                  <AuthForm />
+                </div>
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="/auth" 
+            element={<Navigate to="/login" replace />}
           />
           <Route 
             path="/home" 
@@ -66,7 +80,6 @@ function AppContent() {
             } 
           />
           
-          {/* Default Routes */}
           <Route path="/" element={<Navigate to="/home" replace />} />
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>

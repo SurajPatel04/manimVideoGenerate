@@ -1,5 +1,6 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -13,7 +14,14 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function AuthForm() {
   const { login, signup, loading } = useAuth();
-  const [isLogin, setIsLogin] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Determine initial state based on URL
+  const [isLogin, setIsLogin] = useState(() => {
+    return location.pathname === '/login';
+  });
+  
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
@@ -24,6 +32,15 @@ export default function AuthForm() {
     password: "",
     confirmPassword: "",
   });
+
+  // Update form state when URL changes
+  useEffect(() => {
+    if (location.pathname === '/login') {
+      setIsLogin(true);
+    } else if (location.pathname === '/signup') {
+      setIsLogin(false);
+    }
+  }, [location.pathname]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -67,7 +84,12 @@ export default function AuthForm() {
   };
 
   const toggleAuthMode = () => {
-    setIsLogin(!isLogin);
+    const newIsLogin = !isLogin;
+    setIsLogin(newIsLogin);
+    
+    // Update URL based on new state
+    navigate(newIsLogin ? '/login' : '/signup', { replace: true });
+    
     // Clear form when switching
     setFormData({
       firstName: "",
