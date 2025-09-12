@@ -53,7 +53,7 @@ export class ManimApiService {
       const response = await axios.get<TaskResultResponse>(`/api/manimGeneration/result/${taskId}`, {
         withCredentials: true,
         headers: this.getAuthHeaders(accessToken),
-        timeout: 10000,
+        timeout: 15000,
       });
       
       return response.data;

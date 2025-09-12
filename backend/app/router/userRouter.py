@@ -107,61 +107,21 @@ async def userLogin(userCredentials: LoginRequest):
         "tokenType": "bearer"
     }
 
-@router.post("/refreshToken", status_code=status.HTTP_201_CREATED)
-async def get_new_access_token(request: RefreshTokenRequest):
-    userData = verifyRefreshToken(request.refreshToken)
-    storedToken = await RefreshToken.find_one({
-        "token":request.refreshToken, "revoked":False
-    })
-
-    if not storedToken:
-        raise HTTPException(status_code=401, detail="Refresh token expired or revoked")
-    
-    expiresAt = storedToken.expiresAt
-    if expiresAt.tzinfo is None:
-        expiresAt = expiresAt.replace(tzinfo=timezone.utc)
-
-    if expiresAt < datetime.now(timezone.utc):
-        raise HTTPException(status_code=401, detail="Refresh token expired or revoked")
-    
-    storedToken.revoked = True
-    await storedToken.save()
-
-    newAccessToken = createAccessToken(data={"user_id": userData.id})
-    newRefreshToken = createRefreshToken(data={"user_id": userData.id})
-    
-    tokenDoc = RefreshToken(
-        userId=str(userData.id),
-        token=newRefreshToken,
-        expiresAt=datetime.now(timezone.utc) + timedelta(days=int(REFRESH_TOKEN_EXPIRE_DAYS)),
-        revoked=False
-    )
-
-    await tokenDoc.insert()
-
-    return {
-        "access_token": newAccessToken,
-        "refresh_token": newRefreshToken,
-        "email":request.email,
-        "token_type": "bearer"
-    }
-
-from bson import ObjectId
-
+from beanie import SortDirection
 
 @router.get("/userHistory", status_code=status.HTTP_200_OK)
 async def getUserHistory(
     current_user: TokenData = Depends(getCurrentUser),
-    page: int = Query(1, ge=1),   # page number (default = 1, must be >= 1)
-    limit: int = Query(5, ge=1, le=100)  # items per page (default = 5)
+    page: int = Query(1, ge=1),
+    limit: int = Query(5, ge=1, le=100)
 ):
     user_id = ObjectId(current_user.id)
 
     skip = (page - 1) * limit
 
-    # Fetch paginated history
     history = (
         await UsersHistory.find(UsersHistory.userId == user_id)
+        .sort("-createdAt")
         .skip(skip)
         .limit(limit)
         .to_list()
@@ -179,6 +139,6 @@ async def getUserHistory(
         "page": page,
         "limit": limit,
         "total": total,
-        "pages": (total + limit - 1) // limit,  # ceil division
+        "pages": (total + limit - 1) // limit,
         "data": history
     }

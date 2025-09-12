@@ -494,10 +494,10 @@ def run_manim_scene(filename, state: mainmState):
             bufsize=1
         )
 
-        full_output = ""  # Collect all output
+        full_output = ""
         for line in process.stdout:
-            print(line, end='')       # Show real-time
-            full_output += line       # Save for return
+            print(line, end='') 
+            full_output += line 
 
         process.wait()
 
@@ -721,7 +721,7 @@ class MyScene(Scene):
     """
 
     agent = create_tool_calling_agent(llmFlash, tools, prompt=prompt)
-    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=10)
+    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=5)
     
     print(f"--- Running agent with filename: {unique_name}.py ---")
     result = agent_executor.invoke({"input": human_message})
@@ -1040,11 +1040,10 @@ When you call this tool, you **MUST** provide **BOTH** of the following argument
     )
     
     agent = create_tool_calling_agent(llmFlash, tools, prompt)
-    agentExecutor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=10)
+    agentExecutor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=5)
     
     human_message = f"Please fix the error in the code based on the error message provided. and i want this {description}"
 
-    # 2. Provide all required variables in the .ainvoke() call.
     result = agentExecutor.invoke({
         "input": human_message,
         "filename":filename,

@@ -95,3 +95,29 @@ export interface SignupRequest {
 export interface RefreshTokenRequest {
   refreshToken: string;
 }
+
+// User History API Types
+export interface UserHistoryMessage {
+  userQuery: string;
+  description: string;
+  code: string;
+  timestamp: string;
+  filename: string;
+  quality: string;
+  link: string;
+}
+
+export interface UserHistoryItem {
+  _id: string;
+  userId: string;
+  chatName: string;
+  messages: UserHistoryMessage[];
+}
+
+export interface UserHistoryResponse {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+  data: UserHistoryItem[];
+}

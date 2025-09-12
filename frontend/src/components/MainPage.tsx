@@ -4,10 +4,11 @@ import { Sidebar, SidebarBody } from "@/components/ui/sidebar";
 import { BackgroundBeams } from "@/components/ui/background-beams";
 import { CodeBlock } from "@/components/ui/code-block";
 import { useAuth } from "@/contexts/AuthContext";
-import { IconPlus, IconUser, IconLogout, IconMenu2, IconDownload, IconCode, IconX } from "@tabler/icons-react";
-import type { ManimGenerationRequest } from '@/types/api';
+import { IconPlus, IconUser, IconLogout, IconMenu2, IconDownload, IconCode, IconX, IconHistory } from "@tabler/icons-react";
+import type { ManimGenerationRequest, UserHistoryItem } from '@/types/api';
 import { ManimApiService } from '@/services/manimApi';
 import { Stepper, Step, StepLabel, Box } from '@mui/material';
+import HistorySidebar from '@/components/HistorySidebar';
 
 // Types for better performance
 interface MessageType {
@@ -521,6 +522,34 @@ export default function MainPage() {
 
   const toggleSidebar = useCallback(() => setSidebarOpen(prev => !prev), []);
 
+  const handleHistoryItemClick = useCallback((historyItem: UserHistoryItem) => {
+    // Convert history item to messages for display
+    const newMessages: MessageType[] = [];
+    
+    historyItem.messages.forEach((histMsg, index) => {
+      // Add user message
+      newMessages.push({
+        type: 'user',
+        content: histMsg.userQuery,
+        id: `history_user_${historyItem._id}_${index}`
+      });
+
+      // Add assistant message with video if available
+      newMessages.push({
+        type: 'assistant',
+        content: `✅ Animation completed successfully! Your "${historyItem.chatName}" is ready.`,
+        videoUrl: histMsg.link,
+        code: histMsg.code,
+        filename: histMsg.filename,
+        success: true,
+        id: `history_assistant_${historyItem._id}_${index}`
+      });
+    });
+
+    setMessages(newMessages);
+    setCurrentHistoryId(historyItem._id);
+  }, []);
+
   // Cleanup function to stop polling and reset states
   const stopPollingAndReset = useCallback(() => {
     if (pollingInterval) {
@@ -747,22 +776,42 @@ export default function MainPage() {
       <div className="hidden md:block">
         <Sidebar open={sidebarOpen} setOpen={setSidebarOpen}>
           <SidebarBody className="justify-between gap-10">
-            <div className="flex flex-col gap-2">
-              <div className={`flex-shrink-0 ${sidebarOpen ? 'p-2' : 'px-2 py-2 flex justify-center'}`}>
-                  <button
-                      onClick={toggleSidebar}
-                      className="p-2 hover:bg-gray-700 rounded-lg cursor-pointer transition-colors"
-                  >
-                      <IconMenu2 className="text-white h-5 w-5" />
-                  </button>
+            <div className="flex flex-col h-full">
+              <div className="flex-shrink-0 space-y-2">
+                <div className={`flex-shrink-0 ${sidebarOpen ? 'p-2' : 'px-2 py-2 flex justify-center'}`}>
+                    <button
+                        onClick={toggleSidebar}
+                        className="p-2 hover:bg-gray-700 rounded-lg cursor-pointer transition-colors"
+                    >
+                        <IconMenu2 className="text-white h-5 w-5" />
+                    </button>
+                </div>
+                <button
+                  onClick={handleNewChat}
+                  className={`flex items-center gap-2 p-2 hover:bg-gray-700 rounded-lg cursor-pointer transition-colors w-full ${sidebarOpen ? 'text-left' : 'justify-center'}`}
+                >
+                  <IconPlus className="text-white h-5 w-5 shrink-0" />
+                  <span className={`text-white text-sm transition-opacity duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0 hidden'}`}>New chat</span>
+                </button>
               </div>
-              <button
-                onClick={handleNewChat}
-                className={`flex items-center gap-2 p-2 hover:bg-gray-700 rounded-lg cursor-pointer transition-colors w-full ${sidebarOpen ? 'text-left' : 'justify-center'}`}
-              >
-                <IconPlus className="text-white h-5 w-5 shrink-0" />
-                <span className={`text-white text-sm transition-opacity duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0 hidden'}`}>New chat</span>
-              </button>
+              
+              {/* History Section */}
+              {sidebarOpen && (
+                <div className="flex-1 overflow-hidden px-2 mt-4">
+                  <div className="mb-2">
+                    <div className="flex items-center gap-2 px-2 py-1">
+                      <IconHistory className="h-4 w-4 text-gray-400" />
+                      <span className="text-xs text-gray-400 font-medium">Recent</span>
+                    </div>
+                  </div>
+                  <HistorySidebar 
+                    isOpen={true}
+                    onToggle={() => {}}
+                    onHistoryItemClick={handleHistoryItemClick}
+                    inMainSidebar={true}
+                  />
+                </div>
+              )}
             </div>
             <div className="relative">
               <button

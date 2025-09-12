@@ -23,6 +23,7 @@ class UsersHistory(Document):
             ObjectId: str
         }
     }
+    createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
     class Settings:
