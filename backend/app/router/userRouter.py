@@ -1,7 +1,9 @@
 from fastapi import (
     APIRouter, 
     status, 
-    HTTPException, 
+    HTTPException,
+    Depends,
+    Query
 )
 from app.schema.UserSchema import (
     UserListOutput, 
@@ -23,9 +25,13 @@ from datetime import (
     timedelta, 
     timezone
 )
+from app.schema.UserSchema import TokenData
+from bson import ObjectId
 from app.models.User import Users
+from app.models.UserHistory import UsersHistory
 from app.models.RefreshToken import RefreshToken
 from typing import List
+from app.utils.auth import getCurrentUser
 from dotenv import load_dotenv
 import os
 
@@ -138,4 +144,41 @@ async def get_new_access_token(request: RefreshTokenRequest):
         "refresh_token": newRefreshToken,
         "email":request.email,
         "token_type": "bearer"
+    }
+
+from bson import ObjectId
+
+
+@router.get("/userHistory", status_code=status.HTTP_200_OK)
+async def getUserHistory(
+    current_user: TokenData = Depends(getCurrentUser),
+    page: int = Query(1, ge=1),   # page number (default = 1, must be >= 1)
+    limit: int = Query(5, ge=1, le=100)  # items per page (default = 5)
+):
+    user_id = ObjectId(current_user.id)
+
+    skip = (page - 1) * limit
+
+    # Fetch paginated history
+    history = (
+        await UsersHistory.find(UsersHistory.userId == user_id)
+        .skip(skip)
+        .limit(limit)
+        .to_list()
+    )
+
+    total = await UsersHistory.find(UsersHistory.userId == user_id).count()
+
+    if not history:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No user history found"
+        )
+
+    return {
+        "page": page,
+        "limit": limit,
+        "total": total,
+        "pages": (total + limit - 1) // limit,  # ceil division
+        "data": history
     }

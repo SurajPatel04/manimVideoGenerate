@@ -18,8 +18,12 @@ class UsersHistory(Document):
     chatName: Annotated[str, Indexed]
     messages: List[Message] = Field(default_factory=list)
     model_config = {
-        "arbitrary_types_allowed": True
+        "arbitrary_types_allowed": True,
+        "json_encoders": {
+            ObjectId: str
+        }
     }
+
 
     class Settings:
         name = "userHistory"

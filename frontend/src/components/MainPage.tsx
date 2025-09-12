@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, memo, useEffect } from "react";
+import { useState, useCallback, useMemo, memo, useEffect, useRef } from "react";
 import { PlaceholdersAndVanishInput } from "@/components/ui/placeholders-and-vanish-input";
 import { Sidebar, SidebarBody } from "@/components/ui/sidebar";
 import { BackgroundBeams } from "@/components/ui/background-beams";
@@ -8,6 +8,20 @@ import { IconPlus, IconUser, IconLogout, IconMenu2, IconDownload, IconCode, Icon
 import type { ManimGenerationRequest } from '@/types/api';
 import { ManimApiService } from '@/services/manimApi';
 import { Stepper, Step, StepLabel, Box } from '@mui/material';
+
+// Types for better performance
+interface MessageType {
+  type: 'user' | 'assistant';
+  content: string;
+  taskId?: string;
+  videoUrl?: string;
+  progress?: number;
+  stage?: string;
+  code?: string;
+  filename?: string;
+  success?: boolean;
+  id: string; // Add unique ID for better list rendering
+}
 
 // Constants
 const SUGGESTION_PROMPTS = [
@@ -24,9 +38,9 @@ const PLACEHOLDERS = [
 ];
 
 // Memoized Components for performance
-const SuggestionButton = memo(({ suggestion, onClick }: { suggestion: string, onClick: (suggestion: string) => void }) => (
+const SuggestionButton = memo(({ suggestion, onClick }: { suggestion: string, onClick: (suggestion: string, options?: { format: string; quality: string }) => void }) => (
   <button
-    onClick={() => onClick(suggestion)}
+    onClick={() => onClick(suggestion, { format: "mp4", quality: "ql" })}
     className="p-3 md:p-4 bg-gray-800 hover:bg-gray-700 rounded-xl border border-gray-700 text-white text-left transition-all duration-200 hover:border-gray-600 w-full"
   >
     <p className="text-xs md:text-sm">{suggestion}</p>
@@ -126,8 +140,81 @@ const ProgressStepper = memo(({ progress }: { progress?: number }) => {
   );
 });
 
-const Message = memo(({ message }: { message: { type: 'user' | 'assistant', content: string, taskId?: string, videoUrl?: string, progress?: number, stage?: string, code?: string, filename?: string, success?: boolean } }) => {
+const Message = memo(({ message, onCodeModalToggle }: { 
+  message: MessageType,
+  onCodeModalToggle: (isOpen: boolean) => void 
+}) => {
   const [showCode, setShowCode] = useState(false);
+
+  const handleShowCode = useCallback(() => {
+    setShowCode(true);
+    onCodeModalToggle(true);
+  }, [onCodeModalToggle]);
+
+  const handleHideCode = useCallback(() => {
+    setShowCode(false);
+    onCodeModalToggle(false);
+  }, [onCodeModalToggle]);
+
+  // Memoize video/gif section to prevent unnecessary re-renders
+  const videoSection = useMemo(() => {
+    if (message.type !== 'assistant' || !message.videoUrl || message.success === false) {
+      return null;
+    }
+
+    // Check if the URL is a GIF file
+    const isGif = message.videoUrl.toLowerCase().includes('.gif');
+
+    return (
+      <div className="mt-3 flex flex-col items-center">
+        {isGif ? (
+          <img 
+            src={message.videoUrl}
+            alt="Generated animation"
+            className="w-full max-w-md rounded-lg"
+            style={{ maxHeight: '400px', objectFit: 'contain' }}
+          />
+        ) : (
+          <video 
+            controls 
+            className="w-full max-w-md rounded-lg"
+            poster=""
+            preload="metadata" // Optimize video loading
+          >
+            <source src={message.videoUrl} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        )}
+        <div className="mt-2 flex gap-2 flex-wrap">
+          <a 
+            href={message.videoUrl} 
+            download
+            className="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs transition-colors flex-shrink-0"
+          >
+            <IconDownload className="h-3 w-3 flex-shrink-0" />
+            <span className="whitespace-nowrap">Download {isGif ? 'GIF' : 'Video'}</span>
+          </a>
+          {message.code && (
+            <button
+              onClick={handleShowCode}
+              className="inline-flex items-center gap-1 px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-xs transition-colors flex-shrink-0"
+            >
+              <IconCode className="h-3 w-3 flex-shrink-0" />
+              <span className="whitespace-nowrap">Code</span>
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }, [message.videoUrl, message.code, message.success, handleShowCode]);
+
+  // Memoize stepper section
+  const stepperSection = useMemo(() => {
+    if (message.type !== 'assistant' || !message.taskId || message.videoUrl || message.success === false) {
+      return null;
+    }
+    return <ProgressStepper progress={message.progress} />;
+  }, [message.type, message.taskId, message.videoUrl, message.success, message.progress]);
 
   return (
     <>
@@ -142,53 +229,27 @@ const Message = memo(({ message }: { message: { type: 'user' | 'assistant', cont
           <p className="whitespace-pre-wrap break-words text-sm md:text-base mb-2 leading-relaxed">{message.content}</p>
           
           {/* Material UI Stepper for assistant messages with tasks */}
-          {message.type === 'assistant' && message.taskId && !message.videoUrl && message.success !== false && (
-            <ProgressStepper progress={message.progress} />
-          )}
+          {stepperSection}
 
-          {/* Video player for completed animations - only show if success is true */}
-          {message.type === 'assistant' && message.videoUrl && message.success !== false && (
-            <div className="mt-3 flex flex-col items-center">
-              <video 
-                controls 
-                className="w-full max-w-md rounded-lg"
-                poster=""
-              >
-                <source src={message.videoUrl} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
-              <div className="mt-2 flex gap-2">
-                <a 
-                  href={message.videoUrl} 
-                  download
-                  className="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs transition-colors"
-                >
-                  <IconDownload className="h-3 w-3" />
-                  Download
-                </a>
-                {message.code && (
-                  <button
-                    onClick={() => setShowCode(true)}
-                    className="inline-flex items-center gap-1 px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-xs transition-colors"
-                  >
-                    <IconCode className="h-3 w-3" />
-                    Code
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
+          {/* Video player for completed animations */}
+          {videoSection}
         </div>
       </div>
 
       {/* Code Modal */}
       {showCode && message.code && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-900 rounded-lg max-w-4xl w-full max-h-[80vh] overflow-hidden">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+          onClick={handleHideCode}
+        >
+          <div 
+            className="bg-gray-900 rounded-lg max-w-4xl w-full max-h-[80vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between p-4 border-b border-gray-700">
               <h3 className="text-white text-lg font-semibold">Generated Animation Code</h3>
               <button
-                onClick={() => setShowCode(false)}
+                onClick={handleHideCode}
                 className="text-gray-400 hover:text-white transition-colors"
               >
                 <IconX className="h-5 w-5" />
@@ -206,10 +267,23 @@ const Message = memo(({ message }: { message: { type: 'user' | 'assistant', cont
       )}
     </>
   );
+}, (prevProps, nextProps) => {
+  // Custom comparison function for better memoization
+  const prevMsg = prevProps.message;
+  const nextMsg = nextProps.message;
+  
+  return (
+    prevMsg.content === nextMsg.content &&
+    prevMsg.progress === nextMsg.progress &&
+    prevMsg.videoUrl === nextMsg.videoUrl &&
+    prevMsg.success === nextMsg.success &&
+    prevMsg.stage === nextMsg.stage &&
+    prevMsg.code === nextMsg.code
+  );
 });
 
 export default function MainPage() {
-  const [messages, setMessages] = useState<Array<{ type: 'user' | 'assistant', content: string, taskId?: string, videoUrl?: string, progress?: number, stage?: string, code?: string, filename?: string, success?: boolean }>>([]);
+  const [messages, setMessages] = useState<MessageType[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -217,7 +291,12 @@ export default function MainPage() {
   const [currentTaskId, setCurrentTaskId] = useState<string>("");
   const [inputValue, setInputValue] = useState<string>(""); // Add state for input value
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+  const [isCodeModalOpen, setIsCodeModalOpen] = useState(false); // Track if any code modal is open
   const { user, logout, tokens } = useAuth();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Utility function to generate unique IDs
+  const generateMessageId = useCallback(() => `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, []);
 
   const startTaskPolling = useCallback(async (taskId: string) => {
     if (!tokens?.accessToken) return;
@@ -409,6 +488,37 @@ export default function MainPage() {
     };
   }, [pollingInterval]);
 
+  // Auto-scroll to bottom when messages change (optimized)
+  useEffect(() => {
+    const scrollToBottom = () => {
+      messagesEndRef.current?.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'nearest'
+      });
+    };
+    
+    // Only scroll if not too many messages to avoid performance issues
+    if (messages.length < 50) {
+      const timeoutId = setTimeout(scrollToBottom, 150);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [messages.length]); // Only depend on length, not entire messages array
+
+  // Also scroll when generating state changes (for progress updates)
+  useEffect(() => {
+    if (isGenerating) {
+      const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'nearest'
+        });
+      };
+      
+      const timeoutId = setTimeout(scrollToBottom, 100);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isGenerating]);
+
   const toggleSidebar = useCallback(() => setSidebarOpen(prev => !prev), []);
 
   // Cleanup function to stop polling and reset states
@@ -487,21 +597,26 @@ export default function MainPage() {
 
   const toggleUserMenu = useCallback(() => setShowUserMenu(prev => !prev), []);
 
-  const processSubmission = useCallback(async (text: string) => {
+  const processSubmission = useCallback(async (text: string, options: { format: string; quality: string } = { format: "mp4", quality: "ql" }) => {
     // Add null check and trim validation
     if (!text || !text.trim()) return;
 
-    const userMessage = { type: 'user' as const, content: text.trim() };
+    const userMessage: MessageType = { 
+      type: 'user', 
+      content: text.trim(),
+      id: generateMessageId()
+    };
     setMessages(prev => [...prev, userMessage]);
     setIsGenerating(true);
 
     // Add assistant response with stepper immediately showing 0% progress
-    const assistantMessage = {
-      type: 'assistant' as const,
+    const assistantMessage: MessageType = {
+      type: 'assistant',
       content: `🔄 Starting animation generation for "${text.trim()}"...`,
       taskId: 'temp-id', // Temporary ID until we get real one
       progress: 0,
-      stage: "Setting up description generation state"
+      stage: "Setting up description generation state",
+      id: generateMessageId()
     };
     setMessages(prev => [...prev, assistantMessage]);
 
@@ -514,8 +629,8 @@ export default function MainPage() {
       // Prepare the API request payload
       const requestPayload: ManimGenerationRequest = {
         userQuery: text.trim(),
-        format: "mp4",
-        quality: "ql", 
+        format: options.format,
+        quality: options.quality, 
         historyId: currentHistoryId // Empty string for new chat, otherwise existing historyId
       };
 
@@ -571,21 +686,22 @@ export default function MainPage() {
         errorMessage = error.message;
       }
 
-      const errorResponseMessage = {
-        type: 'assistant' as const,
-        content: errorMessage
+      const errorResponseMessage: MessageType = {
+        type: 'assistant',
+        content: errorMessage,
+        id: generateMessageId()
       };
       setMessages(prev => [...prev, errorResponseMessage]);
       setIsGenerating(false); // Only set to false on API call failure
     }
     // Note: Don't set setIsGenerating(false) in finally - let polling handle it for successful submissions
-  }, [currentHistoryId, tokens?.accessToken, startTaskPolling]);
+  }, [currentHistoryId, tokens?.accessToken, startTaskPolling, generateMessageId]);
 
-  const onInputSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const onInputSubmit = (e: React.FormEvent<HTMLFormElement>, options: { format: string; quality: string }) => {
       e.preventDefault();
       
       if (inputValue && inputValue.trim()) {
-        processSubmission(inputValue.trim());
+        processSubmission(inputValue.trim(), options);
         setInputValue(""); // Clear the input after submission
       }
   };
@@ -746,21 +862,30 @@ export default function MainPage() {
             </div>
           ) : (
             <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto">
-              {messages.map((msg, i) => <Message key={i} message={msg} />)}
+              {messages.map((msg) => (
+                <Message 
+                  key={msg.id} 
+                  message={msg} 
+                  onCodeModalToggle={setIsCodeModalOpen}
+                />
+              ))}
+              <div ref={messagesEndRef} />
             </div>
           )}
         </div>
-        <div className="p-4 md:p-6 bg-gradient-to-t from-black to-transparent relative z-10">
-          <div className="max-w-4xl mx-auto">
-            <PlaceholdersAndVanishInput
-              placeholders={PLACEHOLDERS}
-              onChange={handleInputChange}
-              onSubmit={onInputSubmit}
-              onCancel={handleCancelTask}
-              isGenerating={isGenerating}
-            />
+        {!isCodeModalOpen && (
+          <div className="p-4 md:p-6 bg-gradient-to-t from-black to-transparent relative z-10">
+            <div className="max-w-4xl mx-auto">
+              <PlaceholdersAndVanishInput
+                placeholders={PLACEHOLDERS}
+                onChange={handleInputChange}
+                onSubmit={onInputSubmit}
+                onCancel={handleCancelTask}
+                isGenerating={isGenerating}
+              />
+            </div>
           </div>
-        </div>
+        )}
       </main>
     </div>
   );

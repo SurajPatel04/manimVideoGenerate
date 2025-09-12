@@ -26,7 +26,7 @@ async def init_beanie_for_workers():
     # Close existing client if it exists and was created in a different loop
     if _worker_client is not None:
         try:
-            _worker_client.close()
+            await _worker_client.close()
         except Exception:
             pass
     
@@ -42,5 +42,5 @@ async def close_worker_db():
     """Close the worker database connection"""
     global _worker_client
     if _worker_client is not None:
-        _worker_client.close()
+        await _worker_client.close()
         _worker_client = None

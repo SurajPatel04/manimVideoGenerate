@@ -15,7 +15,24 @@ def uploadFile(filename, format, expires_in=31536000):
     current_dir = os.path.dirname(os.path.abspath(__file__))
     backend_dir = os.path.dirname(os.path.dirname(current_dir))
     videos_dir = os.path.join(backend_dir, "videos")
-    local_file_path = os.path.join(videos_dir, f"{filename}.{format}")
+    
+    local_file_path_with_suffix = os.path.join(videos_dir, f"{filename}_ManimCE_v0.19.0.{format}")
+    local_file_path_without_suffix = os.path.join(videos_dir, f"{filename}.{format}")
+    
+    if os.path.exists(local_file_path_with_suffix):
+        local_file_path = local_file_path_with_suffix
+        print(f"Found file with Manim suffix: {local_file_path}")
+    elif os.path.exists(local_file_path_without_suffix):
+        local_file_path = local_file_path_without_suffix
+        print(f"Found file without suffix: {local_file_path}")
+    else:
+        try:
+            available_files = os.listdir(videos_dir)
+            print(f"Available files in {videos_dir}: {available_files}")
+        except:
+            print(f"Could not list files in {videos_dir}")
+        raise FileNotFoundError(f"Video file not found. Checked:\n- {local_file_path_with_suffix}\n- {local_file_path_without_suffix}")
+    
     bucket_path = f"videos/{filename}.{format}"
 
     if not os.path.exists(videos_dir):

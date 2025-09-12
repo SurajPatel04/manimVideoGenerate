@@ -98,14 +98,20 @@ def call_graph(self, query, userID, quality, format, historyId=None):
                 try:
                     current_dir = os.path.dirname(os.path.abspath(__file__))
                     backend_dir = os.path.dirname(os.path.dirname(current_dir))
-                    video_file_path = os.path.join(backend_dir, "videos", f"{filename_without_extension}.{manimGeneration.get('format')}")
                     
-                    # Remove the main video file
-                    if os.path.exists(video_file_path):
-                        os.remove(video_file_path)
-                        print(f"Successfully removed video file: {video_file_path}")
+                    # Check for file with Manim version suffix first
+                    video_file_path_with_suffix = os.path.join(backend_dir, "videos", f"{filename_without_extension}_ManimCE_v0.19.0.{manimGeneration.get('format')}")
+                    video_file_path_without_suffix = os.path.join(backend_dir, "videos", f"{filename_without_extension}.{manimGeneration.get('format')}")
+                    
+                    # Remove the main video file (try both naming conventions)
+                    if os.path.exists(video_file_path_with_suffix):
+                        os.remove(video_file_path_with_suffix)
+                        print(f"Successfully removed video file: {video_file_path_with_suffix}")
+                    elif os.path.exists(video_file_path_without_suffix):
+                        os.remove(video_file_path_without_suffix)
+                        print(f"Successfully removed video file: {video_file_path_without_suffix}")
                     else:
-                        print(f"Video file not found for cleanup: {video_file_path}")
+                        print(f"Video file not found for cleanup: {video_file_path_with_suffix} or {video_file_path_without_suffix}")
                     
                     # Remove the partial movie files directory
                     partial_movie_dir = os.path.join(backend_dir, "videos", "partial_movie_files", filename_without_extension)

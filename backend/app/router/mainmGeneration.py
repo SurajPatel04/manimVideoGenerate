@@ -11,6 +11,7 @@ from fastapi.responses import StreamingResponse
 from app.utils.auth import getCurrentUser
 from celery.result import AsyncResult
 from app.core.queue import taskQueue
+from app.models.UserHistory import UsersHistory
 import json
 
 router = APIRouter(
@@ -45,8 +46,8 @@ async def generate(query: MainmUserModel, userId: int=Depends(getCurrentUser)):
     )
     return {"task_id": task.id}
 
-@router.post("/cancel")
-async def cancel_task(req: CancelRequest):
+@router.post("/cancel", status_code=status.HTTP_202_ACCEPTED)
+async def cancel_task(req: CancelRequest,  userId: int = Depends(getCurrentUser)):
     taskQueue.control.revoke(req.taskId, terminate=True, signal="SIGKILL")
     return {"status": "revoked", "taskId": req.taskId}
 

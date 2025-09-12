@@ -13,11 +13,15 @@ export function PlaceholdersAndVanishInput({
 }: {
   placeholders: string[];
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  onSubmit: (e: React.FormEvent<HTMLFormElement>, options: { format: string; quality: string }) => void;
   onCancel?: () => void;
   isGenerating?: boolean;
 }) {
   const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
+  const [format, setFormat] = useState("mp4");
+  const [quality, setQuality] = useState("ql");
+  const [showOptions, setShowOptions] = useState(false);
+  const optionsRef = useRef<HTMLDivElement>(null);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const startAnimation = () => {
@@ -108,6 +112,23 @@ export function PlaceholdersAndVanishInput({
     draw();
   }, [value, draw]);
 
+  // Handle clicking outside the options panel
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (optionsRef.current && !optionsRef.current.contains(event.target as Node)) {
+        setShowOptions(false);
+      }
+    }
+
+    if (showOptions) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showOptions]);
+
   const animate = (start: number) => {
     const animateFrame = (pos: number = 0) => {
       requestAnimationFrame(() => {
@@ -179,18 +200,56 @@ export function PlaceholdersAndVanishInput({
       onCancel();
     } else {
       vanishAndSubmit();
-      onSubmit && onSubmit(e);
+      onSubmit && onSubmit(e, { format, quality });
     }
   };
   return (
-    <form
-      className={cn(
-        "w-full relative max-w-xl mx-auto h-12 rounded-full overflow-hidden transition duration-200",
-        "bg-[#202020] border border-gray-600",
-        value && "border-gray-500"
-      )}
-      onSubmit={handleSubmit}
-    >
+    <div className="w-full relative max-w-xl mx-auto" ref={optionsRef}>
+      {/* Options Panel */}
+      <div className={cn(
+        "mb-3 p-3 rounded-lg bg-[#202020] border border-gray-600 transition-all duration-200",
+        showOptions ? "opacity-100 max-h-32" : "opacity-0 max-h-0 overflow-hidden p-0 mb-0 border-0"
+      )}>
+        <div className="flex gap-4 items-center flex-wrap">
+          <div className="flex flex-col gap-1 min-w-[80px]">
+            <label className="text-xs text-gray-400 font-medium">Format</label>
+            <select
+              value={format}
+              onChange={(e) => setFormat(e.target.value)}
+              className="bg-[#2a2a2a] text-white text-sm rounded px-3 py-1.5 border border-gray-600 focus:outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 transition-colors"
+            >
+              <option value="mp4">MP4</option>
+              <option value="gif">GIF</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-1 min-w-[100px]">
+            <label className="text-xs text-gray-400 font-medium">Quality</label>
+            <select
+              value={quality}
+              onChange={(e) => setQuality(e.target.value)}
+              className="bg-[#2a2a2a] text-white text-sm rounded px-3 py-1.5 border border-gray-600 focus:outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 transition-colors"
+            >
+              <option value="ql">Low (ql)</option>
+              <option value="qm">Medium (qm)</option>
+              <option value="qh">High (qh)</option>
+            </select>
+          </div>
+          <div className="flex items-end h-full">
+            <div className="text-xs text-gray-500 mb-1">
+              {format.toUpperCase()} • {quality === 'ql' ? 'Low' : quality === 'qm' ? 'Medium' : 'High'} Quality
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <form
+        className={cn(
+          "w-full relative h-12 rounded-full overflow-hidden transition duration-200",
+          "bg-[#202020] border border-gray-600",
+          value && "border-gray-500"
+        )}
+        onSubmit={handleSubmit}
+      >
       <canvas
         className={cn(
           "absolute pointer-events-none  text-base transform scale-50 top-[20%] left-2 sm:left-8 origin-top-left filter invert dark:invert-0 pr-20",
@@ -310,5 +369,46 @@ export function PlaceholdersAndVanishInput({
         </AnimatePresence>
       </div>
     </form>
+    
+    {/* Options Toggle Button */}
+    <button
+      type="button"
+      onClick={() => setShowOptions(!showOptions)}
+      className="mt-2 mx-auto flex items-center gap-2 px-3 py-1.5 text-xs text-gray-400 hover:text-gray-300 transition-colors rounded hover:bg-gray-800/50"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="12"
+        height="12"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="w-3 h-3"
+      >
+        <circle cx="12" cy="12" r="3" />
+        <path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24" />
+      </svg>
+      <span>{showOptions ? "Hide" : "Show"} Options</span>
+      <motion.svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="12"
+        height="12"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        animate={{ rotate: showOptions ? 180 : 0 }}
+        transition={{ duration: 0.2 }}
+        className="w-3 h-3"
+      >
+        <path d="M6 9l6 6 6-6" />
+      </motion.svg>
+    </button>
+    </div>
   );
 }
