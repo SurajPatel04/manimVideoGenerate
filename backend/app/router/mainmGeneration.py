@@ -33,8 +33,16 @@ def hello():
 
 @router.post("/", status_code=status.HTTP_202_ACCEPTED)
 async def generate(query: MainmUserModel, userId: int=Depends(getCurrentUser)):
-    
-    task = call_graph.apply_async(args=[query.userQuery,userId.id,query.quality, query.format])
+
+    historyId = getattr(query, "historyId", None)
+    task = call_graph.apply_async(
+        args=[
+            query.userQuery,
+            userId.id,query.quality,
+            query.format, 
+            historyId
+        ]
+    )
     return {"task_id": task.id}
 
 

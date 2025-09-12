@@ -26,7 +26,7 @@ async def ensure_beanie_initialized():
 
 
 @taskQueue.task(name="call_graph_task", bind=True)
-def call_graph(self, query, userID, quality, format):
+def call_graph(self, query, userID, quality, format, historyId=None):
     async def _inner():
         await ensure_beanie_initialized()
         
@@ -133,16 +133,30 @@ def call_graph(self, query, userID, quality, format):
                 code=code,
                 quality=generated_quality,
                 filename=filename_without_extension,
-                link = link
+                link=link
             )
 
-            history=UsersHistory(
-                userId=ObjectId(userID),
-                chatName=result.get("chatName"),
-                messages=[message]
-            )
-
-            await history.insert()
+            if historyId:  # Append to existing history
+                existing_history = await UsersHistory.get(ObjectId(historyId))
+                if existing_history:
+                    existing_history.messages.append(message)
+                    await existing_history.save()
+                    history = existing_history
+                else:
+                    # fallback: if historyId invalid, create a new history
+                    history = UsersHistory(
+                        userId=ObjectId(userID),
+                        chatName=result.get("chatName"),
+                        messages=[message]
+                    )
+                    await history.insert()
+            else:  # Create new history
+                history = UsersHistory(
+                    userId=ObjectId(userID),
+                    chatName=result.get("chatName"),
+                    messages=[message]
+                )
+                await history.insert()
 
             update_progress("Completed", 100, "Video generation completed successfully")
             
