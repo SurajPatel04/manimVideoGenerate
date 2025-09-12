@@ -1,9 +1,11 @@
-import { useState, useCallback, useMemo, memo } from "react";
+import { useState, useCallback, useMemo, memo, useEffect } from "react";
 import { PlaceholdersAndVanishInput } from "@/components/ui/placeholders-and-vanish-input";
 import { Sidebar, SidebarBody } from "@/components/ui/sidebar";
 import { BackgroundBeams } from "@/components/ui/background-beams";
 import { useAuth } from "@/contexts/AuthContext";
-import { IconPlus, IconUser, IconLogout, IconMenu2 } from "@tabler/icons-react";
+import { IconPlus, IconUser, IconLogout, IconMenu2, IconDownload } from "@tabler/icons-react";
+import type { ManimGenerationRequest, TaskResultResponse } from '@/types/api';
+import { ManimApiService } from '@/services/manimApi';
 
 // Constants
 const SUGGESTION_PROMPTS = [
@@ -29,7 +31,7 @@ const SuggestionButton = memo(({ suggestion, onClick }: { suggestion: string, on
   </button>
 ));
 
-const Message = memo(({ message }: { message: { type: 'user' | 'assistant', content: string } }) => (
+const Message = memo(({ message }: { message: { type: 'user' | 'assistant', content: string, taskId?: string, videoUrl?: string, progress?: number, stage?: string } }) => (
   <div className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
     <div
       className={`max-w-[85%] md:max-w-3xl p-3 md:p-4 rounded-lg ${
@@ -38,24 +40,172 @@ const Message = memo(({ message }: { message: { type: 'user' | 'assistant', cont
           : 'bg-gray-800 text-white shadow-lg border border-gray-700'
       }`}
     >
-      <p className="whitespace-pre-wrap text-sm md:text-base">{message.content}</p>
+      <p className="whitespace-pre-wrap break-words text-sm md:text-base mb-2 leading-relaxed">{message.content}</p>
+      
+      {/* Progress bar for assistant messages with tasks */}
+      {message.type === 'assistant' && message.taskId && typeof message.progress === 'number' && message.progress < 100 && (
+        <div className="mt-3">
+          <div className="flex justify-between text-xs text-gray-300 mb-1">
+            <span>{message.stage || 'Processing'}</span>
+            <span>{message.progress}%</span>
+          </div>
+          <div className="w-full bg-gray-700 rounded-full h-2">
+            <div 
+              className="bg-blue-600 h-2 rounded-full transition-all duration-500" 
+              style={{ width: `${message.progress}%` }}
+            ></div>
+          </div>
+        </div>
+      )}
+
+      {/* Video player for completed animations */}
+      {message.type === 'assistant' && message.videoUrl && (
+        <div className="mt-3 flex flex-col items-center">
+          <video 
+            controls 
+            className="w-full max-w-md rounded-lg"
+            poster=""
+          >
+            <source src={message.videoUrl} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+          <div className="mt-2 flex gap-2">
+            <a 
+              href={message.videoUrl} 
+              download
+              className="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs transition-colors"
+            >
+              <IconDownload className="h-3 w-3" />
+              Download
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   </div>
 ));
 
 export default function MainPage() {
-  const [messages, setMessages] = useState<Array<{ type: 'user' | 'assistant', content: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ type: 'user' | 'assistant', content: string, taskId?: string, videoUrl?: string, progress?: number, stage?: string }>>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const { user, logout } = useAuth();
+  const [currentHistoryId, setCurrentHistoryId] = useState<string>("");
+  const [currentTaskId, setCurrentTaskId] = useState<string>("");
+  const [inputValue, setInputValue] = useState<string>(""); // Add state for input value
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+  const { user, logout, tokens } = useAuth();
+
+  const startTaskPolling = useCallback(async (taskId: string) => {
+    if (!tokens?.accessToken) return;
+
+    const pollTask = async () => {
+      try {
+        const result = await ManimApiService.pollTaskStatus(taskId, tokens.accessToken);
+        
+        // Update the message with progress
+        setMessages(prev => prev.map(msg => 
+          msg.taskId === taskId 
+            ? { 
+                ...msg, 
+                progress: result.progress,
+                stage: result.current_stage,
+                content: result.status === 'completed' && result.data?.success
+                  ? `✅ Animation completed successfully! Your "${result.data.chat_name}" is ready.`
+                  : result.status === 'failed'
+                  ? `❌ Animation generation failed. Please try again.`
+                  : `🔄 ${result.current_stage || 'Processing'} (${result.progress || 0}%)`
+              }
+            : msg
+        ));
+
+        if (result.status === 'completed') {
+          if (result.data?.success) {
+            // Update history ID from the result
+            if (result.data.historyId) {
+              setCurrentHistoryId(result.data.historyId);
+              console.log('History ID updated from result:', result.data.historyId);
+            }
+
+            // Add the video to the message
+            setMessages(prev => prev.map(msg => 
+              msg.taskId === taskId 
+                ? { 
+                    ...msg, 
+                    videoUrl: result.data?.link,
+                    content: `✅ Animation completed successfully! Your "${result.data?.chat_name}" is ready.`
+                  }
+                : msg
+            ));
+          }
+          
+          setIsGenerating(false);
+          if (pollingInterval) {
+            clearInterval(pollingInterval);
+            setPollingInterval(null);
+          }
+        } else if (result.status === 'failed') {
+          setIsGenerating(false);
+          if (pollingInterval) {
+            clearInterval(pollingInterval);
+            setPollingInterval(null);
+          }
+        }
+      } catch (error) {
+        console.error('Polling error:', error);
+        
+        // Update message to show polling failed
+        setMessages(prev => prev.map(msg => 
+          msg.taskId === taskId 
+            ? { 
+                ...msg, 
+                content: `⚠️ Unable to track progress. Task ID: ${taskId}. Please check back later.`
+              }
+            : msg
+        ));
+        
+        setIsGenerating(false);
+        if (pollingInterval) {
+          clearInterval(pollingInterval);
+          setPollingInterval(null);
+        }
+      }
+    };
+
+    // Start polling immediately
+    await pollTask();
+    
+    // Set up interval for continued polling
+    const interval = setInterval(pollTask, 3000); // Poll every 3 seconds
+    setPollingInterval(interval);
+  }, [tokens?.accessToken, pollingInterval]);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, [pollingInterval]);
 
   const toggleSidebar = useCallback(() => setSidebarOpen(prev => !prev), []);
 
   const handleNewChat = useCallback(() => {
+    console.log('Starting new chat - resetting history');
     setMessages([]);
+    setCurrentHistoryId(""); // Reset history for new chat
+    setCurrentTaskId(""); // Reset task ID for new chat
+    setIsGenerating(false); // Reset generating state
+    
+    // Clear any active polling
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
+    }
+    
     setShowUserMenu(false);
-  }, []);
+  }, [pollingInterval]);
 
   const handleLogout = useCallback(() => {
     logout();
@@ -65,32 +215,104 @@ export default function MainPage() {
   const toggleUserMenu = useCallback(() => setShowUserMenu(prev => !prev), []);
 
   const processSubmission = useCallback(async (text: string) => {
-    if (!text.trim()) return;
+    // Add null check and trim validation
+    if (!text || !text.trim()) return;
 
-    const userMessage = { type: 'user' as const, content: text };
+    const userMessage = { type: 'user' as const, content: text.trim() };
     setMessages(prev => [...prev, userMessage]);
     setIsGenerating(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Check if user has access token
+      if (!tokens?.accessToken) {
+        throw new Error('Authentication required. Please log in again.');
+      }
+
+      // Prepare the API request payload
+      const requestPayload: ManimGenerationRequest = {
+        userQuery: text.trim(),
+        format: "mp4",
+        quality: "ql", 
+        historyId: currentHistoryId // Empty string for new chat, otherwise existing historyId
+      };
+
+      // Log the request payload for debugging
+      console.log('API Request:', {
+        userQuery: text.trim(),
+        historyId: currentHistoryId,
+        isNewChat: currentHistoryId === ""
+      });
+
+      // Make API call to manim generation endpoint using the service
+      const response = await ManimApiService.generateAnimation(requestPayload, tokens.accessToken);
+
+      // Log the task ID as requested
+      console.log('Task ID:', response.task_id);
+
+      // Store the task ID for potential future use (status polling, etc.)
+      setCurrentTaskId(response.task_id);
+
+      // Update history ID if returned from API for subsequent requests in this chat
+      if (response.historyId) {
+        setCurrentHistoryId(response.historyId);
+        console.log('History ID updated:', response.historyId);
+      }
+
+      // Add assistant response with task ID for tracking
+      const isNewChat = !currentHistoryId;
       const assistantMessage = {
         type: 'assistant' as const,
-        content: `I'll help you create an animation about "${text}". Let me generate the Manim code and video for you.`
+        content: `🔄 Starting animation generation for "${text.trim()}"...`,
+        taskId: response.task_id,
+        progress: 0,
+        stage: "Initializing"
       };
       setMessages(prev => [...prev, assistantMessage]);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setIsGenerating(false);
+
+      // Start polling for task status
+      startTaskPolling(response.task_id);
+
+      // TODO: You might want to store the task_id for polling status later
+
+    } catch (error: any) {
+      console.error('Error generating manim animation:', error);
+      
+      // Handle specific error cases
+      let errorMessage = 'Sorry, there was an error generating your animation. Please try again.';
+      
+      if (error.message.includes('Authentication')) {
+        errorMessage = 'Authentication failed. Please log in again.';
+      } else if (error.message.includes('403')) {
+        errorMessage = 'You do not have permission to generate animations.';
+      } else if (error.message.includes('Network error')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (error.message.includes('timeout')) {
+        errorMessage = 'Request timed out. The animation generation is taking longer than expected.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      const errorResponseMessage = {
+        type: 'assistant' as const,
+        content: errorMessage
+      };
+      setMessages(prev => [...prev, errorResponseMessage]);
+      setIsGenerating(false); // Only set to false on API call failure
     }
-  }, []);
+    // Note: Don't set setIsGenerating(false) in finally - let polling handle it for successful submissions
+  }, [currentHistoryId, tokens?.accessToken, startTaskPolling]);
 
   const onInputSubmit = (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      const formData = new FormData(e.target as HTMLFormElement);
-      const value = formData.get('input') as string;
-      processSubmission(value);
+      
+      if (inputValue && inputValue.trim()) {
+        processSubmission(inputValue.trim());
+        setInputValue(""); // Clear the input after submission
+      }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value);
   };
 
   const suggestionButtons = useMemo(() => 
@@ -251,7 +473,7 @@ export default function MainPage() {
                   <div className="bg-gray-800 text-white p-3 md:p-4 rounded-lg shadow-lg max-w-3xl border border-gray-700">
                     <div className="flex items-center space-x-2">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                      <span className="text-sm md:text-base">Generating your animation...</span>
+                      <span className="text-sm md:text-base">Processing your animation request...</span>
                     </div>
                   </div>
                 </div>
@@ -261,9 +483,15 @@ export default function MainPage() {
         </div>
         <div className="p-4 md:p-6 bg-gradient-to-t from-black to-transparent relative z-10">
           <div className="max-w-4xl mx-auto">
+            {/* Debug indicator - remove in production */}
+            {messages.length > 0 && (
+              <div className="mb-2 text-xs text-gray-500 text-center">
+                Chat Session: {currentHistoryId ? `ID: ${currentHistoryId.slice(0, 8)}...` : 'New Session'}
+              </div>
+            )}
             <PlaceholdersAndVanishInput
               placeholders={PLACEHOLDERS}
-              onChange={() => {}}
+              onChange={handleInputChange}
               onSubmit={onInputSubmit}
             />
           </div>

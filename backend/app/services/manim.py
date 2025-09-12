@@ -19,7 +19,6 @@ from app.utils.supabaseClient import uploadFile
 def call_graph(self, query, userID, quality, format, historyId=None):
     async def _inner():
         try:
-            # Initialize database connection in the current event loop
             await init_beanie_for_workers()
             
             def update_progress(stage, progress_percent, details=None):
@@ -128,38 +127,40 @@ def call_graph(self, query, userID, quality, format, historyId=None):
                     link=link
                 )
 
-                if historyId:  # Append to existing history
+                if historyId:
                     existing_history = await UsersHistory.get(ObjectId(historyId))
                     if existing_history:
                         existing_history.messages.append(message)
                         await existing_history.save()
                         history = existing_history
                     else:
-                        # fallback: if historyId invalid, create a new history
                         history = UsersHistory(
                             userId=ObjectId(userID),
                             chatName=result.get("chatName"),
                             messages=[message]
                         )
                         await history.insert()
-                else:  # Create new history
+                    history_id = str(history.id)
+                else:
                     history = UsersHistory(
                         userId=ObjectId(userID),
                         chatName=result.get("chatName"),
                         messages=[message]
                     )
                     await history.insert()
+                    history_id = str(history.id)
 
                 update_progress("Completed", 100, "Video generation completed successfully")
                 
                 return {
                     "success": True,
+                    "link": link,
+                    "historyId": history_id,
                     "data": manimGeneration,
                     "chat_name": result.get("chatName"),
                     "description": result.get("detailedDescription"),
                     "quality": generated_quality,
                     "code": code,
-                    "link": link
                 }
                 
             except Exception as e:
@@ -177,7 +178,6 @@ def call_graph(self, query, userID, quality, format, historyId=None):
             except Exception as cleanup_error:
                 print(f"Warning: Failed to close database connection: {cleanup_error}")
     
-    # Use asyncio.new_event_loop() to ensure a fresh event loop
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:

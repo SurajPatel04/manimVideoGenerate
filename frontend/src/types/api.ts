@@ -22,6 +22,53 @@ export interface RefreshTokenResponse {
   tokenType: string;
 }
 
+// Manim Generation API Types
+export interface ManimGenerationRequest {
+  userQuery: string;
+  format: string;
+  quality: string;
+  historyId: string;
+}
+
+export interface ManimGenerationResponse {
+  task_id: string;
+  historyId?: string; // Add optional historyId that might be returned
+}
+
+// Task Result API Types
+export interface TaskResultResponse {
+  status: "in_progress" | "completed" | "failed";
+  state: "PROGRESS" | "SUCCESS" | "FAILURE";
+  current_stage?: string;
+  progress?: number;
+  details?: string;
+  timestamp?: string;
+  data?: {
+    success: boolean;
+    link: string;
+    historyId: string;
+    data: {
+      description: string;
+      isCodeGood: boolean;
+      filename: string;
+      format: string;
+      validationError: string | null;
+      validationErrorHistory: string[];
+      executionErrorHistory: string[];
+      executionError: string;
+      rewriteAttempts: number;
+      executionSuccess: boolean;
+      quality: string;
+      createAgain: number;
+      code: string;
+    };
+    chat_name: string;
+    description: string;
+    quality: string;
+    code: string;
+  };
+}
+
 // API Request Types
 export interface LoginRequest {
   email: string;
