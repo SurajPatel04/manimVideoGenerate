@@ -45,9 +45,12 @@ export interface TaskResultResponse {
   timestamp?: string;
   data?: {
     success: boolean;
-    link: string;
-    historyId: string;
-    data: {
+    link?: string;
+    historyId?: string;
+    reason?: string; // For failed cases
+    message?: string; // For failed cases
+    stage?: string; // For failed cases
+    data?: {
       description: string;
       isCodeGood: boolean;
       filename: string;
@@ -62,10 +65,11 @@ export interface TaskResultResponse {
       createAgain: number;
       code: string;
     };
-    chat_name: string;
-    description: string;
-    quality: string;
-    code: string;
+    chat_name?: string;
+    description?: string;
+    quality?: string;
+    code?: string;
+    filename?: string; // Direct access to filename
   };
 }
 

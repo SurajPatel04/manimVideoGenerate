@@ -58,7 +58,7 @@ def call_graph(self, query, userID, quality, format, historyId=None):
                 
                 result = graph_for_description_generate.invoke(state)
 
-                if result.get("isFesiable") is False:
+                if result.get("isFesible") is False:
                     update_progress("Failed", 100, f"Not feasible: {result.get('reason', 'Unknown reason')}")
                     return {
                         "success": False,

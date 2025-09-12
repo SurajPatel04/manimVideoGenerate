@@ -5,9 +5,9 @@ import { BackgroundBeams } from "@/components/ui/background-beams";
 import { CodeBlock } from "@/components/ui/code-block";
 import { useAuth } from "@/contexts/AuthContext";
 import { IconPlus, IconUser, IconLogout, IconMenu2, IconDownload, IconCode, IconX } from "@tabler/icons-react";
-import type { ManimGenerationRequest, TaskResultResponse } from '@/types/api';
+import type { ManimGenerationRequest } from '@/types/api';
 import { ManimApiService } from '@/services/manimApi';
-import { Stepper, Step, StepLabel, Box, Typography } from '@mui/material';
+import { Stepper, Step, StepLabel, Box } from '@mui/material';
 
 // Constants
 const SUGGESTION_PROMPTS = [
@@ -34,7 +34,7 @@ const SuggestionButton = memo(({ suggestion, onClick }: { suggestion: string, on
 ));
 
 // Progress Stepper Component
-const ProgressStepper = memo(({ progress, stage }: { progress?: number, stage?: string }) => {
+const ProgressStepper = memo(({ progress }: { progress?: number }) => {
   const steps = [
     'Setting up description generation state',
     'Analyzing if user query is possible',
@@ -89,7 +89,7 @@ const ProgressStepper = memo(({ progress, stage }: { progress?: number, stage?: 
           }
         }}
       >
-        {steps.map((label, index) => (
+        {steps.map((label) => (
           <Step key={label} sx={{ padding: 0 }}>
             <StepLabel 
               sx={{
@@ -126,7 +126,7 @@ const ProgressStepper = memo(({ progress, stage }: { progress?: number, stage?: 
   );
 });
 
-const Message = memo(({ message }: { message: { type: 'user' | 'assistant', content: string, taskId?: string, videoUrl?: string, progress?: number, stage?: string, code?: string, filename?: string } }) => {
+const Message = memo(({ message }: { message: { type: 'user' | 'assistant', content: string, taskId?: string, videoUrl?: string, progress?: number, stage?: string, code?: string, filename?: string, success?: boolean } }) => {
   const [showCode, setShowCode] = useState(false);
 
   return (
@@ -142,12 +142,12 @@ const Message = memo(({ message }: { message: { type: 'user' | 'assistant', cont
           <p className="whitespace-pre-wrap break-words text-sm md:text-base mb-2 leading-relaxed">{message.content}</p>
           
           {/* Material UI Stepper for assistant messages with tasks */}
-          {message.type === 'assistant' && message.taskId && !message.videoUrl && (
-            <ProgressStepper progress={message.progress} stage={message.stage} />
+          {message.type === 'assistant' && message.taskId && !message.videoUrl && message.success !== false && (
+            <ProgressStepper progress={message.progress} />
           )}
 
-          {/* Video player for completed animations */}
-          {message.type === 'assistant' && message.videoUrl && (
+          {/* Video player for completed animations - only show if success is true */}
+          {message.type === 'assistant' && message.videoUrl && message.success !== false && (
             <div className="mt-3 flex flex-col items-center">
               <video 
                 controls 
@@ -209,7 +209,7 @@ const Message = memo(({ message }: { message: { type: 'user' | 'assistant', cont
 });
 
 export default function MainPage() {
-  const [messages, setMessages] = useState<Array<{ type: 'user' | 'assistant', content: string, taskId?: string, videoUrl?: string, progress?: number, stage?: string, code?: string, filename?: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ type: 'user' | 'assistant', content: string, taskId?: string, videoUrl?: string, progress?: number, stage?: string, code?: string, filename?: string, success?: boolean }>>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -268,8 +268,10 @@ export default function MainPage() {
                 ...msg, 
                 progress: result.progress,
                 stage: result.current_stage,
-                content: result.status === 'completed' && result.data?.success
-                  ? `Animation completed successfully! Your "${result.data.chat_name}" is ready.`
+                content: result.status === 'completed'
+                  ? result.data?.success
+                    ? `Animation completed successfully! Your "${result.data.chat_name}" is ready.`
+                    : `Animation generation failed: ${result.data?.reason || result.data?.message || 'Unknown error'}`
                   : result.status === 'failed'
                   ? `Animation generation failed. Please try again.`
                   : `${result.current_stage || 'Processing'} (${result.progress || 0}%)`
@@ -284,22 +286,49 @@ export default function MainPage() {
           // Set generating to false
           setIsGenerating(false);
           
-          if (result.status === 'completed' && result.data?.success) {
-            // Update history ID from the result
-            if (result.data.historyId) {
-              setCurrentHistoryId(result.data.historyId);
-              console.log('History ID updated from result:', result.data.historyId);
-            }
+          if (result.status === 'completed') {
+            // Check if the task was successful or failed based on data.success
+            if (result.data?.success) {
+              // Update history ID from the result
+              if (result.data.historyId) {
+                setCurrentHistoryId(result.data.historyId);
+                console.log('History ID updated from result:', result.data.historyId);
+              }
 
-            // Add the video to the message
+              // Add the video to the message for successful completion
+              setMessages(prev => prev.map(msg => 
+                msg.taskId === taskId 
+                  ? { 
+                      ...msg, 
+                      videoUrl: result.data?.link,
+                      code: result.data?.data?.code || result.data?.code,
+                      filename: result.data?.data?.filename || result.data?.filename,
+                      content: `✅ Animation completed successfully! Your "${result.data?.chat_name}" is ready.`,
+                      success: true
+                    }
+                  : msg
+              ));
+            } else {
+              // Handle failure case where data.success is false
+              const failureReason = result.data?.reason || result.data?.message || 'Animation generation failed for unknown reasons.';
+              setMessages(prev => prev.map(msg => 
+                msg.taskId === taskId 
+                  ? { 
+                      ...msg, 
+                      content: `❌ Animation generation failed: ${failureReason}`,
+                      success: false
+                    }
+                  : msg
+              ));
+            }
+          } else if (result.status === 'failed') {
+            // Handle system-level failure
             setMessages(prev => prev.map(msg => 
               msg.taskId === taskId 
                 ? { 
                     ...msg, 
-                    videoUrl: result.data?.link,
-                    code: result.data?.data?.code,
-                    filename: result.data?.data?.filename,
-                    content: `✅ Animation completed successfully! Your "${result.data?.chat_name}" is ready.`
+                    content: `❌ Animation generation failed. Please try again.`,
+                    success: false
                   }
                 : msg
             ));
