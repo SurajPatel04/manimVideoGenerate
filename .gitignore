@@ -5,4 +5,5 @@ media/
 test.py
 Animation_7c794ffc.py
 .venv
-node_modules
+node_module
+videos/
