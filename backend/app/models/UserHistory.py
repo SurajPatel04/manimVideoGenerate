@@ -11,6 +11,7 @@ class Message(BaseModel):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     filename: Optional[str]=None
     quality: Optional[str] = None
+    link: Optional[str] = None
 
 class UsersHistory(Document):
     userId: Annotated[ObjectId, Indexed()]
@@ -19,3 +20,6 @@ class UsersHistory(Document):
     model_config = {
         "arbitrary_types_allowed": True
     }
+
+    class Settings:
+        name = "userHistory"

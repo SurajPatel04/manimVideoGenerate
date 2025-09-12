@@ -18,4 +18,4 @@ class RefreshToken(Document):
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:
-        name = "refresh_tokens"
+        name = "refreshTokens"

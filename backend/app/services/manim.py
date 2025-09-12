@@ -132,7 +132,8 @@ def call_graph(self, query, userID, quality, format):
                 description=result.get("detailedDescription"),
                 code=code,
                 quality=generated_quality,
-                filename=filename_without_extension
+                filename=filename_without_extension,
+                link = link
             )
 
             history=UsersHistory(

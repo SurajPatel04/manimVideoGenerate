@@ -13,10 +13,11 @@ from datetime import (
     datetime, 
     timezone
 )
-from typing import Annotated
+from typing import Annotated, Optional
 
 class Users(Document):
-    userName: Annotated[str, Indexed(unique=True)]
+    firstName: str
+    lastName: Optional[str] = None
     password: str
     email: Annotated[EmailStr,Indexed(unique=True)]
     isPaid: bool = Field(default=False)

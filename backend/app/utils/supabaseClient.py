@@ -10,7 +10,7 @@ SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-def uploadFile(filename, format, expires_in=86400):
+def uploadFile(filename, format, expires_in=31536000):
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
     backend_dir = os.path.dirname(os.path.dirname(current_dir))

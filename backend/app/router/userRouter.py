@@ -48,7 +48,6 @@ async def createUser(user: UserInput):
     existsUser = await Users.find_one({
     "$or": [
             {"email": user.email},
-            {"userName": user.userName}
         ]
     })
     print(existsUser)
@@ -58,11 +57,7 @@ async def createUser(user: UserInput):
                 status_code=status.HTTP_409_CONFLICT, 
                 detail=f"Email '{user.email}' already exists"
             )
-        if existsUser.userName == user.userName:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Username '{user.userName}' already exists"
-            )
+        
     user.password = hash(user.password)
     data = Users(**user.model_dump())
     await data.insert()
