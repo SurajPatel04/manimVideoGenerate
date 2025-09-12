@@ -6,7 +6,10 @@ from pydantic import (
 from typing import Optional
 
 class UserListOutput(BaseModel):
+    id: str
     email: str
+    firstName: str
+    lastName: Optional[str] = None
 
 class UserInput(BaseModel):
     email: str

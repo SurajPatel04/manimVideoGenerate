@@ -56,29 +56,57 @@ export default function AuthForm() {
     if (isLogin) {
       try {
         const success = await login(formData.email, formData.password);
-        if (!success) {
-          setError("Invalid email or password");
+        if (success) {
+          // Login successful, user will be redirected by router
+          setFormData({
+            firstName: "",
+            lastName: "",
+            email: "",
+            password: "",
+            confirmPassword: "",
+          });
         }
-      } catch (err) {
-        setError("Login failed. Please try again.");
+      } catch (err: any) {
+        setError(err.message || "Login failed. Please try again.");
       }
     } else {
+      // Validation for signup
+      if (formData.password.length < 6) {
+        setError("Password must be at least 6 characters");
+        return;
+      }
+      
       if (formData.password !== formData.confirmPassword) {
         setError("Passwords don't match!");
         return;
       }
+      
       try {
         const success = await signup({
           firstName: formData.firstName,
-          lastName: formData.lastName,
+          lastName: formData.lastName, // Optional field
           email: formData.email,
           password: formData.password,
         });
-        if (!success) {
-          setError("Signup failed. Please try again.");
+        
+        if (success) {
+          // Navigate to login page after successful signup
+          navigate('/login');
+          setFormData({
+            firstName: "",
+            lastName: "",
+            email: "",
+            password: "",
+            confirmPassword: "",
+          });
         }
-      } catch (err) {
-        setError("Signup failed. Please try again.");
+      } catch (err: any) {
+        // Handle specific error messages
+        if (err.message === 'Email already exists') {
+          setError("Email already exists");
+        } else {
+          setError(err.message || "Signup failed. Please try again.");
+        }
       }
     }
   };
@@ -131,14 +159,13 @@ export default function AuthForm() {
               />
             </LabelInputContainer>
             <LabelInputContainer>
-              <Label htmlFor="lastName" className="text-white">Last name</Label>
+              <Label htmlFor="lastName" className="text-white">Last name (optional)</Label>
               <Input
                 id="lastName"
                 placeholder="Doe"
                 type="text"
                 value={formData.lastName}
                 onChange={handleInputChange}
-                required
               />
             </LabelInputContainer>
           </div>
@@ -179,6 +206,11 @@ export default function AuthForm() {
               )}
             </button>
           </div>
+          {!isLogin && (
+            <p className="text-xs text-neutral-400 mt-1">
+              Password must be at least 6 characters
+            </p>
+          )}
         </LabelInputContainer>
 
         {!isLogin && (

@@ -34,7 +34,7 @@ load_dotenv()
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS"))
 
 router = APIRouter(
-    prefix="/user"
+    prefix="/api/user"
 )
 
 @router.get("/", response_model=List[UserListOutput])
@@ -43,7 +43,7 @@ async def allUser():
     return post
 
 
-@router.post("/", response_model=UserListOutput, status_code=status.HTTP_201_CREATED)
+@router.post("/signUp", response_model=UserListOutput, status_code=status.HTTP_201_CREATED)
 async def createUser(user: UserInput):
     existsUser = await Users.find_one({
     "$or": [
@@ -55,7 +55,7 @@ async def createUser(user: UserInput):
         if existsUser.email == user.email:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT, 
-                detail=f"Email '{user.email}' already exists"
+                detail=f"Email already exists"
             )
         
     user.password = hash(user.password)
@@ -94,6 +94,10 @@ async def userLogin(userCredentials: LoginRequest):
     return {
         "accessToken": accessToken,
         "refreshToken": refreshToken,
+        "email": user.email,
+        "firstName": user.firstName,
+        "lastName": user.lastName,
+        "userId": str(user.id),
         "tokenType": "bearer"
     }
 
@@ -132,5 +136,6 @@ async def get_new_access_token(request: RefreshTokenRequest):
     return {
         "access_token": newAccessToken,
         "refresh_token": newRefreshToken,
+        "email":request.email,
         "token_type": "bearer"
     }

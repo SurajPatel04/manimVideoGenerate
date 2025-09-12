@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
+import axios from 'axios';
+import type { LoginResponse, SignupResponse } from '@/types/api';
 
 interface User {
   id: string;
@@ -8,8 +10,15 @@ interface User {
   lastName: string;
 }
 
+interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+  tokenType: string;
+}
+
 interface AuthContextType {
   user: User | null;
+  tokens: AuthTokens | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   signup: (userData: SignupData) => Promise<boolean>;
@@ -40,30 +49,75 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [tokens, setTokens] = useState<AuthTokens | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Token management utilities
+  const saveTokensToStorage = (authTokens: AuthTokens) => {
+    localStorage.setItem('accessToken', authTokens.accessToken);
+    localStorage.setItem('refreshToken', authTokens.refreshToken);
+    localStorage.setItem('tokenType', authTokens.tokenType);
+    setTokens(authTokens);
+  };
+
+  const clearTokensFromStorage = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('tokenType');
+    setTokens(null);
+  };
+
+  const getStoredTokens = (): AuthTokens | null => {
+    const accessToken = localStorage.getItem('accessToken');
+    const refreshToken = localStorage.getItem('refreshToken');
+    const tokenType = localStorage.getItem('tokenType');
+
+    if (accessToken && refreshToken && tokenType) {
+      return { accessToken, refreshToken, tokenType };
+    }
+    return null;
+  };
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
     try {
-      // Simulate API call - In real implementation, you'd use email and password for authentication
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock successful login - replace with actual API call
-      console.log('Login attempt:', { email, password: '***' });
-      
-      const mockUser: User = {
-        id: '1',
+      // Make API call to login endpoint
+      const response = await axios.post<LoginResponse>('/api/user/login', {
         email,
-        firstName: 'John',
-        lastName: 'Doe',
+        password,
+      }, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 10000,
+      });
+      
+      // Extract tokens and user data from response
+      const { accessToken, refreshToken, tokenType, email: userEmail, firstName, lastName, userId } = response.data;
+      
+      // Save tokens to localStorage and state
+      const authTokens: AuthTokens = { accessToken, refreshToken, tokenType };
+      saveTokensToStorage(authTokens);
+      
+      // Create user object from response data
+      const userData: User = {
+        id: userId,
+        email: userEmail,
+        firstName,
+        lastName: lastName || '',
       };
       
-      setUser(mockUser);
-      localStorage.setItem('user', JSON.stringify(mockUser));
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login failed:', error);
-      return false;
+      // Handle specific error messages
+      if (error.response?.status === 401) {
+        throw new Error('Invalid email or password');
+      }
+      throw new Error(error.response?.data?.detail || error.response?.data?.message || 'Login failed');
     } finally {
       setLoading(false);
     }
@@ -72,23 +126,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signup = async (userData: SignupData): Promise<boolean> => {
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock successful signup
-      const newUser: User = {
-        id: Math.random().toString(36).substr(2, 9),
-        email: userData.email,
+      // Make API call to signup endpoint
+      const response = await axios.post<SignupResponse>('/api/user/signUp', {
         firstName: userData.firstName,
-        lastName: userData.lastName,
+        lastName: userData.lastName || '', // lastName is optional
+        email: userData.email,
+        password: userData.password,
+      }, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 10000,
+      });
+      
+      // If signup is successful, create user object from response
+      const newUser: User = {
+        id: response.data.id,
+        email: response.data.email,
+        firstName: response.data.firstName,
+        lastName: response.data.lastName || '',
       };
       
       setUser(newUser);
       localStorage.setItem('user', JSON.stringify(newUser));
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Signup failed:', error);
-      return false;
+      // Handle specific error messages from the API
+      if (error.response?.status === 409 && error.response?.data?.detail === 'Email already exists') {
+        throw new Error('Email already exists');
+      }
+      throw new Error(error.response?.data?.detail || error.response?.data?.message || 'Signup failed');
     } finally {
       setLoading(false);
     }
@@ -96,25 +165,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = () => {
     setUser(null);
+    clearTokensFromStorage();
     localStorage.removeItem('user');
   };
 
-  // Check for existing user on mount
+  // Check for existing user and tokens on mount
   React.useEffect(() => {
     const savedUser = localStorage.getItem('user');
-    if (savedUser) {
+    const storedTokens = getStoredTokens();
+    
+    if (savedUser && storedTokens) {
       try {
         setUser(JSON.parse(savedUser));
+        setTokens(storedTokens);
       } catch (error) {
         console.error('Failed to parse saved user:', error);
         localStorage.removeItem('user');
+        clearTokensFromStorage();
       }
     }
   }, []);
 
   const value: AuthContextType = {
     user,
-    isAuthenticated: !!user,
+    tokens,
+    isAuthenticated: !!user && !!tokens,
     login,
     signup,
     logout,
