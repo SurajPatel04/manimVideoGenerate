@@ -8,10 +8,14 @@ export function PlaceholdersAndVanishInput({
   placeholders,
   onChange,
   onSubmit,
+  onCancel,
+  isGenerating = false,
 }: {
   placeholders: string[];
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  onCancel?: () => void;
+  isGenerating?: boolean;
 }) {
   const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
 
@@ -171,8 +175,12 @@ export function PlaceholdersAndVanishInput({
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    vanishAndSubmit();
-    onSubmit && onSubmit(e);
+    if (isGenerating && onCancel) {
+      onCancel();
+    } else {
+      vanishAndSubmit();
+      onSubmit && onSubmit(e);
+    }
   };
   return (
     <form
@@ -201,53 +209,76 @@ export function PlaceholdersAndVanishInput({
         ref={inputRef}
         value={value}
         type="text"
+        disabled={isGenerating}
         className={cn(
           "w-full relative text-sm sm:text-base z-50 border-none text-white bg-transparent h-full rounded-full focus:outline-none focus:ring-0 pl-4 sm:pl-10 pr-20",
           "placeholder:text-gray-400",
-          animating && "text-transparent"
+          animating && "text-transparent",
+          isGenerating && "cursor-not-allowed opacity-50"
         )}
       />
 
       <button
-        disabled={!value}
+        disabled={!value && !isGenerating}
         type="submit"
         className={cn(
           "absolute right-2 top-1/2 z-50 -translate-y-1/2 h-8 w-8 rounded-full transition duration-200 flex items-center justify-center",
           "bg-[#202020] border border-gray-600",
-          value ? "bg-white text-black hover:bg-gray-100" : "bg-[#202020] text-gray-400",
-          !value && "cursor-not-allowed"
+          (value || isGenerating) ? (isGenerating ? "bg-[#202020] text-red-400 hover:bg-gray-700" : "bg-white text-black hover:bg-gray-100") : "bg-[#202020] text-gray-400",
+          (!value && !isGenerating) && "cursor-not-allowed"
         )}
       >
-        <motion.svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className={cn("h-4 w-4", value ? "text-black" : "text-gray-400")}
-        >
-          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-          <motion.path
-            d="M5 12l14 0"
-            initial={{
-              strokeDasharray: "50%",
-              strokeDashoffset: "50%",
-            }}
-            animate={{
-              strokeDashoffset: value ? 0 : "50%",
-            }}
-            transition={{
-              duration: 0.3,
-              ease: "linear",
-            }}
-          />
-          <path d="M13 18l6 -6" />
-          <path d="M13 6l6 6" />
-        </motion.svg>
+        {isGenerating ? (
+          // Cancel icon (X)
+          <motion.svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-4 w-4 text-red-400"
+          >
+            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <path d="M18 6l-12 12" />
+            <path d="M6 6l12 12" />
+          </motion.svg>
+        ) : (
+          // Submit icon (arrow)
+          <motion.svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={cn("h-4 w-4", value ? "text-black" : "text-gray-400")}
+          >
+            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <motion.path
+              d="M5 12l14 0"
+              initial={{
+                strokeDasharray: "50%",
+                strokeDashoffset: "50%",
+              }}
+              animate={{
+                strokeDashoffset: value ? 0 : "50%",
+              }}
+              transition={{
+                duration: 0.3,
+                ease: "linear",
+              }}
+            />
+            <path d="M13 18l6 -6" />
+            <path d="M13 6l6 6" />
+          </motion.svg>
+        )}
       </button>
 
       <div className="absolute inset-0 flex items-center rounded-full pointer-events-none">
@@ -273,7 +304,7 @@ export function PlaceholdersAndVanishInput({
               }}
               className="text-gray-400 text-sm sm:text-base font-normal pl-4 sm:pl-12 text-left w-[calc(100%-2rem)] truncate"
             >
-              {placeholders[currentPlaceholder]}
+              {isGenerating ? "Click the cancel button to stop generation..." : placeholders[currentPlaceholder]}
             </motion.p>
           )}
         </AnimatePresence>

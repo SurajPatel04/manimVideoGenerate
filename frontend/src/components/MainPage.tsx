@@ -2,10 +2,12 @@ import { useState, useCallback, useMemo, memo, useEffect } from "react";
 import { PlaceholdersAndVanishInput } from "@/components/ui/placeholders-and-vanish-input";
 import { Sidebar, SidebarBody } from "@/components/ui/sidebar";
 import { BackgroundBeams } from "@/components/ui/background-beams";
+import { CodeBlock } from "@/components/ui/code-block";
 import { useAuth } from "@/contexts/AuthContext";
-import { IconPlus, IconUser, IconLogout, IconMenu2, IconDownload } from "@tabler/icons-react";
+import { IconPlus, IconUser, IconLogout, IconMenu2, IconDownload, IconCode, IconX } from "@tabler/icons-react";
 import type { ManimGenerationRequest, TaskResultResponse } from '@/types/api';
 import { ManimApiService } from '@/services/manimApi';
+import { Stepper, Step, StepLabel, Box, Typography } from '@mui/material';
 
 // Constants
 const SUGGESTION_PROMPTS = [
@@ -31,62 +33,183 @@ const SuggestionButton = memo(({ suggestion, onClick }: { suggestion: string, on
   </button>
 ));
 
-const Message = memo(({ message }: { message: { type: 'user' | 'assistant', content: string, taskId?: string, videoUrl?: string, progress?: number, stage?: string } }) => (
-  <div className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-    <div
-      className={`max-w-[85%] md:max-w-3xl p-3 md:p-4 rounded-lg ${
-        message.type === 'user'
-          ? 'bg-blue-600 text-white'
-          : 'bg-gray-800 text-white shadow-lg border border-gray-700'
-      }`}
-    >
-      <p className="whitespace-pre-wrap break-words text-sm md:text-base mb-2 leading-relaxed">{message.content}</p>
-      
-      {/* Progress bar for assistant messages with tasks */}
-      {message.type === 'assistant' && message.taskId && typeof message.progress === 'number' && message.progress < 100 && (
-        <div className="mt-3">
-          <div className="flex justify-between text-xs text-gray-300 mb-1">
-            <span>{message.stage || 'Processing'}</span>
-            <span>{message.progress}%</span>
-          </div>
-          <div className="w-full bg-gray-700 rounded-full h-2">
-            <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-500" 
-              style={{ width: `${message.progress}%` }}
-            ></div>
-          </div>
-        </div>
-      )}
+// Progress Stepper Component
+const ProgressStepper = memo(({ progress, stage }: { progress?: number, stage?: string }) => {
+  const steps = [
+    'Setting up description generation state',
+    'Analyzing if user query is possible',
+    'Detailed description in progress',
+    'Creating animation code',
+    'Video generation completed successfully'
+  ];
 
-      {/* Video player for completed animations */}
-      {message.type === 'assistant' && message.videoUrl && (
-        <div className="mt-3 flex flex-col items-center">
-          <video 
-            controls 
-            className="w-full max-w-md rounded-lg"
-            poster=""
-          >
-            <source src={message.videoUrl} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-          <div className="mt-2 flex gap-2">
-            <a 
-              href={message.videoUrl} 
-              download
-              className="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs transition-colors"
+  // Determine active step based on progress from backend
+  const getActiveStep = () => {
+    const currentProgress = progress || 0;
+    if (currentProgress <= 10) return 0;      // Step 1: 0-10%
+    if (currentProgress <= 20) return 1;      // Step 2: 10-20%
+    if (currentProgress <= 30) return 2;      // Step 3: 20-30%
+    if (currentProgress <= 50) return 3;      // Step 4: 30-50%
+    return 4; // Step 5: 50-100%
+  };
+
+  const activeStep = getActiveStep();
+
+  return (
+    <Box sx={{ 
+      width: '100%', 
+      mt: 2, 
+      mb: 2,
+      backgroundColor: 'transparent',
+      '& .MuiStepper-root': {
+        backgroundColor: 'transparent',
+        padding: 0,
+      }
+    }}>
+      <Stepper 
+        activeStep={activeStep} 
+        alternativeLabel
+        sx={{
+          backgroundColor: 'transparent',
+          width: '100%',
+          '& .MuiStepConnector-root': {
+            top: 22,
+            left: 'calc(-50% + 16px)',
+            right: 'calc(50% + 16px)',
+            '& .MuiStepConnector-line': {
+              borderColor: '#4B5563', // gray-600
+              borderTopWidth: 2,
+            }
+          },
+          '& .MuiStepConnector-active .MuiStepConnector-line': {
+            borderColor: '#3B82F6', // blue-500
+          },
+          '& .MuiStepConnector-completed .MuiStepConnector-line': {
+            borderColor: '#10B981', // green-500
+          }
+        }}
+      >
+        {steps.map((label, index) => (
+          <Step key={label} sx={{ padding: 0 }}>
+            <StepLabel 
+              sx={{
+                '& .MuiStepLabel-label': {
+                  color: '#9CA3AF', // gray-400
+                  fontSize: '0.75rem', // text-xs
+                  marginTop: '8px',
+                },
+                '& .MuiStepLabel-label.Mui-active': {
+                  color: '#3B82F6', // blue-500
+                  fontWeight: 600,
+                },
+                '& .MuiStepLabel-label.Mui-completed': {
+                  color: '#10B981', // green-500
+                },
+                '& .MuiStepIcon-root': {
+                  color: '#4B5563', // gray-600
+                  fontSize: '1.5rem',
+                },
+                '& .MuiStepIcon-root.Mui-active': {
+                  color: '#3B82F6', // blue-500
+                },
+                '& .MuiStepIcon-root.Mui-completed': {
+                  color: '#10B981', // green-500
+                },
+              }}
             >
-              <IconDownload className="h-3 w-3" />
-              Download
-            </a>
+              {label}
+            </StepLabel>
+          </Step>
+        ))}
+      </Stepper>
+    </Box>
+  );
+});
+
+const Message = memo(({ message }: { message: { type: 'user' | 'assistant', content: string, taskId?: string, videoUrl?: string, progress?: number, stage?: string, code?: string, filename?: string } }) => {
+  const [showCode, setShowCode] = useState(false);
+
+  return (
+    <>
+      <div className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+        <div
+          className={`max-w-[85%] md:max-w-3xl p-3 md:p-4 rounded-lg ${
+            message.type === 'user'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-800 text-white shadow-lg border border-gray-700'
+          }`}
+        >
+          <p className="whitespace-pre-wrap break-words text-sm md:text-base mb-2 leading-relaxed">{message.content}</p>
+          
+          {/* Material UI Stepper for assistant messages with tasks */}
+          {message.type === 'assistant' && message.taskId && !message.videoUrl && (
+            <ProgressStepper progress={message.progress} stage={message.stage} />
+          )}
+
+          {/* Video player for completed animations */}
+          {message.type === 'assistant' && message.videoUrl && (
+            <div className="mt-3 flex flex-col items-center">
+              <video 
+                controls 
+                className="w-full max-w-md rounded-lg"
+                poster=""
+              >
+                <source src={message.videoUrl} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+              <div className="mt-2 flex gap-2">
+                <a 
+                  href={message.videoUrl} 
+                  download
+                  className="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs transition-colors"
+                >
+                  <IconDownload className="h-3 w-3" />
+                  Download
+                </a>
+                {message.code && (
+                  <button
+                    onClick={() => setShowCode(true)}
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-xs transition-colors"
+                  >
+                    <IconCode className="h-3 w-3" />
+                    Code
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Code Modal */}
+      {showCode && message.code && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-900 rounded-lg max-w-4xl w-full max-h-[80vh] overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-gray-700">
+              <h3 className="text-white text-lg font-semibold">Generated Animation Code</h3>
+              <button
+                onClick={() => setShowCode(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <IconX className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-4 overflow-auto max-h-[calc(80vh-80px)]">
+              <CodeBlock
+                language="python"
+                filename={message.filename || "animation.py"}
+                code={message.code}
+              />
+            </div>
           </div>
         </div>
       )}
-    </div>
-  </div>
-));
+    </>
+  );
+});
 
 export default function MainPage() {
-  const [messages, setMessages] = useState<Array<{ type: 'user' | 'assistant', content: string, taskId?: string, videoUrl?: string, progress?: number, stage?: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ type: 'user' | 'assistant', content: string, taskId?: string, videoUrl?: string, progress?: number, stage?: string, code?: string, filename?: string }>>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -99,9 +222,44 @@ export default function MainPage() {
   const startTaskPolling = useCallback(async (taskId: string) => {
     if (!tokens?.accessToken) return;
 
+    let pollCount = 0;
+    let consecutiveErrors = 0;
+    const maxRetries = 3;
+    const baseInterval = 2000; // Start with 2 seconds
+    const maxInterval = 30000; // Max 30 seconds
+    const maxPollCount = 300; // Stop after 10 minutes (300 * 2s average)
+
+    const calculateInterval = () => {
+      // Exponential backoff with jitter
+      const backoff = Math.min(baseInterval * Math.pow(1.5, consecutiveErrors), maxInterval);
+      const jitter = Math.random() * 1000; // Add up to 1 second jitter
+      return backoff + jitter;
+    };
+
     const pollTask = async () => {
       try {
+        pollCount++;
+        
+        // Safety check to prevent infinite polling
+        if (pollCount > maxPollCount) {
+          console.warn('Polling timeout reached, stopping polling');
+          setMessages(prev => prev.map(msg => 
+            msg.taskId === taskId 
+              ? { 
+                  ...msg, 
+                  content: '⏰ Polling timeout. The task may still be processing on the server.'
+                }
+              : msg
+          ));
+          setIsGenerating(false);
+          return true;
+        }
+
         const result = await ManimApiService.pollTaskStatus(taskId, tokens.accessToken);
+        console.log(`Polling #${pollCount} - Status: ${result.status}, Progress: ${result.progress}%`);
+        
+        // Reset error count on successful response
+        consecutiveErrors = 0;
         
         // Update the message with progress
         setMessages(prev => prev.map(msg => 
@@ -111,16 +269,22 @@ export default function MainPage() {
                 progress: result.progress,
                 stage: result.current_stage,
                 content: result.status === 'completed' && result.data?.success
-                  ? `✅ Animation completed successfully! Your "${result.data.chat_name}" is ready.`
+                  ? `Animation completed successfully! Your "${result.data.chat_name}" is ready.`
                   : result.status === 'failed'
-                  ? `❌ Animation generation failed. Please try again.`
-                  : `🔄 ${result.current_stage || 'Processing'} (${result.progress || 0}%)`
+                  ? `Animation generation failed. Please try again.`
+                  : `${result.current_stage || 'Processing'} (${result.progress || 0}%)`
               }
             : msg
         ));
 
-        if (result.status === 'completed') {
-          if (result.data?.success) {
+        // Check if task is completed or failed and stop polling
+        if (result.status === 'completed' || result.status === 'failed') {
+          console.log(`Polling completed after ${pollCount} attempts - Status: ${result.status}`);
+          
+          // Set generating to false
+          setIsGenerating(false);
+          
+          if (result.status === 'completed' && result.data?.success) {
             // Update history ID from the result
             if (result.data.historyId) {
               setCurrentHistoryId(result.data.historyId);
@@ -133,52 +297,79 @@ export default function MainPage() {
                 ? { 
                     ...msg, 
                     videoUrl: result.data?.link,
+                    code: result.data?.data?.code,
+                    filename: result.data?.data?.filename,
                     content: `✅ Animation completed successfully! Your "${result.data?.chat_name}" is ready.`
                   }
                 : msg
             ));
           }
           
-          setIsGenerating(false);
-          if (pollingInterval) {
-            clearInterval(pollingInterval);
-            setPollingInterval(null);
-          }
-        } else if (result.status === 'failed') {
-          setIsGenerating(false);
-          if (pollingInterval) {
-            clearInterval(pollingInterval);
-            setPollingInterval(null);
-          }
+          // Return true to indicate polling should stop
+          return true;
         }
-      } catch (error) {
-        console.error('Polling error:', error);
         
-        // Update message to show polling failed
+        // Return false to continue polling
+        return false;
+      } catch (error) {
+        consecutiveErrors++;
+        console.error(`Polling error #${consecutiveErrors}:`, error);
+        
+        // Stop polling after max consecutive errors
+        if (consecutiveErrors >= maxRetries) {
+          console.error('Max polling errors reached, stopping polling');
+          setMessages(prev => prev.map(msg => 
+            msg.taskId === taskId 
+              ? { 
+                  ...msg, 
+                  content: `Connection failed after ${maxRetries} retries. Task ID: ${taskId}`
+                }
+              : msg
+          ));
+          setIsGenerating(false);
+          return true;
+        }
+        
+        // Update message to show retry attempt
         setMessages(prev => prev.map(msg => 
           msg.taskId === taskId 
             ? { 
                 ...msg, 
-                content: `⚠️ Unable to track progress. Task ID: ${taskId}. Please check back later.`
+                content: `Connection issue (${consecutiveErrors}/${maxRetries}). Retrying...`
               }
             : msg
         ));
         
-        setIsGenerating(false);
-        if (pollingInterval) {
-          clearInterval(pollingInterval);
-          setPollingInterval(null);
-        }
+        // Continue polling with backoff
+        return false;
       }
     };
 
     // Start polling immediately
-    await pollTask();
+    const shouldStop = await pollTask();
+    if (shouldStop) {
+      console.log('Task already completed, not setting up interval');
+      return; // Don't set up interval if already completed
+    }
     
-    // Set up interval for continued polling
-    const interval = setInterval(pollTask, 3000); // Poll every 3 seconds
-    setPollingInterval(interval);
-  }, [tokens?.accessToken, pollingInterval]);
+    // Set up dynamic interval polling with exponential backoff
+    const scheduleNextPoll = () => {
+      const interval = calculateInterval();
+      console.log(`Scheduling next poll in ${Math.round(interval)}ms`);
+      
+      setTimeout(async () => {
+        const shouldStop = await pollTask();
+        if (!shouldStop) {
+          scheduleNextPoll(); // Schedule the next poll
+        } else {
+          console.log('Polling sequence completed');
+          setPollingInterval(null);
+        }
+      }, interval);
+    };
+
+    scheduleNextPoll();
+  }, [tokens?.accessToken]);
 
   // Cleanup polling on unmount
   useEffect(() => {
@@ -190,6 +381,59 @@ export default function MainPage() {
   }, [pollingInterval]);
 
   const toggleSidebar = useCallback(() => setSidebarOpen(prev => !prev), []);
+
+  // Cleanup function to stop polling and reset states
+  const stopPollingAndReset = useCallback(() => {
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
+    }
+    setIsGenerating(false);
+    setCurrentTaskId("");
+  }, [pollingInterval]);
+
+  // Cancel task function
+  const handleCancelTask = useCallback(async () => {
+    if (!currentTaskId || !tokens?.accessToken) return;
+
+    try {
+      const response = await ManimApiService.cancelTask(currentTaskId, tokens.accessToken);
+      console.log('Task cancelled:', response);
+
+      // Stop polling and reset states
+      stopPollingAndReset();
+
+      // Update the message that was showing progress to show cancelled status
+      setMessages(prev => prev.map(msg => 
+        msg.taskId === currentTaskId 
+          ? { 
+              ...msg, 
+              content: 'Animation generation has been cancelled.',
+              progress: undefined,
+              stage: undefined
+            }
+          : msg
+      ));
+
+    } catch (error: any) {
+      console.error('Error cancelling task:', error);
+      
+      // Still stop the polling even if cancel API fails
+      stopPollingAndReset();
+
+      // Update the message that was showing progress to show local cancellation
+      setMessages(prev => prev.map(msg => 
+        msg.taskId === currentTaskId 
+          ? { 
+              ...msg, 
+              content: 'Process stopped locally (may continue on server).',
+              progress: undefined,
+              stage: undefined
+            }
+          : msg
+      ));
+    }
+  }, [currentTaskId, tokens?.accessToken, stopPollingAndReset]);
 
   const handleNewChat = useCallback(() => {
     console.log('Starting new chat - resetting history');
@@ -221,6 +465,16 @@ export default function MainPage() {
     const userMessage = { type: 'user' as const, content: text.trim() };
     setMessages(prev => [...prev, userMessage]);
     setIsGenerating(true);
+
+    // Add assistant response with stepper immediately showing 0% progress
+    const assistantMessage = {
+      type: 'assistant' as const,
+      content: `🔄 Starting animation generation for "${text.trim()}"...`,
+      taskId: 'temp-id', // Temporary ID until we get real one
+      progress: 0,
+      stage: "Setting up description generation state"
+    };
+    setMessages(prev => [...prev, assistantMessage]);
 
     try {
       // Check if user has access token
@@ -258,16 +512,12 @@ export default function MainPage() {
         console.log('History ID updated:', response.historyId);
       }
 
-      // Add assistant response with task ID for tracking
-      const isNewChat = !currentHistoryId;
-      const assistantMessage = {
-        type: 'assistant' as const,
-        content: `🔄 Starting animation generation for "${text.trim()}"...`,
-        taskId: response.task_id,
-        progress: 0,
-        stage: "Initializing"
-      };
-      setMessages(prev => [...prev, assistantMessage]);
+      // Update the message with the real task ID
+      setMessages(prev => prev.map(msg => 
+        msg.taskId === 'temp-id' 
+          ? { ...msg, taskId: response.task_id }
+          : msg
+      ));
 
       // Start polling for task status
       startTaskPolling(response.task_id);
@@ -468,31 +718,17 @@ export default function MainPage() {
           ) : (
             <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto">
               {messages.map((msg, i) => <Message key={i} message={msg} />)}
-              {isGenerating && (
-                <div className="flex justify-start">
-                  <div className="bg-gray-800 text-white p-3 md:p-4 rounded-lg shadow-lg max-w-3xl border border-gray-700">
-                    <div className="flex items-center space-x-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                      <span className="text-sm md:text-base">Processing your animation request...</span>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
         <div className="p-4 md:p-6 bg-gradient-to-t from-black to-transparent relative z-10">
           <div className="max-w-4xl mx-auto">
-            {/* Debug indicator - remove in production */}
-            {messages.length > 0 && (
-              <div className="mb-2 text-xs text-gray-500 text-center">
-                Chat Session: {currentHistoryId ? `ID: ${currentHistoryId.slice(0, 8)}...` : 'New Session'}
-              </div>
-            )}
             <PlaceholdersAndVanishInput
               placeholders={PLACEHOLDERS}
               onChange={handleInputChange}
               onSubmit={onInputSubmit}
+              onCancel={handleCancelTask}
+              isGenerating={isGenerating}
             />
           </div>
         </div>

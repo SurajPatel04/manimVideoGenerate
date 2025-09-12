@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { ManimGenerationRequest, ManimGenerationResponse, TaskResultResponse } from '@/types/api';
+import type { ManimGenerationRequest, ManimGenerationResponse, TaskResultResponse, CancelTaskResponse } from '@/types/api';
 
 export class ManimApiService {
   private static getAuthHeaders(accessToken: string) {
@@ -60,6 +60,37 @@ export class ManimApiService {
     } catch (error: any) {
       console.error('Task status polling error:', error);
       throw error;
+    }
+  }
+
+  static async cancelTask(taskId: string, accessToken: string): Promise<CancelTaskResponse> {
+    try {
+      const response = await axios.post<CancelTaskResponse>(
+        '/api/manimGeneration/cancel',
+        { taskId },
+        {
+          withCredentials: true,
+          headers: this.getAuthHeaders(accessToken),
+          timeout: 10000,
+        }
+      );
+      
+      console.log('Task cancelled:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Task cancellation error:', error);
+      
+      if (error.response) {
+        throw new Error(
+          error.response.data?.detail || 
+          error.response.data?.message || 
+          `HTTP ${error.response.status}: ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        throw new Error('Network error: Unable to reach the server');
+      } else {
+        throw new Error(`Request error: ${error.message}`);
+      }
     }
   }
 }

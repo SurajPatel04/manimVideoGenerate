@@ -69,6 +69,12 @@ export interface TaskResultResponse {
   };
 }
 
+// Cancel Task API Types
+export interface CancelTaskResponse {
+  status: "revoked";
+  taskId: string;
+}
+
 // API Request Types
 export interface LoginRequest {
   email: string;
