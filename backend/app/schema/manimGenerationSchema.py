@@ -6,3 +6,6 @@ class MainmUserModel(BaseModel):
     quality: str
     format: str
     historyId: Optional[str] = None
+
+class CancelRequest(BaseModel):
+    taskId: str

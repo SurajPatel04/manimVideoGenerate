@@ -4,7 +4,7 @@ from fastapi import (
     HTTPException,
     Depends
 )
-from app.schema.manimGenerationSchema import MainmUserModel
+from app.schema.manimGenerationSchema import MainmUserModel, CancelRequest
 from app.services.manim import call_graph
 # from app.services.task import call_graph
 from fastapi.responses import StreamingResponse
@@ -44,6 +44,11 @@ async def generate(query: MainmUserModel, userId: int=Depends(getCurrentUser)):
         ]
     )
     return {"task_id": task.id}
+
+@router.post("/cancel")
+async def cancel_task(req: CancelRequest):
+    taskQueue.control.revoke(req.taskId, terminate=True, signal="SIGKILL")
+    return {"status": "revoked", "taskId": req.taskId}
 
 
 @router.get("/result/{task_id}")
