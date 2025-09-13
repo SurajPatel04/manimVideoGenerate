@@ -103,3 +103,4 @@ uvicorn
 celery
 redis
 beanie
+pymongo
