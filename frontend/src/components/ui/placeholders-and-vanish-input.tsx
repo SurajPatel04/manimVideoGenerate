@@ -115,7 +115,18 @@ export function PlaceholdersAndVanishInput({
   // Handle clicking outside the options panel
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (optionsRef.current && !optionsRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      
+      // Don't close if clicking on the plus button or its children
+      const plusButton = (event.target as Element).closest('[data-plus-button]');
+      if (plusButton) {
+        console.log('Clicked on plus button, not closing options');
+        return;
+      }
+      
+      // Close if clicking outside the options panel
+      if (optionsRef.current && !optionsRef.current.contains(target)) {
+        console.log('Clicked outside options panel, closing');
         setShowOptions(false);
       }
     }
@@ -204,12 +215,14 @@ export function PlaceholdersAndVanishInput({
     }
   };
   return (
-    <div className="w-full relative max-w-xl mx-auto" ref={optionsRef}>
+    <div className="w-full relative max-w-xl mx-auto">
       {/* Options Panel */}
-      <div className={cn(
-        "mb-3 p-3 rounded-lg bg-[#202020] border border-gray-600 transition-all duration-200",
-        showOptions ? "opacity-100 max-h-32" : "opacity-0 max-h-0 overflow-hidden p-0 mb-0 border-0"
-      )}>
+      <div 
+        ref={optionsRef}
+        className={cn(
+          "mb-3 p-3 rounded-lg bg-[#202020] border border-gray-600 transition-all duration-200",
+          showOptions ? "opacity-100 max-h-32" : "opacity-0 max-h-0 overflow-hidden p-0 mb-0 border-0"
+        )}>
         <div className="flex gap-4 items-center flex-wrap">
           <div className="flex flex-col gap-1 min-w-[80px]">
             <label className="text-xs text-gray-400 font-medium">Format</label>
@@ -257,6 +270,41 @@ export function PlaceholdersAndVanishInput({
         )}
         ref={canvasRef}
       />
+      
+      {/* Plus icon button for options */}
+      <button
+        type="button"
+        data-plus-button="true"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('Plus button clicked, current showOptions:', showOptions);
+          setShowOptions(!showOptions);
+        }}
+        className={cn(
+          "absolute left-2 top-1/2 z-[60] -translate-y-1/2 h-8 w-8 rounded-full transition duration-200 flex items-center justify-center",
+          "hover:bg-gray-700 text-gray-400 hover:text-gray-300 cursor-pointer border border-transparent hover:border-gray-500",
+          showOptions && "bg-gray-700 text-gray-300 border-gray-500"
+        )}
+      >
+        <motion.svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          animate={{ rotate: showOptions ? 45 : 0 }}
+          transition={{ duration: 0.2 }}
+          className="h-4 w-4"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </motion.svg>
+      </button>
+      
       <input
         onChange={(e) => {
           if (!animating) {
@@ -270,7 +318,7 @@ export function PlaceholdersAndVanishInput({
         type="text"
         disabled={isGenerating}
         className={cn(
-          "w-full relative text-sm sm:text-base z-50 border-none text-white bg-transparent h-full rounded-full focus:outline-none focus:ring-0 pl-4 sm:pl-10 pr-20",
+          "w-full relative text-sm sm:text-base z-40 border-none text-white bg-transparent h-full rounded-full focus:outline-none focus:ring-0 pl-12 pr-20",
           "placeholder:text-gray-400",
           animating && "text-transparent",
           isGenerating && "cursor-not-allowed opacity-50"
@@ -361,7 +409,7 @@ export function PlaceholdersAndVanishInput({
                 duration: 0.3,
                 ease: "linear",
               }}
-              className="text-gray-400 text-sm sm:text-base font-normal pl-4 sm:pl-12 text-left w-[calc(100%-2rem)] truncate"
+              className="text-gray-400 text-sm sm:text-base font-normal pl-12 text-left w-[calc(100%-6rem)] truncate"
             >
               {isGenerating ? "Click the cancel button to stop generation..." : placeholders[currentPlaceholder]}
             </motion.p>
@@ -369,46 +417,6 @@ export function PlaceholdersAndVanishInput({
         </AnimatePresence>
       </div>
     </form>
-    
-    {/* Options Toggle Button */}
-    <button
-      type="button"
-      onClick={() => setShowOptions(!showOptions)}
-      className="mt-2 mx-auto flex items-center gap-2 px-3 py-1.5 text-xs text-gray-400 hover:text-gray-300 transition-colors rounded hover:bg-gray-800/50"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="12"
-        height="12"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="w-3 h-3"
-      >
-        <circle cx="12" cy="12" r="3" />
-        <path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24" />
-      </svg>
-      <span>{showOptions ? "Hide" : "Show"} format and quality</span>
-      <motion.svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="12"
-        height="12"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        animate={{ rotate: showOptions ? 180 : 0 }}
-        transition={{ duration: 0.2 }}
-        className="w-3 h-3"
-      >
-        <path d="M6 9l6 6 6-6" />
-      </motion.svg>
-    </button>
     </div>
   );
 }
