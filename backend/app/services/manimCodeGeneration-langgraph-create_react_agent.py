@@ -57,14 +57,15 @@ in Manim v0.19+, you should import directly below mention from the top-level man
         Scene Method:
             set_background
 
-
+    Render the 3D surface plot clearly, with the equation displayed in LaTeX format (e.g., $z = x^2 + y^2$) outside of the graph. 
+    The text should be white, large, and positioned in front of the viewer so it does not overlap the surface. 
     What's New
         Camera Lighting: Lighting is now handled automatically by the camera.
         Setting Background Color: Use self.camera.background_color = <color> to set the background color.
         Directional Lighting: For custom lighting effects, you can use DirectionalLight.
 
             Example usage:
-            from manim import *
+            from manim import WHITE, ORIGN
 
             class MyScene(ThreeDScene):
                 def construct(self):
@@ -85,238 +86,39 @@ in Manim v0.19+, you should import directly below mention from the top-level man
         Scene Setup:
             Use self.set_camera_orientation and self.begin_ambient_camera_rotation for camera positioning and rotation.
 
-    -- TypeError: Mobject.__init__() got an unexpected keyword argument 'disappearing_time'
-        How to fix: The TracedPath API changed. In earlier versions, TracedPath had a disappearing_time argument. In v0.19+, it no longer exists.
-            Instead of disappearing_time, use the new dissipating_time argument:
-            Example 
+        1. TracedPath
+            Old: TracedPath(mobject, disappearing_time=...)
+            New: TracedPath(traced_point_func=..., dissipating_time=...)
+            You must pass a function returning a point, not the Mobject itself.
+
+        2. Camera
+            self.camera.animate removed
+            Use self.move_camera() or self.set_camera_orientation() for 3D.
+            self.add_ambient_camera_rotation() is scene-level, not animation-level.
+
+        3. Shapes & Objects
+            .to_center() removed → use .move_to(ORIGIN)
+            start_vector, other_angle in Angle removed
+            opacity in constructor  → use .set_opacity() after creation
+            x_range, y_values, numbers arguments in axes or numberline removed → use add_numbers() or plot().
+
+        4. Animations
+            ShowCreation removed → use Create
+            Passing None to self.play() → error (don’t pass move_camera() directly)
+            .scene_updater() missing dt argument → all updaters must accept dt.
+
+        5. 3D Text
+            Text3D removed → use 2D Text + .extrude()
+            Surface / Parametric objects
+
+        6. Surface / Parametric objects
+            ParametricSurface  → use Surface
+            axes.get_graph()  → use axes.plot()
+
+        7. Colors / constants
+            Some constants removed, like LIGHT_BLUE → use BLUE_E or define manually.
+            Rate functions moved → import from top-level manim.
             
-            from manim import TracedPath, BLUE, RED
-
-            trace1 = TracedPath(bob1, stroke_width=2, color=BLUE, dissipating_time=3)
-            trace2 = TracedPath(bob2, stroke_width=2, color=RED, dissipating_time=3)
-
-            self.add(trace1, trace2)
-
-    -- TypeError: TracedPath.__init__() missing 1 required positional argument: 'traced_point_func'
-
-        Old version: TracedPath(bob1, ...) — passed the mobject directly.
-        New version (v0.19+): TracedPath(traced_point_func=...) — you must give a function returning the point to trace.
-        dissipating_time replaces disappearing_time.
-
-        **CORRECT v0.19+ SYNTAX TO USE:**
-
-    Your tasks are:
-    1.  Before writing the main body of the code, write a commented-out "Layout Plan" that describes how you will position the main elements on the screen to avoid overlap.
-    2.  Write the complete Manim python code for the animation.
-    3.  The class name for the animation scene MUST be the same as the filename (without the .py extension).
-    4.  Use the provided tool to save the final code to a file.
-    
-    Note:
-    
-    - And all the content should be in frame.
-    - if you are creating 3d then do it correctly
-        -- 2D Scenes use a camera.frame to control the view.
-        -- 3D Scenes use the camera object directly for control.
-
-    You got These error many time try to overcome these issue:
-    - TypeError: Code.__init__() got an unexpected keyword argument 'code'
-    - NameError: name 'Text3D' is not defined
-    - ValueError: latex error converting to dvi.
-    - TypeError: Mobject.__getattr__.<locals>.getter() takes 1 positional argument but 2 were given
-    - Code.__init__() got an unexpected keyword argument 'code'
-    -- Also, prefer using `axes.plot()` instead of the older `axes.get_graph()`.
-    -- TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_range' 
-    - AttributeError: 'object' has no attribute 'to_center'. Always use the `.move_to(ORIGIN)` method instead of `.to_center()`.
-    -- latex error converting to dvi
-    -- Text object has no attribute 'to_center'
-    - In Manim v0.19 and newer versions, to_center() has been deprecated and removed. Instead, you should use:
-    # Old way (doesn't work in v0.19+): axes.to_center()
-    # New way (correct for v0.19+): axes.move_to(ORIGIN)
-
-    -- TypeError: Mobject.__init__() got an unexpected keyword argument 'x_label'
-    -- AttributeError: 'ThreeDCamera' object has no attribute 'animate'
-    --TypeError: Unexpected argument None passed to Scene.play().
-    --- The `NameError` for `ParametricSurface` was incorrectly "fixed" by explicitly importing it from `manim.mobject.three_d.three_dimensions`.  
-
-        In Manim v0.19+, this import path is invalid and causes:
-        ImportError: cannot import name 'ParametricSurface' from 'manim.mobject.three_d.three_dimensions'
-
-         Correct usage: `from manim import ParametricSurface`
-
-        Additionally, the animation for axes and labels should use `FadeIn` for smooth entrance rather than appearing instantly.
-
-        The corrected file `Animation_b9cf9c45.py` failed due to the bad import and must be fixed as described.
-
-    -- AttributeError: 'MoveAlongPath' object has no attribute 'submobjects'
-        Mobjects (like Cube(), Sphere()) have submobjects.
-        Animations (like MoveAlongPath(obj, path)) do not have submobjects.
-
-    -- AttributeError: 'Animation_ed282dad' object has no attribute 'add_ambient_camera_rotation'
-        cube = Cube()
-        anim = Rotate(cube, angle=PI/4)
-
-        anim.add_ambient_camera_rotation(rate=0.1)  # ❌ WRONG
-
-        Correct usage:
-            class MyScene(ThreeDScene):
-            def construct(self):
-                cube = Cube()
-                self.add(cube)
-                self.add_ambient_camera_rotation(rate=0.1)  # ✅ add rotation to the scene
-                self.play(Rotate(cube, angle=PI/4))
-                self.wait(2)
-    -- AttributeError: 'Animation_b79f245b' object has no attribute 'set_background'
-        How to fix:
-            Use self.camera.background_color instead:
-                Replace any line like: self.set_background(BLACK)
-                With: self.camera.background_color = BLACK
-
-    -- TypeError: .scene_updater() missing 1 required positional argument: 'dt_scene'
-        Note:
-            Always include dt for any updater function.
-            dt is the time delta since the last frame — use it to make animations frame-rate independent.
-            Works for both 2D and 3D scenes.
-
-    -- AttributeError: 'ThreeDCamera' object has no attribute 'animate'
-        In Manim v0.19+, you cannot use self.camera.animate.
-        Replace: self.camera.animate.set_theta(-45 * DEGREES) 
-        with either: self.set_camera_orientation(theta=-45 * DEGREES)  # instant
-        or --> self.move_camera(theta=-45 * DEGREES, run_time=8)  # smooth
-
-    -- TypeError: Mobject.__init__() got an unexpected keyword argument 'start_vector'
-        In Manim v0.19+, Angle no longer accepts start_vector or other_angle.
-        Use only:Angle(line1, line2, radius=..., color=...)
-
-    -- TypeError: Unexpected argument None passed to Scene.play()
-        The error happens because you passed self.move_camera(...) to self.play().
-        # self.move_camera() returns None, so play() sees None → error.
-        Fix: Either animate the camera with .animate inside play():
-        self.play(
-            phase_tracker.animate.set_value(4 * PI),
-            self.camera.frame.animate.set_phi(self.camera.get_phi() + 10 * DEGREES)
-        )
-        or call move_camera() separately:
-        # self.play(phase_tracker.animate.set_value(4 * PI))
-        # self.move_camera(phi=self.camera.get_phi() + 10 * DEGREES, run_time=2)
-        # Never pass move_camera() directly into play().
-
-    -- TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'u_range'
-        Fix: Remove u_range from Circle, Line, Square, or Scene.play() calls. Use it only with parametric objects.
-        Example:
-        # Correct
-        curve = ParametricFunction(lambda t: np.array([t, t**2, 0]), t_range=[0,1])
-        self.play(Create(curve))
-        # Wrong
-        circle = Circle(u_range=[0,1])  # causes your error
-
-    -- ImportError: cannot import name 'ParametricSurface' from 'manim' 
-        In Manim v0.19, ParametricSurface was renamed to Surface.
-
-        Fix the import:
-
-        from manim import Surface
-
-
-        Example usage:
-
-        surface = Surface(
-            lambda u, v: np.array([np.cos(u)*np.cos(v), np.cos(u)*np.sin(v), u]),
-            u_range=[-PI, PI],
-            v_range=[0, TAU],
-            resolution=(8, 8)
-        )
-    
-    -- TypeError: Mobject.__init__() got an unexpected keyword argument 'opacity'
-        opacity is not a constructor argument.
-        Instead, set it after creating the object using .set_opacity().
-
-    -- NameError: name 'ShowCreation' is not defined
-        ShowCreation was removed. Replace it with Create:
-
-
-    -- Important: In v0.19, there’s no built-in 3D text class—you must use to 2D Text
-        You create 2D text and then use the .extrude() method on it.
-
-    --  from manim.animation.rate_functions import linear ModuleNotFoundError: No module named 'manim.animation.rate_functions'
-        In Manim v0.19+, LINEAR was moved.
-        from manim.animation.rate_functions import linear
-        All rate functions (like linear, smooth, there_and_back, etc.) live in the top-level manim module now:
-
-    -- AttributeError: 'ThreeDCamera' object has no attribute 'animate'
-        3D camera (ThreeDCamera) has no .animate.
-
-        Fix use this
-        # Use self.move_camera(phi=…, theta=…, run_time=…) in ThreeDScene.
-        Do not pass move_camera to self.play() or Succession; it schedules animation internally.
-
-    -- AttributeError: 'ThreeDCamera' object has no attribute 'get_position'
-        Fix use this
-        Use self.camera.frame_center or self.camera.frame.get_center() to get the camera’s position.
-
-    -- NameError: name 'EASE_IN_OUT' is not defined
-        Use this In Manim 0.19+, first import, from manim.rate_functions import ease_in_out then Use the function ease_in_out instead
-    
-    -- AttributeError: ParametricFunction object has no attribute 'scene'
-        In Manim 0.19+, you can’t call scene on a Mobject. Instead, add it to the scene using self.add() or self.play().
-
-    -- TypeError: Mobject.__getattr__.<locals>.setter() takes 2 positional arguments but 3 were given
-        Use this In Manim 0.19+, mobj.set_fill(color=WHITE, opacity=1)
-
-    -- AttributeError: NumberPlane object has no attribute 'center_on_screen'
-        Use this In Manim 0.19+, plane.move_to(ORIGIN) 
-
-    -- AttributeError: 'ThreeDCamera' object has no attribute 'set_field_of_view'
-        Use this In Manim 0.19+ self.camera.frame.set(width=10) 
-    
-    -- TypeError: Mobject.__getattr__.<locals>.setter() got an unexpected keyword argument 'ambient_coefficient'
-        Use this In Manim 0.19+, shading params like ambient_coefficient, diffuse_coefficient, specular_coefficient no longer exist — use only set_fill, set_stroke, and set_color.
-    -- AttributeError: CubicBezier object has no attribute 'add_tip'
-        Fix: In Manim v0.19+, CubicBezier has no add_tip(). Use a separate Arrow or CurvedArrow instead.
-    -- NameError: name 'LIGHT_BLUE' is not defined fix: LIGHT_BLUE is undefined in Manim v0.19+; use BLUE_E or define it with Color("\\#ADD8E6").
-
-    -- TypeError: Mobject.apply_points_function_about_point() got an unexpected keyword argument 'scale_tips'
-        Fix: Remove scale_tips and, if you need arrow tip scaling, set it separately with arrow.set_tip_length() or use Arrow/Vector with custom tip size.
-
-    -- TypeError: Unexpected argument None passed to Scene.play().
-        Fix: don’t put it inside self.play().
-            Example:
-            # self.play(LaggedStart(*[GrowArrow(a) for a in arrows]))
-            # self.move_camera(phi=new_phi, theta=-45*DEGREES, run_time=2)
-
-    -- TypeError: Mobject.__init__() got an unexpected keyword argument 'vector'
-        If you want to place it: dot = Dot(point=RIGHT)   # use 'point' instead of 'vector'
-        or
-        If you meant an arrow/vector: arrow = Vector(RIGHT)   # or Arrow(ORIGIN, RIGHT)
-
-
-    -- TypeError: Mobject.apply_points_function_about_point() got an unexpected keyword argument 'scale_tips' 
-        fix: Remove it and instead use: arrow.set_tip_length(0.3)
-
-    -- Exception: Cannot call Mobject.get_start for a Mobject with no points
-        Fix: Make sure the Mobject is not empty—use a proper shape or add points before calling get_start()
-            Example:
-                line = Line(LEFT, RIGHT)
-                print(line.get_start()) 
-
-    -- TypeError: NumberLine.add_numbers() got multiple values for argument 'x_values'
-        x_values was removed in Manim v0.19+.
-        line = NumberLine(x_range=[0, 10, 1])
-        line.add_numbers(numbers=[0,1,2,3,4,5,6,7,8,9,10])
-        Or auto-generate:
-        line.add_numbers()
-
-    -- Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'y_values'
-        # ax = Axes(x_range=[-5, 5, 1], y_range=[-5, 5, 1])
-        # graph = ax.plot(lambda x: x**2)  # no y_values
-
-    -- TypeError: Mobject.__init__() got an unexpected keyword argument 'numbers'
-        Manim objects don’t accept custom arguments in __init__().
-
-    -- TypeError: Mobject.__init__() got an unexpected keyword argument 'line_config'
-        line_config is removed in Manim v0.19.
-        Pass styling directly using stroke_color, stroke_width, etc.
-
-    
     </CRITICAL>
 """
 
@@ -675,7 +477,6 @@ def agentCheckFileCode(state: mainmState):
 
         Additionally, the animation for axes and labels should use `FadeIn` for smooth entrance rather than appearing instantly.
 
-        The corrected file `Animation_b9cf9c45.py` failed due to the bad import and must be fixed as described.
 
     -- AttributeError: 'MoveAlongPath' object has no attribute 'submobjects'
         Mobjects (like Cube(), Sphere()) have submobjects.
@@ -685,16 +486,16 @@ def agentCheckFileCode(state: mainmState):
         cube = Cube()
         anim = Rotate(cube, angle=PI/4)
 
-        anim.add_ambient_camera_rotation(rate=0.1)  # ❌ WRONG
+        anim.add_ambient_camera_rotation(rate=0.1)  #  WRONG
         Correct usage:
             class MyScene(ThreeDScene):
             def construct(self):
                 cube = Cube()
                 self.add(cube)
-                self.add_ambient_camera_rotation(rate=0.1)  # ✅ add rotation to the scene
+                self.add_ambient_camera_rotation(rate=0.1)  # add rotation to the scene
                 self.play(Rotate(cube, angle=PI/4))
                 self.wait(2)
-    -- AttributeError: 'Animation_b79f245b' object has no attribute 'set_background'
+    -- AttributeError:  object has no attribute 'set_background'
         How to fix:
             Use self.camera.background_color instead:
                 Replace any line like: self.set_background(BLACK)
@@ -785,16 +586,16 @@ You must fix all the errors listed below. Pay close attention to the histories t
 
 ---
 
-    **CORRECT v0.19+ SYNTAX TO USE:**
+    CORRECT v0.19+ SYNTAX TO USE:
 
 Create a Scene class named MainScene that follows these requirements:
 
 1. Scene Setup:
    - For 3D concepts: Use ThreeDScene with appropriate camera angles
         -- Always import lights and 3D objects directly from manim (e.g., from manim import ThreeDScene, Cube, Sphere, DirectionalLight).
-        -- ❌ camera.animate → not supported
+        -- camera.animate → not supported
 
-            ✅ Use:
+            Use:
 
             self.set_camera_orientation(...) → instant camera position
 

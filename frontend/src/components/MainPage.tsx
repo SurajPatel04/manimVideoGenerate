@@ -50,7 +50,7 @@ const ProgressStepper = memo(({ progress }: { progress?: number }) => {
     'Setting up description generation state',
     'Analyzing if user query is possible',
     'Detailed description in progress',
-    'Creating animation code',
+    'Creating animation code and rendering video',
     'Video generation completed successfully'
   ];
 
@@ -689,7 +689,7 @@ export default function MainPage() {
   );
 
   return (
-    <div className="h-screen w-screen flex bg-black overflow-hidden">
+    <div className="min-h-screen w-screen flex bg-black">
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#171717] border-b border-gray-700 p-4 flex items-center justify-between">
         <button
@@ -841,11 +841,11 @@ export default function MainPage() {
         </div>
       </div>
 
-      <main className="flex-1 flex flex-col min-w-0 md:ml-0 pt-16 md:pt-0 relative">
+      <main className="flex-1 flex flex-col min-w-0 md:ml-0 pt-16 md:pt-0 relative min-h-screen">
         <BackgroundBeams />
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 relative z-10">
+        <div className="flex-1 p-4 md:p-6 relative z-10 pb-32">
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full">
+            <div className="flex flex-col items-center justify-center min-h-[60vh]">
               <div className="w-full max-w-3xl px-2">
                 <div className="grid grid-cols-1 gap-3 md:gap-4">
                   {suggestionButtons}
@@ -853,7 +853,7 @@ export default function MainPage() {
               </div>
             </div>
           ) : (
-            <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto">
+            <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto pb-4">
               {messages.map((msg) => (
                 <Message 
                   key={msg.id} 
@@ -866,8 +866,28 @@ export default function MainPage() {
           )}
         </div>
         {!isCodeModalOpen && (
-          <div className="p-4 md:p-6 bg-gradient-to-t from-black to-transparent relative z-10">
+          <div className={`fixed bottom-0 right-0 p-4 md:p-6 bg-gradient-to-t from-black via-black/95 to-transparent z-20 transition-all duration-200 ${
+            sidebarOpen ? 'left-0 md:left-[300px]' : 'left-0 md:left-[60px]'
+          }`}>
             <div className="max-w-4xl mx-auto">
+              {/* Warning message for animation code creation and video rendering */}
+              {isGenerating && messages.some(msg => 
+                msg.type === 'assistant' && 
+                msg.taskId && 
+                !msg.videoUrl && 
+                msg.progress && 
+                msg.progress > 30 && 
+                msg.progress <= 50
+              ) && (
+                <div className="mb-4 p-3 bg-yellow-900/50 border border-yellow-600/50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                    <p className="text-yellow-200 text-sm">
+                      The rendering process may take some time based on the complexity of your query. Please be patient while we create your animation.
+                    </p>
+                  </div>
+                </div>
+              )}
               <PlaceholdersAndVanishInput
                 placeholders={PLACEHOLDERS}
                 onChange={handleInputChange}

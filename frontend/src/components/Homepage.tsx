@@ -8,7 +8,7 @@ export default function Homepage() {
     {
       prompt: "Create a 3D surface plot of the function z = sin(x) * cos(y) using a grid",
       gif: "/generatedManim.gif",
-      description: "Interactive 3D mathematical visualizations"
+      description: "3D mathematical visualizations"
     },
     {
       prompt: "Show a 3D surface plot for sin(x) + cos(y)",

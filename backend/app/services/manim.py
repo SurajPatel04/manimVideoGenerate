@@ -52,7 +52,6 @@ def call_graph(self, query, userID, quality, format, historyId=None):
                 )
 
                 update_progress("Checking Feasibility", 20, "Analyzing if user query is possible")
-                time.sleep(5) 
 
                 update_progress("Generating Description", 30, "Detailed description in progress")
                 
