@@ -100,3 +100,5 @@ yarl==1.20.1
 zstandard==0.24.0
 fastapi
 uvicorn
+celery
+redis
