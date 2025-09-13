@@ -12,7 +12,7 @@ export class UserApiService {
   static async getUserHistory(
     accessToken: string,
     page: number = 1,
-    limit: number = 5
+    limit: number = 15
   ): Promise<UserHistoryResponse> {
     try {
       const response = await axios.get<UserHistoryResponse>(

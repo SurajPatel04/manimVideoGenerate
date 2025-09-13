@@ -4,6 +4,7 @@ import { Sidebar, SidebarBody } from "@/components/ui/sidebar";
 import { BackgroundBeams } from "@/components/ui/background-beams";
 import { CodeBlock } from "@/components/ui/code-block";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { IconPlus, IconUser, IconLogout, IconMenu2, IconDownload, IconCode, IconX, IconHistory } from "@tabler/icons-react";
 import type { ManimGenerationRequest, UserHistoryItem } from '@/types/api';
 import { ManimApiService } from '@/services/manimApi';
@@ -287,6 +288,7 @@ export default function MainPage() {
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false); 
   const { user, logout, tokens } = useAuth();
+  const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const mobileUserMenuRef = useRef<HTMLDivElement>(null);
@@ -489,17 +491,27 @@ export default function MainPage() {
   // Close user menu when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      const target = event.target as Node;
-      const isOutsideDesktop = userMenuRef.current && !userMenuRef.current.contains(target);
-      const isOutsideMobile = mobileUserMenuRef.current && !mobileUserMenuRef.current.contains(target);
+      const target = event.target as Element;
       
-      if ((isOutsideDesktop || isOutsideMobile) && showUserMenu) {
+      // Check if the click is on a logout button - if so, don't close the menu here
+      if (target.closest('button')?.textContent?.includes('Logout')) {
+        return;
+      }
+      
+      const clickedInsideDesktop = userMenuRef.current?.contains(target) ?? false;
+      const clickedInsideMobile = mobileUserMenuRef.current?.contains(target) ?? false;
+
+      // Close only if click is outside BOTH menus (desktop and mobile containers)
+      if (showUserMenu && !clickedInsideDesktop && !clickedInsideMobile) {
         setShowUserMenu(false);
       }
     }
 
     if (showUserMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
+      // Use setTimeout to ensure the menu is rendered before adding the listener
+      setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+      }, 0);
     }
 
     return () => {
@@ -594,10 +606,22 @@ export default function MainPage() {
     setShowUserMenu(false);
   }, [pollingInterval]);
 
-  const handleLogout = useCallback(() => {
-    logout();
-    setShowUserMenu(false);
-  }, [logout]);
+  const handleLogout = useCallback((e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    console.log('Logout clicked!'); // Debug log
+    try {
+      logout();
+      setShowUserMenu(false);
+      // Force navigation to login page
+      navigate('/login', { replace: true });
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if logout fails, clear local state and navigate
+      setShowUserMenu(false);
+      navigate('/login', { replace: true });
+    }
+  }, [logout, navigate]);
 
   const toggleUserMenu = useCallback(() => setShowUserMenu(prev => !prev), []);
 
@@ -779,7 +803,9 @@ export default function MainPage() {
                 <div className="absolute bottom-full left-0 right-0 mb-2 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50">
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-2 p-3 hover:bg-gray-700 rounded-lg transition-colors text-white text-sm"
+                    onMouseDown={(e) => e.stopPropagation()}
+                    className="w-full flex items-center gap-2 p-3 hover:bg-gray-700 rounded-lg transition-colors text-white text-sm cursor-pointer"
+                    type="button"
                   >
                     <IconLogout className="h-4 w-4 shrink-0" />
                     Logout
@@ -790,7 +816,9 @@ export default function MainPage() {
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 whitespace-nowrap">
                   <button
                     onClick={handleLogout}
-                    className="flex items-center gap-2 p-3 hover:bg-gray-700 rounded-lg transition-colors text-white text-sm"
+                    onMouseDown={(e) => e.stopPropagation()}
+                    className="flex items-center gap-2 p-3 hover:bg-gray-700 rounded-lg transition-colors text-white text-sm cursor-pointer"
+                    type="button"
                   >
                     <IconLogout className="h-4 w-4 shrink-0" />
                     Logout
@@ -856,7 +884,9 @@ export default function MainPage() {
               <div className="absolute bottom-full left-0 right-0 mb-2 bg-gray-800 border border-gray-600 rounded-lg shadow-lg">
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg transition-colors text-white text-sm"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  className="w-full flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg transition-colors text-white text-sm cursor-pointer"
+                  type="button"
                 >
                   <IconLogout className="h-4 w-4" />
                   Logout
