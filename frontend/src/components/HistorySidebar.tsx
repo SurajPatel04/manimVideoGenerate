@@ -17,6 +17,7 @@ export default function HistorySidebar({ isOpen, onToggle, onHistoryItemClick, i
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
+  const [noHistoryFound, setNoHistoryFound] = useState(false);
   const { tokens } = useAuth();
 
   const fetchHistory = useCallback(async (page: number = 1, reset: boolean = false) => {
@@ -24,21 +25,31 @@ export default function HistorySidebar({ isOpen, onToggle, onHistoryItemClick, i
 
     setLoading(true);
     setError(null);
+    setNoHistoryFound(false);
 
     try {
       const response = await UserApiService.getUserHistory(tokens.accessToken, page, 5);
       
       if (reset) {
-        setHistoryData(response.data);
+        setHistoryData(response.data || []);
       } else {
-        setHistoryData(prev => [...prev, ...response.data]);
+        setHistoryData(prev => [...(prev || []), ...(response.data || [])]);
       }
       
       setCurrentPage(response.page);
       setHasMore(response.page < response.pages);
+      
+      // Check if this is a "no history found" case
+      if (response.total === 0) {
+        setNoHistoryFound(true);
+      }
     } catch (err: any) {
       console.error('Failed to fetch user history:', err);
       setError(err.message || 'Failed to load history');
+      // Reset to empty array on error to prevent undefined access
+      if (reset) {
+        setHistoryData([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -71,22 +82,26 @@ export default function HistorySidebar({ isOpen, onToggle, onHistoryItemClick, i
   };
 
   const getLatestMessage = (messages: UserHistoryMessage[]) => {
+    if (!messages || messages.length === 0) return null;
     return messages[messages.length - 1] || messages[0];
   };
 
   if (!isOpen) return null;
 
+  // Ensure historyData is always an array
+  const safeHistoryData = Array.isArray(historyData) ? historyData : [];
+
   if (inMainSidebar) {
     return (
       <div className="space-y-2">
-        {loading && historyData.length === 0 && (
+        {loading && (safeHistoryData?.length || 0) === 0 && (
           <div className="text-center py-4">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400 mx-auto"></div>
             <p className="text-gray-400 text-xs mt-1">Loading...</p>
           </div>
         )}
 
-        {error && (
+        {error && !noHistoryFound && (
           <div className="text-center py-4">
             <p className="text-red-400 text-xs">{error}</p>
             <button
@@ -98,15 +113,15 @@ export default function HistorySidebar({ isOpen, onToggle, onHistoryItemClick, i
           </div>
         )}
 
-        {historyData.length === 0 && !loading && !error && (
+        {(((safeHistoryData?.length || 0) === 0 && !loading && !error) || noHistoryFound) && (
           <div className="text-center py-4">
             <IconHistory className="h-8 w-8 text-gray-600 mx-auto mb-1" />
             <p className="text-gray-400 text-xs">No history found</p>
           </div>
         )}
 
-        {historyData.map((item) => {
-          const latestMessage = getLatestMessage(item.messages);
+        {safeHistoryData?.map((item) => {
+          const latestMessage = getLatestMessage(item.messages || []);
           const isVideo = latestMessage?.link?.includes('.mp4');
           const isGif = latestMessage?.link?.includes('.gif');
           
@@ -128,7 +143,7 @@ export default function HistorySidebar({ isOpen, onToggle, onHistoryItemClick, i
 
               <div className="flex items-center justify-between text-xs">
                 <span className="text-gray-400">
-                  {item.messages.length} msg{item.messages.length !== 1 ? 's' : ''}
+                  {item.messages?.length || 0} msg{(item.messages?.length || 0) !== 1 ? 's' : ''}
                 </span>
                 {latestMessage && (
                   <span className="text-gray-500 text-xs">
@@ -174,14 +189,14 @@ export default function HistorySidebar({ isOpen, onToggle, onHistoryItemClick, i
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {loading && historyData.length === 0 && (
+        {loading && (safeHistoryData?.length || 0) === 0 && (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto"></div>
             <p className="text-gray-400 text-sm mt-2">Loading history...</p>
           </div>
         )}
 
-        {error && (
+        {error && !noHistoryFound && (
           <div className="text-center py-8">
             <p className="text-red-400 text-sm">{error}</p>
             <button
@@ -193,15 +208,15 @@ export default function HistorySidebar({ isOpen, onToggle, onHistoryItemClick, i
           </div>
         )}
 
-        {historyData.length === 0 && !loading && !error && (
+        {(((safeHistoryData?.length || 0) === 0 && !loading && !error) || noHistoryFound) && (
           <div className="text-center py-8">
             <IconHistory className="h-12 w-12 text-gray-600 mx-auto mb-2" />
             <p className="text-gray-400 text-sm">No history found</p>
           </div>
         )}
 
-        {historyData.map((item) => {
-          const latestMessage = getLatestMessage(item.messages);
+        {safeHistoryData?.map((item) => {
+          const latestMessage = getLatestMessage(item.messages || []);
           const isVideo = latestMessage?.link?.includes('.mp4');
           const isGif = latestMessage?.link?.includes('.gif');
           
@@ -230,7 +245,7 @@ export default function HistorySidebar({ isOpen, onToggle, onHistoryItemClick, i
 
               <div className="flex items-center justify-between text-xs">
                 <span className="text-gray-500">
-                  {item.messages.length} message{item.messages.length !== 1 ? 's' : ''}
+                  {item.messages?.length || 0} message{(item.messages?.length || 0) !== 1 ? 's' : ''}
                 </span>
                 {latestMessage && (
                   <span className="text-gray-500">

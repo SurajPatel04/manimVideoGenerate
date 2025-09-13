@@ -131,7 +131,7 @@ async def getUserHistory(
 
     if not history:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=status.HTTP_204_NO_CONTENT,
             detail="No user history found"
         )
 

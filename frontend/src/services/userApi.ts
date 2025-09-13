@@ -30,6 +30,17 @@ export class UserApiService {
       console.error('User history API error:', error);
       
       if (error.response) {
+        // Handle 204 No Content - return empty response structure
+        if (error.response.status === 204) {
+          return {
+            page: 1,
+            limit: limit,
+            total: 0,
+            pages: 0,
+            data: []
+          };
+        }
+        
         throw new Error(
           error.response.data?.detail || 
           error.response.data?.message || 
