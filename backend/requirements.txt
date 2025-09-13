@@ -102,3 +102,4 @@ fastapi
 uvicorn
 celery
 redis
+beanie
