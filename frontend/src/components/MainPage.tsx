@@ -10,7 +10,6 @@ import { ManimApiService } from '@/services/manimApi';
 import { Stepper, Step, StepLabel, Box } from '@mui/material';
 import HistorySidebar from '@/components/HistorySidebar';
 
-// Types for better performance
 interface MessageType {
   type: 'user' | 'assistant';
   content: string;
@@ -26,9 +25,9 @@ interface MessageType {
 
 // Constants
 const SUGGESTION_PROMPTS = [
-  "Create an animation showing the derivation of quadratic formula",
-  "Generate a video explaining Newton's laws of motion with examples",
-  "Make an animation about the water cycle and climate change",
+  "Create a 3D surface plot of the function z = sin(x) * cos(y) using a grid",
+  "Show a 3D surface plot for sin(x) + cos(y)",
+  "Visualize a 3D surface plot of z = x^2 + y^2 (a paraboloid)",
 
 ];
 
