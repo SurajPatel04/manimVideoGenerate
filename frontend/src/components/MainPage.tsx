@@ -319,7 +319,7 @@ export default function MainPage() {
             msg.taskId === taskId 
               ? { 
                   ...msg, 
-                  content: '⏰ Polling timeout. The task may still be processing on the server.'
+                  content: 'Polling timeout. The task may still be processing on the server.'
                 }
               : msg
           ));
@@ -328,7 +328,6 @@ export default function MainPage() {
         }
 
         const result = await ManimApiService.pollTaskStatus(taskId, tokens.accessToken);
-        console.log(`Polling #${pollCount} - Status: ${result.status}, Progress: ${result.progress}%`);
         
 
         consecutiveErrors = 0;
@@ -351,7 +350,6 @@ export default function MainPage() {
         ));
 
         if (result.status === 'completed' || result.status === 'failed') {
-          console.log(`Polling completed after ${pollCount} attempts - Status: ${result.status}`);
           
           setIsGenerating(false);
           
@@ -359,7 +357,6 @@ export default function MainPage() {
             if (result.data?.success) {
               if (result.data.historyId) {
                 setCurrentHistoryId(result.data.historyId);
-                console.log('History ID updated from result:', result.data.historyId);
               }
               setMessages(prev => prev.map(msg => 
                 msg.taskId === taskId 
@@ -434,20 +431,17 @@ export default function MainPage() {
 
     const shouldStop = await pollTask();
     if (shouldStop) {
-      console.log('Task already completed, not setting up interval');
       return;
     }
     
     const scheduleNextPoll = () => {
       const interval = calculateInterval();
-      console.log(`Scheduling next poll in ${Math.round(interval)}ms`);
       
       setTimeout(async () => {
         const shouldStop = await pollTask();
         if (!shouldStop) {
           scheduleNextPoll();
         } else {
-          console.log('Polling sequence completed');
           setPollingInterval(null);
         }
       }, interval);
@@ -553,8 +547,7 @@ export default function MainPage() {
     if (!currentTaskId || !tokens?.accessToken) return;
 
     try {
-      const response = await ManimApiService.cancelTask(currentTaskId, tokens.accessToken);
-      console.log('Task cancelled:', response);
+      await ManimApiService.cancelTask(currentTaskId, tokens.accessToken);
 
       stopPollingAndReset();
 
@@ -588,7 +581,6 @@ export default function MainPage() {
   }, [currentTaskId, tokens?.accessToken, stopPollingAndReset]);
 
   const handleNewChat = useCallback(() => {
-    console.log('Starting new chat - resetting history');
     setMessages([]);
     setCurrentHistoryId(""); 
     setCurrentTaskId(""); 
@@ -622,7 +614,7 @@ export default function MainPage() {
 
     const assistantMessage: MessageType = {
       type: 'assistant',
-      content: `🔄 Starting animation generation for "${text.trim()}"...`,
+      content: `Starting animation generation for "${text.trim()}"...`,
       taskId: 'temp-id',
       progress: 0,
       stage: "Setting up description generation state",
@@ -641,21 +633,12 @@ export default function MainPage() {
         historyId: currentHistoryId
       };
 
-      console.log('API Request:', {
-        userQuery: text.trim(),
-        historyId: currentHistoryId,
-        isNewChat: currentHistoryId === ""
-      });
-
       const response = await ManimApiService.generateAnimation(requestPayload, tokens.accessToken);
-
-      console.log('Task ID:', response.task_id);
 
       setCurrentTaskId(response.task_id);
 
       if (response.historyId) {
         setCurrentHistoryId(response.historyId);
-        console.log('History ID updated:', response.historyId);
       }
 
       setMessages(prev => prev.map(msg => 
