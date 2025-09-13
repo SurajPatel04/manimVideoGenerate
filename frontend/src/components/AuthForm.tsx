@@ -17,7 +17,6 @@ export default function AuthForm() {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Determine initial state based on URL
   const [isLogin, setIsLogin] = useState(() => {
     return location.pathname === '/login';
   });
@@ -33,7 +32,6 @@ export default function AuthForm() {
     confirmPassword: "",
   });
 
-  // Update form state when URL changes
   useEffect(() => {
     if (location.pathname === '/login') {
       setIsLogin(true);
@@ -57,7 +55,6 @@ export default function AuthForm() {
       try {
         const success = await login(formData.email, formData.password);
         if (success) {
-          // Login successful, user will be redirected by router
           setFormData({
             firstName: "",
             lastName: "",
@@ -70,7 +67,6 @@ export default function AuthForm() {
         setError(err.message || "Login failed. Please try again.");
       }
     } else {
-      // Validation for signup
       if (formData.password.length < 6) {
         setError("Password must be at least 6 characters");
         return;
@@ -84,13 +80,13 @@ export default function AuthForm() {
       try {
         const success = await signup({
           firstName: formData.firstName,
-          lastName: formData.lastName, // Optional field
+          lastName: formData.lastName,
           email: formData.email,
           password: formData.password,
         });
         
         if (success) {
-          // Navigate to login page after successful signup
+
           navigate('/login');
           setFormData({
             firstName: "",
@@ -101,7 +97,6 @@ export default function AuthForm() {
           });
         }
       } catch (err: any) {
-        // Handle specific error messages
         if (err.message === 'Email already exists') {
           setError("Email already exists");
         } else {
@@ -115,10 +110,8 @@ export default function AuthForm() {
     const newIsLogin = !isLogin;
     setIsLogin(newIsLogin);
     
-    // Update URL based on new state
     navigate(newIsLogin ? '/login' : '/signup', { replace: true });
     
-    // Clear form when switching
     setFormData({
       firstName: "",
       lastName: "",

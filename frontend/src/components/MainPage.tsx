@@ -20,10 +20,9 @@ interface MessageType {
   code?: string;
   filename?: string;
   success?: boolean;
-  id: string; // Add unique ID for better list rendering
+  id: string; 
 }
 
-// Constants
 const SUGGESTION_PROMPTS = [
   "Create a 3D surface plot of the function z = sin(x) * cos(y) using a grid",
   "Show a 3D surface plot for sin(x) + cos(y)",
@@ -37,7 +36,6 @@ const PLACEHOLDERS = [
   "Make an animation about the water cycle and climate change",
 ];
 
-// Memoized Components for performance
 const SuggestionButton = memo(({ suggestion, onClick }: { suggestion: string, onClick: (suggestion: string, options?: { format: string; quality: string }) => void }) => (
   <button
     onClick={() => onClick(suggestion, { format: "mp4", quality: "ql" })}
@@ -47,7 +45,6 @@ const SuggestionButton = memo(({ suggestion, onClick }: { suggestion: string, on
   </button>
 ));
 
-// Progress Stepper Component
 const ProgressStepper = memo(({ progress }: { progress?: number }) => {
   const steps = [
     'Setting up description generation state',
@@ -57,14 +54,13 @@ const ProgressStepper = memo(({ progress }: { progress?: number }) => {
     'Video generation completed successfully'
   ];
 
-  // Determine active step based on progress from backend
   const getActiveStep = () => {
     const currentProgress = progress || 0;
-    if (currentProgress <= 10) return 0;      // Step 1: 0-10%
-    if (currentProgress <= 20) return 1;      // Step 2: 10-20%
-    if (currentProgress <= 30) return 2;      // Step 3: 20-30%
-    if (currentProgress <= 50) return 3;      // Step 4: 30-50%
-    return 4; // Step 5: 50-100%
+    if (currentProgress <= 10) return 0; 
+    if (currentProgress <= 20) return 1;
+    if (currentProgress <= 30) return 2;
+    if (currentProgress <= 50) return 3;
+    return 4;
   };
 
   const activeStep = getActiveStep();
@@ -91,15 +87,15 @@ const ProgressStepper = memo(({ progress }: { progress?: number }) => {
             left: 'calc(-50% + 16px)',
             right: 'calc(50% + 16px)',
             '& .MuiStepConnector-line': {
-              borderColor: '#4B5563', // gray-600
+              borderColor: '#4B5563', 
               borderTopWidth: 2,
             }
           },
           '& .MuiStepConnector-active .MuiStepConnector-line': {
-            borderColor: '#3B82F6', // blue-500
+            borderColor: '#3B82F6',
           },
           '& .MuiStepConnector-completed .MuiStepConnector-line': {
-            borderColor: '#10B981', // green-500
+            borderColor: '#10B981',
           }
         }}
       >
@@ -108,26 +104,26 @@ const ProgressStepper = memo(({ progress }: { progress?: number }) => {
             <StepLabel 
               sx={{
                 '& .MuiStepLabel-label': {
-                  color: '#9CA3AF', // gray-400
-                  fontSize: '0.75rem', // text-xs
+                  color: '#9CA3AF',
+                  fontSize: '0.75rem',
                   marginTop: '8px',
                 },
                 '& .MuiStepLabel-label.Mui-active': {
-                  color: '#3B82F6', // blue-500
+                  color: '#3B82F6',
                   fontWeight: 600,
                 },
                 '& .MuiStepLabel-label.Mui-completed': {
-                  color: '#10B981', // green-500
+                  color: '#10B981',
                 },
                 '& .MuiStepIcon-root': {
-                  color: '#4B5563', // gray-600
+                  color: '#4B5563', 
                   fontSize: '1.5rem',
                 },
                 '& .MuiStepIcon-root.Mui-active': {
-                  color: '#3B82F6', // blue-500
+                  color: '#3B82F6',
                 },
                 '& .MuiStepIcon-root.Mui-completed': {
-                  color: '#10B981', // green-500
+                  color: '#10B981',
                 },
               }}
             >
@@ -156,13 +152,11 @@ const Message = memo(({ message, onCodeModalToggle }: {
     onCodeModalToggle(false);
   }, [onCodeModalToggle]);
 
-  // Memoize video/gif section to prevent unnecessary re-renders
   const videoSection = useMemo(() => {
     if (message.type !== 'assistant' || !message.videoUrl || message.success === false) {
       return null;
     }
 
-    // Check if the URL is a GIF file
     const isGif = message.videoUrl.toLowerCase().includes('.gif');
 
     return (
@@ -179,7 +173,7 @@ const Message = memo(({ message, onCodeModalToggle }: {
             controls 
             className="w-full max-w-md rounded-lg"
             poster=""
-            preload="metadata" // Optimize video loading
+            preload="metadata" 
           >
             <source src={message.videoUrl} type="video/mp4" />
             Your browser does not support the video tag.
@@ -208,7 +202,6 @@ const Message = memo(({ message, onCodeModalToggle }: {
     );
   }, [message.videoUrl, message.code, message.success, handleShowCode]);
 
-  // Memoize stepper section
   const stepperSection = useMemo(() => {
     if (message.type !== 'assistant' || !message.taskId || message.videoUrl || message.success === false) {
       return null;
@@ -268,7 +261,7 @@ const Message = memo(({ message, onCodeModalToggle }: {
     </>
   );
 }, (prevProps, nextProps) => {
-  // Custom comparison function for better memoization
+
   const prevMsg = prevProps.message;
   const nextMsg = nextProps.message;
   
@@ -289,13 +282,12 @@ export default function MainPage() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [currentHistoryId, setCurrentHistoryId] = useState<string>("");
   const [currentTaskId, setCurrentTaskId] = useState<string>("");
-  const [inputValue, setInputValue] = useState<string>(""); // Add state for input value
+  const [inputValue, setInputValue] = useState<string>(""); 
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
-  const [isCodeModalOpen, setIsCodeModalOpen] = useState(false); // Track if any code modal is open
+  const [isCodeModalOpen, setIsCodeModalOpen] = useState(false); 
   const { user, logout, tokens } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Utility function to generate unique IDs
   const generateMessageId = useCallback(() => `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, []);
 
   const startTaskPolling = useCallback(async (taskId: string) => {
@@ -304,14 +296,13 @@ export default function MainPage() {
     let pollCount = 0;
     let consecutiveErrors = 0;
     const maxRetries = 3;
-    const baseInterval = 2000; // Start with 2 seconds
-    const maxInterval = 30000; // Max 30 seconds
-    const maxPollCount = 300; // Stop after 10 minutes (300 * 2s average)
-
+    const baseInterval = 2000;
+    const maxInterval = 30000; 
+    const maxPollCount = 300; 
     const calculateInterval = () => {
-      // Exponential backoff with jitter
+
       const backoff = Math.min(baseInterval * Math.pow(1.5, consecutiveErrors), maxInterval);
-      const jitter = Math.random() * 1000; // Add up to 1 second jitter
+      const jitter = Math.random() * 1000;
       return backoff + jitter;
     };
 
@@ -319,7 +310,6 @@ export default function MainPage() {
       try {
         pollCount++;
         
-        // Safety check to prevent infinite polling
         if (pollCount > maxPollCount) {
           console.warn('Polling timeout reached, stopping polling');
           setMessages(prev => prev.map(msg => 
@@ -337,10 +327,9 @@ export default function MainPage() {
         const result = await ManimApiService.pollTaskStatus(taskId, tokens.accessToken);
         console.log(`Polling #${pollCount} - Status: ${result.status}, Progress: ${result.progress}%`);
         
-        // Reset error count on successful response
+
         consecutiveErrors = 0;
-        
-        // Update the message with progress
+
         setMessages(prev => prev.map(msg => 
           msg.taskId === taskId 
             ? { 
@@ -358,23 +347,17 @@ export default function MainPage() {
             : msg
         ));
 
-        // Check if task is completed or failed and stop polling
         if (result.status === 'completed' || result.status === 'failed') {
           console.log(`Polling completed after ${pollCount} attempts - Status: ${result.status}`);
           
-          // Set generating to false
           setIsGenerating(false);
           
           if (result.status === 'completed') {
-            // Check if the task was successful or failed based on data.success
             if (result.data?.success) {
-              // Update history ID from the result
               if (result.data.historyId) {
                 setCurrentHistoryId(result.data.historyId);
                 console.log('History ID updated from result:', result.data.historyId);
               }
-
-              // Add the video to the message for successful completion
               setMessages(prev => prev.map(msg => 
                 msg.taskId === taskId 
                   ? { 
@@ -388,7 +371,6 @@ export default function MainPage() {
                   : msg
               ));
             } else {
-              // Handle failure case where data.success is false
               const failureReason = result.data?.reason || result.data?.message || 'Animation generation failed for unknown reasons.';
               setMessages(prev => prev.map(msg => 
                 msg.taskId === taskId 
@@ -401,7 +383,6 @@ export default function MainPage() {
               ));
             }
           } else if (result.status === 'failed') {
-            // Handle system-level failure
             setMessages(prev => prev.map(msg => 
               msg.taskId === taskId 
                 ? { 
@@ -413,17 +394,14 @@ export default function MainPage() {
             ));
           }
           
-          // Return true to indicate polling should stop
           return true;
         }
         
-        // Return false to continue polling
         return false;
       } catch (error) {
         consecutiveErrors++;
         console.error(`Polling error #${consecutiveErrors}:`, error);
         
-        // Stop polling after max consecutive errors
         if (consecutiveErrors >= maxRetries) {
           console.error('Max polling errors reached, stopping polling');
           setMessages(prev => prev.map(msg => 
@@ -437,8 +415,7 @@ export default function MainPage() {
           setIsGenerating(false);
           return true;
         }
-        
-        // Update message to show retry attempt
+
         setMessages(prev => prev.map(msg => 
           msg.taskId === taskId 
             ? { 
@@ -448,19 +425,16 @@ export default function MainPage() {
             : msg
         ));
         
-        // Continue polling with backoff
         return false;
       }
     };
 
-    // Start polling immediately
     const shouldStop = await pollTask();
     if (shouldStop) {
       console.log('Task already completed, not setting up interval');
-      return; // Don't set up interval if already completed
+      return;
     }
     
-    // Set up dynamic interval polling with exponential backoff
     const scheduleNextPoll = () => {
       const interval = calculateInterval();
       console.log(`Scheduling next poll in ${Math.round(interval)}ms`);
@@ -468,7 +442,7 @@ export default function MainPage() {
       setTimeout(async () => {
         const shouldStop = await pollTask();
         if (!shouldStop) {
-          scheduleNextPoll(); // Schedule the next poll
+          scheduleNextPoll();
         } else {
           console.log('Polling sequence completed');
           setPollingInterval(null);
@@ -479,7 +453,6 @@ export default function MainPage() {
     scheduleNextPoll();
   }, [tokens?.accessToken]);
 
-  // Cleanup polling on unmount
   useEffect(() => {
     return () => {
       if (pollingInterval) {
@@ -488,7 +461,6 @@ export default function MainPage() {
     };
   }, [pollingInterval]);
 
-  // Auto-scroll to bottom when messages change (optimized)
   useEffect(() => {
     const scrollToBottom = () => {
       messagesEndRef.current?.scrollIntoView({ 
@@ -497,14 +469,12 @@ export default function MainPage() {
       });
     };
     
-    // Only scroll if not too many messages to avoid performance issues
     if (messages.length < 50) {
       const timeoutId = setTimeout(scrollToBottom, 150);
       return () => clearTimeout(timeoutId);
     }
-  }, [messages.length]); // Only depend on length, not entire messages array
+  }, [messages.length]);
 
-  // Also scroll when generating state changes (for progress updates)
   useEffect(() => {
     if (isGenerating) {
       const scrollToBottom = () => {
@@ -522,18 +492,15 @@ export default function MainPage() {
   const toggleSidebar = useCallback(() => setSidebarOpen(prev => !prev), []);
 
   const handleHistoryItemClick = useCallback((historyItem: UserHistoryItem) => {
-    // Convert history item to messages for display
     const newMessages: MessageType[] = [];
     
     historyItem.messages.forEach((histMsg, index) => {
-      // Add user message
       newMessages.push({
         type: 'user',
         content: histMsg.userQuery,
         id: `history_user_${historyItem._id}_${index}`
       });
 
-      // Add assistant message with video if available
       newMessages.push({
         type: 'assistant',
         content: `✅ Animation completed successfully! Your "${historyItem.chatName}" is ready.`,
@@ -549,7 +516,6 @@ export default function MainPage() {
     setCurrentHistoryId(historyItem._id);
   }, []);
 
-  // Cleanup function to stop polling and reset states
   const stopPollingAndReset = useCallback(() => {
     if (pollingInterval) {
       clearInterval(pollingInterval);
@@ -559,7 +525,6 @@ export default function MainPage() {
     setCurrentTaskId("");
   }, [pollingInterval]);
 
-  // Cancel task function
   const handleCancelTask = useCallback(async () => {
     if (!currentTaskId || !tokens?.accessToken) return;
 
@@ -567,10 +532,8 @@ export default function MainPage() {
       const response = await ManimApiService.cancelTask(currentTaskId, tokens.accessToken);
       console.log('Task cancelled:', response);
 
-      // Stop polling and reset states
       stopPollingAndReset();
 
-      // Update the message that was showing progress to show cancelled status
       setMessages(prev => prev.map(msg => 
         msg.taskId === currentTaskId 
           ? { 
@@ -585,10 +548,8 @@ export default function MainPage() {
     } catch (error: any) {
       console.error('Error cancelling task:', error);
       
-      // Still stop the polling even if cancel API fails
       stopPollingAndReset();
 
-      // Update the message that was showing progress to show local cancellation
       setMessages(prev => prev.map(msg => 
         msg.taskId === currentTaskId 
           ? { 
@@ -605,11 +566,10 @@ export default function MainPage() {
   const handleNewChat = useCallback(() => {
     console.log('Starting new chat - resetting history');
     setMessages([]);
-    setCurrentHistoryId(""); // Reset history for new chat
-    setCurrentTaskId(""); // Reset task ID for new chat
-    setIsGenerating(false); // Reset generating state
+    setCurrentHistoryId(""); 
+    setCurrentTaskId(""); 
+    setIsGenerating(false);
     
-    // Clear any active polling
     if (pollingInterval) {
       clearInterval(pollingInterval);
       setPollingInterval(null);
@@ -626,7 +586,6 @@ export default function MainPage() {
   const toggleUserMenu = useCallback(() => setShowUserMenu(prev => !prev), []);
 
   const processSubmission = useCallback(async (text: string, options: { format: string; quality: string } = { format: "mp4", quality: "ql" }) => {
-    // Add null check and trim validation
     if (!text || !text.trim()) return;
 
     const userMessage: MessageType = { 
@@ -637,11 +596,10 @@ export default function MainPage() {
     setMessages(prev => [...prev, userMessage]);
     setIsGenerating(true);
 
-    // Add assistant response with stepper immediately showing 0% progress
     const assistantMessage: MessageType = {
       type: 'assistant',
       content: `🔄 Starting animation generation for "${text.trim()}"...`,
-      taskId: 'temp-id', // Temporary ID until we get real one
+      taskId: 'temp-id',
       progress: 0,
       stage: "Setting up description generation state",
       id: generateMessageId()
@@ -649,57 +607,44 @@ export default function MainPage() {
     setMessages(prev => [...prev, assistantMessage]);
 
     try {
-      // Check if user has access token
       if (!tokens?.accessToken) {
         throw new Error('Authentication required. Please log in again.');
       }
-
-      // Prepare the API request payload
       const requestPayload: ManimGenerationRequest = {
         userQuery: text.trim(),
         format: options.format,
         quality: options.quality, 
-        historyId: currentHistoryId // Empty string for new chat, otherwise existing historyId
+        historyId: currentHistoryId
       };
 
-      // Log the request payload for debugging
       console.log('API Request:', {
         userQuery: text.trim(),
         historyId: currentHistoryId,
         isNewChat: currentHistoryId === ""
       });
 
-      // Make API call to manim generation endpoint using the service
       const response = await ManimApiService.generateAnimation(requestPayload, tokens.accessToken);
 
-      // Log the task ID as requested
       console.log('Task ID:', response.task_id);
 
-      // Store the task ID for potential future use (status polling, etc.)
       setCurrentTaskId(response.task_id);
 
-      // Update history ID if returned from API for subsequent requests in this chat
       if (response.historyId) {
         setCurrentHistoryId(response.historyId);
         console.log('History ID updated:', response.historyId);
       }
 
-      // Update the message with the real task ID
       setMessages(prev => prev.map(msg => 
         msg.taskId === 'temp-id' 
           ? { ...msg, taskId: response.task_id }
           : msg
       ));
 
-      // Start polling for task status
       startTaskPolling(response.task_id);
 
-      // TODO: You might want to store the task_id for polling status later
 
     } catch (error: any) {
       console.error('Error generating manim animation:', error);
-      
-      // Handle specific error cases
       let errorMessage = 'Sorry, there was an error generating your animation. Please try again.';
       
       if (error.message.includes('Authentication')) {
@@ -720,9 +665,8 @@ export default function MainPage() {
         id: generateMessageId()
       };
       setMessages(prev => [...prev, errorResponseMessage]);
-      setIsGenerating(false); // Only set to false on API call failure
+      setIsGenerating(false);
     }
-    // Note: Don't set setIsGenerating(false) in finally - let polling handle it for successful submissions
   }, [currentHistoryId, tokens?.accessToken, startTaskPolling, generateMessageId]);
 
   const onInputSubmit = (e: React.FormEvent<HTMLFormElement>, options: { format: string; quality: string }) => {
@@ -730,7 +674,7 @@ export default function MainPage() {
       
       if (inputValue && inputValue.trim()) {
         processSubmission(inputValue.trim(), options);
-        setInputValue(""); // Clear the input after submission
+        setInputValue("");
       }
   };
 
