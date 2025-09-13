@@ -31,10 +31,10 @@ export function PlaceholdersAndVanishInput({
   };
   const handleVisibilityChange = () => {
     if (document.visibilityState !== "visible" && intervalRef.current) {
-      clearInterval(intervalRef.current); // Clear the interval when the tab is not visible
+      clearInterval(intervalRef.current);
       intervalRef.current = null;
     } else if (document.visibilityState === "visible") {
-      startAnimation(); // Restart the interval when the tab becomes visible
+      startAnimation();
     }
   };
 
@@ -112,19 +112,17 @@ export function PlaceholdersAndVanishInput({
     draw();
   }, [value, draw]);
 
-  // Handle clicking outside the options panel
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as Node;
-      
-      // Don't close if clicking on the plus button or its children
+
       const plusButton = (event.target as Element).closest('[data-plus-button]');
       if (plusButton) {
         console.log('Clicked on plus button, not closing options');
         return;
       }
       
-      // Close if clicking outside the options panel
+
       if (optionsRef.current && !optionsRef.current.contains(target)) {
         console.log('Clicked outside options panel, closing');
         setShowOptions(false);
@@ -336,7 +334,6 @@ export function PlaceholdersAndVanishInput({
         )}
       >
         {isGenerating ? (
-          // Cancel icon (X)
           <motion.svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
@@ -354,7 +351,6 @@ export function PlaceholdersAndVanishInput({
             <path d="M6 6l12 12" />
           </motion.svg>
         ) : (
-          // Submit icon (arrow)
           <motion.svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"

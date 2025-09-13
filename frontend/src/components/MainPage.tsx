@@ -865,7 +865,7 @@ export default function MainPage() {
         sidebarOpen ? 'md:ml-[300px]' : 'md:ml-[60px]'
       }`}>
         <BackgroundBeams />
-  <div className="flex-1 p-4 md:p-6 relative z-10 pb-40 overflow-y-auto">
+  <div className="flex-1 p-4 md:p-6 relative z-10 pb-20 md:pb-24 overflow-y-auto">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center min-h-[60vh]">
               <div className="w-full max-w-3xl px-2">
@@ -875,7 +875,7 @@ export default function MainPage() {
               </div>
             </div>
           ) : (
-            <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto pb-4">
+            <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto pb-8 md:pb-12">
               {messages.map((msg) => (
                 <Message 
                   key={msg.id} 
