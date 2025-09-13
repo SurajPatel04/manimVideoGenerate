@@ -78,7 +78,7 @@ export default function HistorySidebar({ isOpen, onToggle, onHistoryItemClick, i
 
   if (inMainSidebar) {
     return (
-      <div className="flex-1 overflow-y-auto space-y-2">
+      <div className="space-y-2">
         {loading && historyData.length === 0 && (
           <div className="text-center py-4">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400 mx-auto"></div>
@@ -113,26 +113,25 @@ export default function HistorySidebar({ isOpen, onToggle, onHistoryItemClick, i
           return (
             <div
               key={item._id}
-              className="bg-gray-800 rounded-lg p-2 border border-gray-700 hover:border-gray-600 cursor-pointer transition-all duration-200 hover:bg-gray-750"
+              className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50 hover:border-gray-600 cursor-pointer transition-all duration-200 hover:bg-gray-700/50 group"
               onClick={() => onHistoryItemClick?.(item)}
             >
-              <div className="flex items-start justify-between gap-2 mb-1">
-                <h3 className="text-white text-xs font-medium line-clamp-1 flex-1">
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <h3 className="text-white text-sm font-medium line-clamp-2 flex-1 group-hover:text-blue-300 transition-colors">
                   {item.chatName}
                 </h3>
-                <div className="flex-shrink-0">
-                  {isVideo && <IconVideo className="h-3 w-3 text-blue-400" />}
-                  {isGif && <IconFileCode className="h-3 w-3 text-green-400" />}
+                <div className="flex-shrink-0 mt-0.5">
+                  {isVideo && <IconVideo className="h-3.5 w-3.5 text-blue-400" />}
+                  {isGif && <IconFileCode className="h-3.5 w-3.5 text-green-400" />}
                 </div>
               </div>
 
-
               <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500">
+                <span className="text-gray-400">
                   {item.messages.length} msg{item.messages.length !== 1 ? 's' : ''}
                 </span>
                 {latestMessage && (
-                  <span className="text-gray-500">
+                  <span className="text-gray-500 text-xs">
                     {formatDate(latestMessage.timestamp).split(',')[0]}
                   </span>
                 )}
@@ -141,13 +140,12 @@ export default function HistorySidebar({ isOpen, onToggle, onHistoryItemClick, i
           );
         })}
 
-
         {hasMore && (
-          <div className="text-center py-2">
+          <div className="text-center py-3">
             <button
               onClick={handleLoadMore}
               disabled={loading}
-              className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-white text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-md text-white text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Loading...' : 'Load More'}
             </button>

@@ -9,6 +9,7 @@ import type { ManimGenerationRequest, UserHistoryItem } from '@/types/api';
 import { ManimApiService } from '@/services/manimApi';
 import { Stepper, Step, StepLabel, Box } from '@mui/material';
 import HistorySidebar from '@/components/HistorySidebar';
+import '@/styles/scrollbar.css';
 
 interface MessageType {
   type: 'user' | 'assistant';
@@ -716,12 +717,12 @@ export default function MainPage() {
       )}
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:block">
+      <div className="hidden md:block fixed top-0 left-0 h-screen z-30">
         <Sidebar open={sidebarOpen} setOpen={setSidebarOpen}>
-          <SidebarBody className="justify-between gap-10">
-            <div className="flex flex-col h-full">
-              <div className="flex-shrink-0 space-y-2">
-                <div className={`flex-shrink-0 ${sidebarOpen ? 'p-2' : 'px-2 py-2 flex justify-center'}`}>
+          <SidebarBody className="justify-between gap-10 h-full">
+            <div className="flex flex-col h-full min-h-0">
+              <div className="flex-shrink-0 space-y-2 px-2 py-2">
+                <div className={`flex-shrink-0 ${sidebarOpen ? '' : 'flex justify-center'}`}>
                     <button
                         onClick={toggleSidebar}
                         className="p-2 hover:bg-gray-700 rounded-lg cursor-pointer transition-colors"
@@ -740,23 +741,25 @@ export default function MainPage() {
               
               {/* History Section */}
               {sidebarOpen && (
-                <div className="flex-1 overflow-hidden px-2 mt-4">
-                  <div className="mb-2">
+                <div className="flex-1 min-h-0 mt-4">
+                  <div className="mb-3 px-2">
                     <div className="flex items-center gap-2 px-2 py-1">
                       <IconHistory className="h-4 w-4 text-gray-400" />
                       <span className="text-xs text-gray-400 font-medium">Recent</span>
                     </div>
                   </div>
-                  <HistorySidebar 
-                    isOpen={true}
-                    onToggle={() => {}}
-                    onHistoryItemClick={handleHistoryItemClick}
-                    inMainSidebar={true}
-                  />
+                  <div className="overflow-y-auto px-2 max-h-[calc(100vh-220px)] pr-1 sidebar-scrollbar">
+                    <HistorySidebar 
+                      isOpen={true}
+                      onToggle={() => {}}
+                      onHistoryItemClick={handleHistoryItemClick}
+                      inMainSidebar={true}
+                    />
+                  </div>
                 </div>
               )}
             </div>
-            <div className="relative">
+            <div className="relative flex-shrink-0 px-2 pb-2">
               <button
                 onClick={toggleUserMenu}
                 className={`flex items-center gap-2 p-2 hover:bg-gray-700 rounded-lg cursor-pointer transition-colors w-full ${sidebarOpen ? 'text-left' : 'justify-center'}`}
@@ -794,12 +797,12 @@ export default function MainPage() {
       </div>
 
       {/* Mobile Sidebar */}
-      <div className={`md:hidden fixed top-0 left-0 h-full bg-[#171717] border-r border-gray-700 z-50 transform transition-transform duration-300 ${
+      <div className={`md:hidden fixed top-0 left-0 h-screen bg-[#171717] border-r border-gray-700 z-50 transform transition-transform duration-300 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } w-64`}>
         <div className="flex flex-col h-full justify-between p-4">
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 min-h-0">
+            <div className="flex items-center justify-between flex-shrink-0">
               <h2 className="text-white text-lg font-semibold">Menu</h2>
               <button
                 onClick={() => setSidebarOpen(false)}
@@ -810,13 +813,30 @@ export default function MainPage() {
             </div>
             <button
               onClick={handleNewChat}
-              className="flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg transition-colors w-full text-left"
+              className="flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg transition-colors w-full text-left flex-shrink-0"
             >
               <IconPlus className="text-white h-5 w-5" />
               <span className="text-white text-sm">New chat</span>
             </button>
+            {/* History Section for Mobile */}
+            <div className="flex-1 min-h-0">
+              <div className="mb-3 px-2">
+                <div className="flex items-center gap-2 px-2 py-1">
+                  <IconHistory className="h-4 w-4 text-gray-400" />
+                  <span className="text-xs text-gray-400 font-medium">Recent</span>
+                </div>
+              </div>
+              <div className="overflow-y-auto px-2 max-h-[calc(100vh-220px)] pr-1 sidebar-scrollbar">
+                <HistorySidebar 
+                  isOpen={true}
+                  onToggle={() => {}}
+                  onHistoryItemClick={handleHistoryItemClick}
+                  inMainSidebar={true}
+                />
+              </div>
+            </div>
           </div>
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <button
               onClick={toggleUserMenu}
               className="flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg transition-colors w-full text-left"
@@ -841,9 +861,11 @@ export default function MainPage() {
         </div>
       </div>
 
-      <main className="flex-1 flex flex-col min-w-0 md:ml-0 pt-16 md:pt-0 relative min-h-screen">
+      <main className={`flex-1 flex flex-col min-w-0 pt-16 md:pt-0 relative min-h-screen transition-all duration-300 ${
+        sidebarOpen ? 'md:ml-[300px]' : 'md:ml-[60px]'
+      }`}>
         <BackgroundBeams />
-        <div className="flex-1 p-4 md:p-6 relative z-10 pb-32">
+  <div className="flex-1 p-4 md:p-6 relative z-10 pb-40 overflow-y-auto">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center min-h-[60vh]">
               <div className="w-full max-w-3xl px-2">
@@ -866,7 +888,7 @@ export default function MainPage() {
           )}
         </div>
         {!isCodeModalOpen && (
-          <div className={`fixed bottom-0 right-0 p-4 md:p-6 bg-gradient-to-t from-black via-black/95 to-transparent z-20 transition-all duration-200 ${
+          <div className={`fixed bottom-0 right-0 p-4 md:p-6 bg-gradient-to-t from-black via-black/95 to-transparent z-20 transition-all duration-300 ${
             sidebarOpen ? 'left-0 md:left-[300px]' : 'left-0 md:left-[60px]'
           }`}>
             <div className="max-w-4xl mx-auto">
