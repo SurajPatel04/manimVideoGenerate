@@ -288,6 +288,8 @@ export default function MainPage() {
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false); 
   const { user, logout, tokens } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const mobileUserMenuRef = useRef<HTMLDivElement>(null);
 
   const generateMessageId = useCallback(() => `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, []);
 
@@ -489,6 +491,27 @@ export default function MainPage() {
       return () => clearTimeout(timeoutId);
     }
   }, [isGenerating]);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
+      const isOutsideDesktop = userMenuRef.current && !userMenuRef.current.contains(target);
+      const isOutsideMobile = mobileUserMenuRef.current && !mobileUserMenuRef.current.contains(target);
+      
+      if ((isOutsideDesktop || isOutsideMobile) && showUserMenu) {
+        setShowUserMenu(false);
+      }
+    }
+
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showUserMenu]);
 
   const toggleSidebar = useCallback(() => setSidebarOpen(prev => !prev), []);
 
@@ -759,7 +782,7 @@ export default function MainPage() {
                 </div>
               )}
             </div>
-            <div className="relative flex-shrink-0 px-2 pb-2">
+            <div className="relative flex-shrink-0 px-2 pb-2" ref={userMenuRef}>
               <button
                 onClick={toggleUserMenu}
                 className={`flex items-center gap-2 p-2 hover:bg-gray-700 rounded-lg cursor-pointer transition-colors w-full ${sidebarOpen ? 'text-left' : 'justify-center'}`}
@@ -836,7 +859,7 @@ export default function MainPage() {
               </div>
             </div>
           </div>
-          <div className="relative flex-shrink-0">
+          <div className="relative flex-shrink-0" ref={mobileUserMenuRef}>
             <button
               onClick={toggleUserMenu}
               className="flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg transition-colors w-full text-left"
