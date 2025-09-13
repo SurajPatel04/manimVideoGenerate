@@ -2,16 +2,9 @@ FROM python:3.12
 
 WORKDIR /app
 
-# Install system dependencies (LaTeX + FFmpeg + Cairo + Pango)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        texlive-latex-base \
-        texlive-latex-extra \
-        texlive-fonts-recommended \
-        texlive-fonts-extra \
-        texlive-latex-recommended \
-        texlive-xetex \
-        texlive-science \
+        texlive-full \
         ffmpeg \
         libcairo2 \
         libpango-1.0-0 \
@@ -21,7 +14,6 @@ RUN apt-get update && \
         build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
