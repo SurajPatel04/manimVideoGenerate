@@ -4,9 +4,10 @@ from pydantic import (
     EmailStr
 )
 from typing import Optional
+from beanie import PydanticObjectId 
 
 class UserListOutput(BaseModel):
-    id: str
+    id: PydanticObjectId
     email: str
     firstName: str
     lastName: Optional[str] = None
