@@ -21,8 +21,6 @@ class DescriptionGenerationState(BaseModel):
     isGood: bool | None = None 
     AutoComplete: bool
     detailedDescriptionError: Optional[str] = None
-    currentStage: str
-    nextStage: Optional[str] = None
     format: str = Field(default="Red", description="The render file format")
 
 class GenDescriptions(BaseModel):
@@ -31,7 +29,7 @@ class GenDescriptions(BaseModel):
 class DetailDescription(BaseModel):
     description: str
 
-class CheckPickedDescription(BaseModel):
+class CheckDetailedDescription(BaseModel):
     isThisGoodDescrription: bool
     detailedDescriptionError: str
 

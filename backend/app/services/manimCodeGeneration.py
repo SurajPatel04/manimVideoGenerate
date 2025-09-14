@@ -405,14 +405,6 @@ in Manim v0.19+, you should import directly below mention from the top-level man
             sphere.set_stroke(color=WHITE, width=1)
         Replace material=PBRMaterial() with .set_fill(...) / .set_stroke(...).
 
-    -- TypeError: Mobject.__init__() got an unexpected keyword argument 'axes_color'
-        axes_color (old Manim) do not use this
-        use this 
-            Axes(
-                x_range=[-5, 5],
-                y_range=[-5, 5],
-                axis_config={"color": BLUE}   # new way
-            )
     </CRITICAL>
 """
 important = """
@@ -575,263 +567,355 @@ def run_manim_scene(filename, state: mainmState):
 #     os.remove(filename)
 
 
+# For the llm Flase
+# def agentCreateFile(state: mainmState):
+#     tools = [createFileAndWriteMainmCode]
 
+#     systemPrompt = """
+#     You are a helpful AI. You expert in creating manim code in and try it be good in one go and use manim v.19
+
+#     when you do graph write what you are ploting
+#     Example: Plot y = x^2 on an axes with labels and animate the curve being drawn.
+#     then write y=x^2 in the graph  and Face should be screen side not in 3d but 2d so user can see what is written
+
+
+
+# {important}
+
+# {critical}
+
+#     **CORRECT v0.19+ SYNTAX TO USE:**
+
+# Create a Scene class named MainScene that follows these requirements:
+
+# 1. Scene Setup:
+#     For 3D concepts: Use ThreeDScene.
+#         - Always import lights and 3D objects directly: Cube, Sphere, DirectionalLight, etc.
+#         - Position objects explicitly in 3D space with x, y, z coordinates: object.move_to([x, y, z]) or object.move_to(np.array([x, y, z])).
+#         - Use self.set_camera_orientation(...) for initial camera angles.
+#         - Use self.move_camera(..., run_time=...) for smooth transitions.
+#         - Use self.begin_3dillusion_camera_rotation(rate=...) / self.stop_3dillusion_camera_rotation() for automatic rotation.
+#         - Ensure objects are spaced along z-axis to prevent overlaps.
+#         - Add lights (DirectionalLight, PointLight) to illuminate all objects, creating shadows for depth.
+#         - Camera must provide a clear view where all objects are visible; avoid default top-down flattening.
+#     - For 2D concepts: Use Scene with NumberPlane when relevant.
+#     - Add titles and clear labels for all mathematical or visual elements.
+
+# 2. Mathematical Elements:
+#    - Use MathTex for equations with proper LaTeX syntax
+#    - Include step-by-step derivations when showing formulas
+#    - Add mathematical annotations and explanations
+#    - Show key points and important relationships
+
+# 3. Visual Elements:
+#    - Create clear geometric shapes and diagrams
+#    - Use color coding to highlight important parts
+#    - Add arrows or lines to show relationships
+#    - Include coordinate axes when relevant
+
+# 4. Animation Flow:
+#    - Break down complex concepts into simple steps
+#    - Use smooth transitions between steps
+#    - Add pauses (self.wait()) at key moments
+#    - Use transform animations to show changes
+
+# 5. Specific Requirements:
+#    - For equations: Show step-by-step solutions
+#    - For theorems: Visualize proof steps
+#    - For geometry: Show construction process
+#    - For 3D: Include multiple camera angles
+#    - For graphs: Show coordinate system and gridlines
+
+# 6. Code Structure:
+#    - Import required Manim modules
+#    - Use proper class inheritance
+#    - Define clear animation sequences
+
+
+# 7. **Positioning:**
+#    - Center objects: object.move_to(ORIGIN)
+#    - Move to coordinates: object.move_to([x, y, z]) or object.move_to(np.array([x, y, z]))
+#    - Edge positioning: object.to_edge(UP), object.to_edge(LEFT), etc.
+
+# 8. **Axes and Graphs:**
+#    - Create axes: axes = Axes(x_range=[...], y_range=[...])
+#    - Plot functions: graph = axes.plot(lambda x: x**2, color=BLUE)
+#    - NOT: axes.get_graph() (deprecated)
+
+# 9. Before writing the main body of the code, write a commented-out "Layout Plan" that describes how you will position the main elements on the screen to avoid overlap.
+# Example 
+# class MyScene(Scene):
+#     def construct(self):
+#         # Layout Plan:
+#         # 1. Main title will be at the top of the screen (to_edge(UP)).
+#         # 2. A circle will be placed on the left side.
+#         # 3. An explanation text block will be placed to the right of the circle using .next_to().
+#         # 4. The final formula will appear below everything, centered.
+
+#         title = Text("My Animation").to_edge(UP)
+#         my_circle = Circle().move_to(LEFT * 3)
+#         explanation = Text("This circle is an example.").next_to(my_circle, RIGHT, buff=0.5)
+#         # ... rest of the code ...
+
+# 10. **Text and Math (CRITICAL - Prevents LaTeX DVI errors):**
+#    - Plain text: Text("Hello World")
+#    - Math expressions: MathTex(r"x^2 + y^2 = r^2")
+#    - ALWAYS use raw strings (r"") with MathTex
+#    - NEVER: MathTex("x^2") without raw string
+#    - Code blocks: Code("your_code_here", language="python")
+#    - NOT: Code(code="your_code_here") (wrong parameter name)
+
+# 11. **Colors:**
+#    - Use: BLUE, RED, GREEN, YELLOW, etc. (modern constants)
+#    - Or: "#FF5733" (hex colors)
+
+# 12. **Animations:**
+#    - Use: Create(), Write(), Transform(), etc.
+#    - Proper syntax: self.play(Create(object), run_time=2)
+
+# 13. **Imports:**
+#    - Always use: from manim import WHITE, ORIGN, so on
+#    - Or specific imports: from manim import Scene, Text, Create, etc.
+
+# 14. **Layout and Spacing Rules (CRITICAL - Prevents Overlapping)**
+#    - To prevent objects from overlapping, you MUST use Manim's relative positioning tools. Do NOT position everything manually at absolute coordinates unless you are certain they won't clash.
+
+#    - **Rule A: Use `.next_to()` for single objects.** This is the primary tool for placing a label or object next to another.
+#      - **Example:** `label = Text("My Circle").next_to(my_circle, UP, buff=0.5)`
+#      - This places `label` above `my_circle` with a gap (`buff`) of 0.5 units.
+
+#    - **Rule B: Use `.arrange()` for groups of objects.** This is the best way to line up multiple items in a row or column with even spacing.
+#      - **Example:** `my_group = VGroup(circle, square, text).arrange(RIGHT, buff=1)`
+#      - This arranges the objects horizontally with a gap of 1 unit between each.
+
+#    - **Rule C: Use `VGroup` and `.move_to()` for layout blocks.** For complex scenes, group related items together, and then position the entire group. This is safer than positioning many individual items.
+#      - **Example:**
+#        `diagram = VGroup(circle, arrow, square).move_to(LEFT * 3)`
+#        `explanation = Text("...").move_to(RIGHT * 3)`
+
+# {mandatoryChecklist}
+
+#     """ 
+
+
+#     prompt = ChatPromptTemplate.from_messages(
+#         [
+#             ("system", systemPrompt.format(
+#                 critical=critical,
+#                 important=important,
+#                 mandatoryChecklist=mandatoryChecklist
+#             )),
+#             ("human", "{input}"),
+#             MessagesPlaceholder(variable_name="agent_scratchpad")
+#         ]
+#     )
+
+#     # Generate a clean, usable ID
+#     # We'll use a prefix and the first 8 characters of the UUID's hex representation.
+#     unique_name = f"Animation_{uuid.uuid4().hex[:8]}"
+#     state.filename = f"{unique_name}.py"
+#     # 2. Write a clear, direct prompt using the clean ID
+#     human_message = f"""
+#     {state.description} 
+#     Use the filename "{unique_name}.py" and the class name "{unique_name}".
+#     """
+
+#     agent = create_tool_calling_agent(llmPro, tools, prompt=prompt)
+#     agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=5)
+    
+#     print(f"--- Running agent with filename: {unique_name}.py ---")
+#     result = agent_executor.invoke({"input": human_message})
+#     print("\n--- Agent Final Answer ---")
+#     print(result['output'])
+#     print(f"{unique_name}.py")
+#     print(f"statte ************************* {state.filename} ")
+
+#     return state
+
+#  For the llm Pro
 def agentCreateFile(state: mainmState):
     tools = [createFileAndWriteMainmCode]
 
-    systemPrompt = """
-    You are a helpful AI. You expert in creating manim code in and try it be good in one go and use manim v.19
-
-    when you do graph write what you are ploting
-    Example: Plot y = x^2 on an axes with labels and animate the curve being drawn.
-    then write y=x^2 in the graph  and Face should be screen side not in 3d but 2d so user can see what is written
-
-
-
-{important}
-
-{critical}
-
-    **CORRECT v0.19+ SYNTAX TO USE:**
-
-Create a Scene class named MainScene that follows these requirements:
-
-1. Scene Setup:
-    For 3D concepts: Use ThreeDScene.
-        - Always import lights and 3D objects directly: Cube, Sphere, DirectionalLight, etc.
-        - Position objects explicitly in 3D space with x, y, z coordinates: object.move_to([x, y, z]) or object.move_to(np.array([x, y, z])).
-        - Use self.set_camera_orientation(...) for initial camera angles.
-        - Use self.move_camera(..., run_time=...) for smooth transitions.
-        - Use self.begin_3dillusion_camera_rotation(rate=...) / self.stop_3dillusion_camera_rotation() for automatic rotation.
-        - Ensure objects are spaced along z-axis to prevent overlaps.
-        - Add lights (DirectionalLight, PointLight) to illuminate all objects, creating shadows for depth.
-        - Camera must provide a clear view where all objects are visible; avoid default top-down flattening.
-    - For 2D concepts: Use Scene with NumberPlane when relevant.
-    - Add titles and clear labels for all mathematical or visual elements.
-
-2. Mathematical Elements:
-   - Use MathTex for equations with proper LaTeX syntax
-   - Include step-by-step derivations when showing formulas
-   - Add mathematical annotations and explanations
-   - Show key points and important relationships
-
-3. Visual Elements:
-   - Create clear geometric shapes and diagrams
-   - Use color coding to highlight important parts
-   - Add arrows or lines to show relationships
-   - Include coordinate axes when relevant
-
-4. Animation Flow:
-   - Break down complex concepts into simple steps
-   - Use smooth transitions between steps
-   - Add pauses (self.wait()) at key moments
-   - Use transform animations to show changes
-
-5. Specific Requirements:
-   - For equations: Show step-by-step solutions
-   - For theorems: Visualize proof steps
-   - For geometry: Show construction process
-   - For 3D: Include multiple camera angles
-   - For graphs: Show coordinate system and gridlines
-
-6. Code Structure:
-   - Import required Manim modules
-   - Use proper class inheritance
-   - Define clear animation sequences
-
-
-7. **Positioning:**
-   - Center objects: object.move_to(ORIGIN)
-   - Move to coordinates: object.move_to([x, y, z]) or object.move_to(np.array([x, y, z]))
-   - Edge positioning: object.to_edge(UP), object.to_edge(LEFT), etc.
-
-8. **Axes and Graphs:**
-   - Create axes: axes = Axes(x_range=[...], y_range=[...])
-   - Plot functions: graph = axes.plot(lambda x: x**2, color=BLUE)
-   - NOT: axes.get_graph() (deprecated)
-
-9. Before writing the main body of the code, write a commented-out "Layout Plan" that describes how you will position the main elements on the screen to avoid overlap.
-Example 
-class MyScene(Scene):
-    def construct(self):
-        # Layout Plan:
-        # 1. Main title will be at the top of the screen (to_edge(UP)).
-        # 2. A circle will be placed on the left side.
-        # 3. An explanation text block will be placed to the right of the circle using .next_to().
-        # 4. The final formula will appear below everything, centered.
-
-        title = Text("My Animation").to_edge(UP)
-        my_circle = Circle().move_to(LEFT * 3)
-        explanation = Text("This circle is an example.").next_to(my_circle, RIGHT, buff=0.5)
-        # ... rest of the code ...
-
-10. **Text and Math (CRITICAL - Prevents LaTeX DVI errors):**
-   - Plain text: Text("Hello World")
-   - Math expressions: MathTex(r"x^2 + y^2 = r^2")
-   - ALWAYS use raw strings (r"") with MathTex
-   - NEVER: MathTex("x^2") without raw string
-   - Code blocks: Code("your_code_here", language="python")
-   - NOT: Code(code="your_code_here") (wrong parameter name)
-
-11. **Colors:**
-   - Use: BLUE, RED, GREEN, YELLOW, etc. (modern constants)
-   - Or: "#FF5733" (hex colors)
-
-12. **Animations:**
-   - Use: Create(), Write(), Transform(), etc.
-   - Proper syntax: self.play(Create(object), run_time=2)
-
-13. **Imports:**
-   - Always use: from manim import WHITE, ORIGN, so on
-   - Or specific imports: from manim import Scene, Text, Create, etc.
-
-14. **Layout and Spacing Rules (CRITICAL - Prevents Overlapping)**
-   - To prevent objects from overlapping, you MUST use Manim's relative positioning tools. Do NOT position everything manually at absolute coordinates unless you are certain they won't clash.
-
-   - **Rule A: Use `.next_to()` for single objects.** This is the primary tool for placing a label or object next to another.
-     - **Example:** `label = Text("My Circle").next_to(my_circle, UP, buff=0.5)`
-     - This places `label` above `my_circle` with a gap (`buff`) of 0.5 units.
-
-   - **Rule B: Use `.arrange()` for groups of objects.** This is the best way to line up multiple items in a row or column with even spacing.
-     - **Example:** `my_group = VGroup(circle, square, text).arrange(RIGHT, buff=1)`
-     - This arranges the objects horizontally with a gap of 1 unit between each.
-
-   - **Rule C: Use `VGroup` and `.move_to()` for layout blocks.** For complex scenes, group related items together, and then position the entire group. This is safer than positioning many individual items.
-     - **Example:**
-       `diagram = VGroup(circle, arrow, square).move_to(LEFT * 3)`
-       `explanation = Text("...").move_to(RIGHT * 3)`
-
-{mandatoryChecklist}
-
-    """ 
-
-
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", systemPrompt.format(
-                critical=critical,
-                important=important,
-                mandatoryChecklist=mandatoryChecklist
-            )),
-            ("human", "{input}"),
-            MessagesPlaceholder(variable_name="agent_scratchpad")
-        ]
-    )
-
-    # Generate a clean, usable ID
-    # We'll use a prefix and the first 8 characters of the UUID's hex representation.
+    # Generate unique name first
     unique_name = f"Animation_{uuid.uuid4().hex[:8]}"
     state.filename = f"{unique_name}.py"
-    # 2. Write a clear, direct prompt using the clean ID
-    human_message = f"""
-    {state.description} 
-    Use the filename "{unique_name}.py" and the class name "{unique_name}".
+    
+    systemPrompt = """
+    You are a Manim code generation expert. Your task is to:
+    1. Create complete, working Manim v0.19+ code
+    2. MUST use the createFileAndWriteMainmCode tool to save the code
+    3. The filename MUST be exactly: {filename}
+    4. The class name MUST be exactly: {class_name}
+    
+    CRITICAL: You MUST call the createFileAndWriteMainmCode tool with:
+    - filename: "{filename}"
+    - content: [complete Python code as string]
+    
+    {critical}
+    {important}
+    {mandatoryChecklist}
     """
 
-    agent = create_tool_calling_agent(llmFlash, tools, prompt=prompt)
-    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=5)
+    human_message = f"""
+    Create Manim animation for: {state.description}
     
-    print(f"--- Running agent with filename: {unique_name}.py ---")
-    result = agent_executor.invoke({"input": human_message})
-    print("\n--- Agent Final Answer ---")
-    print(result['output'])
-    print(f"{unique_name}.py")
-    print(f"statte ************************* {state.filename} ")
+    Requirements:
+    - Filename: {state.filename}
+    - Class name: {unique_name}
+    - Use createFileAndWriteMainmCode tool to save the code
+    - Complete working Manim v0.19+ code
+    """
+
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", systemPrompt.format(
+            filename=state.filename,
+            class_name=unique_name,
+            critical=critical,
+            important=important,
+            mandatoryChecklist=mandatoryChecklist
+        )),
+        ("human", "{input}"),
+        MessagesPlaceholder(variable_name="agent_scratchpad")
+    ])
+
+    agent = create_tool_calling_agent(llmPro, tools, prompt=prompt)
+    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=3)
+    
+    print(f"--- Creating file with Gemini 2.5 Pro: {state.filename} ---")
+    
+    try:
+        result = agent_executor.invoke({"input": human_message})
+        print(f"Agent result: {result}")
+        
+        filepath = f"./temp/{state.filename}"
+        if not os.path.exists(filepath):
+            print(f"❌ File was not created: {filepath}")
+        else:
+            print(f"✅ File created successfully: {filepath}")
+            
+    except Exception as e:
+        print(f"Agent execution failed: {e}")
 
     return state
 
 def agentCheckFileCode(state: mainmState):
     code= read_file(state.filename)
     message = state.description
-    # print("_______Code_______________")
-    # print(code)
+#     systemPrompt = """
+#     You are an expert Manim developer...
 
-    # print("_____________message___________")
-    # print(message)
-    systemPrompt = """
-    You are an expert Manim developer...
-
-    {critical}
+#     {critical}
     
-    Code is 
-    {code} 
+#     Code is 
+#     {code} 
 
-    **Instructions**
-    1. Analyze the Python script provided below in the "Code is..." section.
-        1.1. Code is important. code should not produce any error in execution check the all syntax 
-        1.2. And all the content should be in frame. 
-        1.3. text or anything should not overlap to each other
-    2. Compare its code and visual style with the description below. code is more important code should not break on the execution
-    3. Return **one** JSON object with two keys:
-    • "is_code_good"   – true / false  
-    • "error_message"  – empty string if good, otherwise concise reason
+#     **Instructions**
+#     1. Analyze the Python script provided below in the "Code is..." section.
+#         1.1. Code is important. code should not produce any error in execution check the all syntax 
+#         1.2. And all the content should be in frame. 
+#         1.3. text or anything should not overlap to each other
+#     2. Compare its code and visual style with the description below. code is more important code should not break on the execution
+#     3. Return **one** JSON object with two keys:
+#     • "is_code_good"   – true / false  
+#     • "error_message"  – empty string if good, otherwise concise reason
 
-       You got These error many time try to overcome these issue:
-    - TypeError: Code.__init__() got an unexpected keyword argument 'code'
-    - NameError: name 'Text3D' is not defined
-    - ValueError: latex error converting to dvi.
-    - TypeError: Mobject.__getattr__.<locals>.getter() takes 1 positional argument but 2 were given
-    - Code.__init__() got an unexpected keyword argument 'code'
-    -- Also, prefer using `axes.plot()` instead of the older `axes.get_graph()`.
-    -- TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_range' 
-    - AttributeError: 'object' has no attribute 'to_center'. Always use the `.move_to(ORIGIN)` method instead of `.to_center()`.
-    -- latex error converting to dvi
-    -- Text object has no attribute 'to_center'
-    - In Manim v0.19 and newer versions, to_center() has been deprecated and removed. Instead, you should use:
-    # Old way (doesn't work in v0.19+): axes.to_center()
-    # New way (correct for v0.19+): axes.move_to(ORIGIN)
+#        You got These error many time try to overcome these issue:
+#     - TypeError: Code.__init__() got an unexpected keyword argument 'code'
+#     - NameError: name 'Text3D' is not defined
+#     - ValueError: latex error converting to dvi.
+#     - TypeError: Mobject.__getattr__.<locals>.getter() takes 1 positional argument but 2 were given
+#     - Code.__init__() got an unexpected keyword argument 'code'
+#     -- Also, prefer using `axes.plot()` instead of the older `axes.get_graph()`.
+#     -- TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_range' 
+#     - AttributeError: 'object' has no attribute 'to_center'. Always use the `.move_to(ORIGIN)` method instead of `.to_center()`.
+#     -- latex error converting to dvi
+#     -- Text object has no attribute 'to_center'
+#     - In Manim v0.19 and newer versions, to_center() has been deprecated and removed. Instead, you should use:
+#     # Old way (doesn't work in v0.19+): axes.to_center()
+#     # New way (correct for v0.19+): axes.move_to(ORIGIN)
 
-    -- TypeError: Mobject.__init__() got an unexpected keyword argument 'x_label'
-    -- AttributeError: 'ThreeDCamera' object has no attribute 'animate'
-    --TypeError: Unexpected argument None passed to Scene.play().
-    --- The `NameError` for `ParametricSurface` was incorrectly "fixed" by explicitly importing it from `manim.mobject.three_d.three_dimensions`.  
+#     -- TypeError: Mobject.__init__() got an unexpected keyword argument 'x_label'
+#     -- AttributeError: 'ThreeDCamera' object has no attribute 'animate'
+#     --TypeError: Unexpected argument None passed to Scene.play().
+#     --- The `NameError` for `ParametricSurface` was incorrectly "fixed" by explicitly importing it from `manim.mobject.three_d.three_dimensions`.  
 
-        In Manim v0.19+, this import path is invalid and causes:
-        ImportError: cannot import name 'ParametricSurface' from 'manim.mobject.three_d.three_dimensions'
+#         In Manim v0.19+, this import path is invalid and causes:
+#         ImportError: cannot import name 'ParametricSurface' from 'manim.mobject.three_d.three_dimensions'
 
-        Correct usage: `from manim import ParametricSurface`
+#         Correct usage: `from manim import ParametricSurface`
 
-        Additionally, the animation for axes and labels should use `FadeIn` for smooth entrance rather than appearing instantly.
+#         Additionally, the animation for axes and labels should use `FadeIn` for smooth entrance rather than appearing instantly.
 
-        The corrected file `Animation_b9cf9c45.py` failed due to the bad import and must be fixed as described.
+#         The corrected file `Animation_b9cf9c45.py` failed due to the bad import and must be fixed as described.
 
-    -- AttributeError: 'MoveAlongPath' object has no attribute 'submobjects'
-        Mobjects (like Cube(), Sphere()) have submobjects.
-        Animations (like MoveAlongPath(obj, path)) do not have submobjects.
+#     -- AttributeError: 'MoveAlongPath' object has no attribute 'submobjects'
+#         Mobjects (like Cube(), Sphere()) have submobjects.
+#         Animations (like MoveAlongPath(obj, path)) do not have submobjects.
 
-    -- AttributeError: 'Animation_ed282dad' object has no attribute 'add_ambient_camera_rotation'
-        cube = Cube()
-        anim = Rotate(cube, angle=PI/4)
+#     -- AttributeError: 'Animation_ed282dad' object has no attribute 'add_ambient_camera_rotation'
+#         cube = Cube()
+#         anim = Rotate(cube, angle=PI/4)
 
-        anim.add_ambient_camera_rotation(rate=0.1)  # ❌ WRONG
-        Correct usage:
-            class MyScene(ThreeDScene):
-            def construct(self):
-                cube = Cube()
-                self.add(cube)
-                self.add_ambient_camera_rotation(rate=0.1)  # ✅ add rotation to the scene
-                self.play(Rotate(cube, angle=PI/4))
-                self.wait(2)
-    -- AttributeError: object has no attribute 'set_background'
-        How to fix:
-            Use self.camera.background_color instead:
-                Replace any line like: self.set_background(BLACK)
-                With: self.camera.background_color = BLACK
-    -- TypeError: .scene_updater() missing 1 required positional argument: 'dt_scene'
-        Note:
-            Always include dt for any updater function.
-            dt is the time delta since the last frame — use it to make animations frame-rate independent.
-            Works for both 2D and 3D scenes.
+#         anim.add_ambient_camera_rotation(rate=0.1)  # ❌ WRONG
+#         Correct usage:
+#             class MyScene(ThreeDScene):
+#             def construct(self):
+#                 cube = Cube()
+#                 self.add(cube)
+#                 self.add_ambient_camera_rotation(rate=0.1)  # ✅ add rotation to the scene
+#                 self.play(Rotate(cube, angle=PI/4))
+#                 self.wait(2)
+#     -- AttributeError: object has no attribute 'set_background'
+#         How to fix:
+#             Use self.camera.background_color instead:
+#                 Replace any line like: self.set_background(BLACK)
+#                 With: self.camera.background_color = BLACK
+#     -- TypeError: .scene_updater() missing 1 required positional argument: 'dt_scene'
+#         Note:
+#             Always include dt for any updater function.
+#             dt is the time delta since the last frame — use it to make animations frame-rate independent.
+#             Works for both 2D and 3D scenes.
 
-    -- name 'BLACK' is not defined
-        Use the color parameter when creating or styling objects:
-        from manim import WHITE, ORIGN, so on
+#     -- name 'BLACK' is not defined
+#         Use the color parameter when creating or styling objects:
+#         from manim import WHITE, ORIGN, so on
 
-            circle = Circle(color=BLACK)      # Using predefined color
-            square = Square(color="#00ff00")  # Using hex code
-            triangle = Triangle(color="blue") # Using color nam
+#             circle = Circle(color=BLACK)      # Using predefined color
+#             square = Square(color="#00ff00")  # Using hex code
+#             triangle = Triangle(color="blue") # Using color nam
 
-{mandatoryChecklist}
+# {mandatoryChecklist}
+#     """
+    
+    systemPrompt = """
+    You are a Manim v0.19+ code validator. Your job is to analyze Python code for potential execution errors.
+
+    **VALIDATION FOCUS:**
+    1. Syntax correctness for Manim v0.19+
+    2. Import statement validity  
+    3. Deprecated method usage detection
+    4. Layout/positioning issues that cause overlaps
+    5. LaTeX syntax in MathTex (must use raw strings)
+
+    **CRITICAL CHECKS:**
+    - No `.to_center()` methods (use `.move_to(ORIGIN)`)
+    - No deprecated imports (import from `manim` directly)
+    - MathTex uses raw strings: `MathTex(r"x^2")` not `MathTex("x^2")`
+    - Proper tool calling syntax
+    - No overlapping object placement
+    - All objects stay within frame boundaries
+
+    **CODE TO VALIDATE:**
+    ```python
+    {code}
+    ```
+
+    **TASK:**
+    Return a JSON object with:
+    - "is_code_good": true/false
+    - "error_message": "" if good, otherwise specific issue found
+
+    Focus on execution-breaking errors, not style preferences.
     """
     structured_llm = llmFlash.with_structured_output(CheckMaimCode)
     print("\n--- Checking Code file ---")
@@ -840,8 +924,6 @@ def agentCheckFileCode(state: mainmState):
 
     messages = [
         SystemMessage(content=systemPrompt.format(
-        critical=critical,
-        mandatoryChecklist=mandatoryChecklist,
         code=code
         )),
         HumanMessage(content=f"{message}")
@@ -860,6 +942,217 @@ def agentCheckFileCode(state: mainmState):
     print(f"Error Message: {state.validationError}")
     return state
 
+# def agentReWriteManimCode(state: mainmState):
+#     tools = [createFileAndWriteMainmCode]
+#     filename = state.filename
+#     validationError = state.validationError
+#     validationErrorHistory = state.validationErrorHistory
+#     executionErrorHistory = state.executionErrorHistory
+#     executionError = state.executionError
+#     description = state.description
+#     state.rewriteAttempts += 1 
+#     code = read_file(filename)
+
+#     print(executionErrorHistory)
+#     print(validationErrorHistory)
+#     # 1. Define the prompt with placeholders for all variables.
+#     systemPrompt = """
+# You are an expert Manim debugger and Python developer, using manim v0.19.
+# Your sole task is to fix the provided Manim code file by analyzing all available error information.
+
+#     when you do graph write what you are ploting
+#     Example: Plot y = x^2 on an axes with labels and animate the curve being drawn.
+#     then write y=x^2 in the graph  and Face should be screen side not in 3d but 2d so user can see what is written
+
+# {critical}
+
+# {important}
+# ---
+# CONTEXT FOR THE FIX:
+
+# File to fix: {filename}
+
+# Original User Description:
+# {description}
+
+# Code to fix:
+# ```python
+# {code}
+# ```
+
+# ---
+# ERROR ANALYSIS:
+
+# You must fix all the errors listed below. Pay close attention to the histories to avoid repeating past mistakes.
+
+# 1. CURRENT EXECUTION ERROR (Highest Priority - Must Fix):
+# {executionError}
+
+# 2. CURRENT VALIDATION ERROR (High Priority - Also Fix):
+# {validationError}
+
+# 3. PREVIOUS FAILED EXECUTION ATTEMPTS (Do not repeat these runtime errors):
+# {executionErrorHistory}
+
+# 4. PREVIOUS FAILED VALIDATION ATTEMPTS (Do not repeat these logical errors):
+# {validationErrorHistory}
+
+# ---
+
+#     **CORRECT v0.19+ SYNTAX TO USE:**
+
+# Create a Scene class named MainScene that follows these requirements:
+
+# 1. Scene Setup:
+#    - For 3D concepts: Use ThreeDScene with appropriate camera angles
+#         -- Always import lights and 3D objects directly from manim (e.g., from manim import ThreeDScene, Cube, Sphere, DirectionalLight).
+#         -- ❌ camera.animate → not supported
+
+#             ✅ Use:
+
+#             self.set_camera_orientation(...) → instant camera position
+
+#             self.move_camera(..., run_time=...) → smooth transition
+
+#             self.begin_3dillusion_camera_rotation(rate=...) / self.stop_3dillusion_camera_rotation() → auto rotation
+
+#    - For 2D concepts: Use Scene with NumberPlane when relevant
+#    - Add title and clear mathematical labels
+
+# 2. Mathematical Elements:
+#    - Use MathTex for equations with proper LaTeX syntax
+#    - Include step-by-step derivations when showing formulas
+#    - Add mathematical annotations and explanations
+#    - Show key points and important relationships
+
+# 3. Visual Elements:
+#    - Create clear geometric shapes and diagrams
+#    - Use color coding to highlight important parts
+#    - Add arrows or lines to show relationships
+#    - Include coordinate axes when relevant
+
+# 4. Animation Flow:
+#    - Break down complex concepts into simple steps
+#    - Use smooth transitions between steps
+#    - Add pauses (self.wait()) at key moments
+#    - Use transform animations to show changes
+
+# 5. Specific Requirements:
+#    - For equations: Show step-by-step solutions
+#    - For theorems: Visualize proof steps
+#    - For geometry: Show construction process
+#    - For 3D: Include multiple camera angles
+#    - For graphs: Show coordinate system and gridlines
+
+# 6. Code Structure:
+#    - Import required Manim modules
+#    - Use proper class inheritance
+#    - Define clear animation sequences
+
+
+# 7. **Positioning:**
+#    - Center objects: object.move_to(ORIGIN)
+#    - Move to coordinates: object.move_to([x, y, z]) or object.move_to(np.array([x, y, z]))
+#    - Edge positioning: object.to_edge(UP), object.to_edge(LEFT), etc.
+
+# 8. **Axes and Graphs:**
+#    - Create axes: axes = Axes(x_range=[...], y_range=[...])
+#    - Plot functions: graph = axes.plot(lambda x: x**2, color=BLUE)
+#    - NOT: axes.get_graph() (deprecated)
+
+# 9. Before writing the main body of the code, write a commented-out "Layout Plan" that describes how you will position the main elements on the screen to avoid overlap.
+# Example 
+# class MyScene(Scene):
+#     def construct(self):
+#         # Layout Plan:
+#         # 1. Main title will be at the top of the screen (to_edge(UP)).
+#         # 2. A circle will be placed on the left side.
+#         # 3. An explanation text block will be placed to the right of the circle using .next_to().
+#         # 4. The final formula will appear below everything, centered.
+
+#         title = Text("My Animation").to_edge(UP)
+#         my_circle = Circle().move_to(LEFT * 3)
+#         explanation = Text("This circle is an example.").next_to(my_circle, RIGHT, buff=0.5)
+#         # ... rest of the code ...
+
+# 10. **Text and Math (CRITICAL - Prevents LaTeX DVI errors):**
+#    - Plain text: Text("Hello World")
+#    - Math expressions: MathTex(r"x^2 + y^2 = r^2")
+#    - ALWAYS use raw strings (r"") with MathTex
+#    - NEVER: MathTex("x^2") without raw string
+#    - Code blocks: Code("your_code_here", language="python")
+#    - NOT: Code(code="your_code_here") (wrong parameter name)
+
+# 11. **Colors:**
+#    - Use: BLUE, RED, GREEN, YELLOW, etc. (modern constants)
+#    - Or: "#FF5733" (hex colors)
+
+# 12. **Animations:**
+#    - Use: Create(), Write(), Transform(), etc.
+#    - Proper syntax: self.play(Create(object), run_time=2)
+
+# 13. **Imports:**
+#    - Always use: from manim import WHITE, ORIGN, so on
+#    - Or specific imports: from manim import Scene, Text, Create, etc.
+
+# 14. **Layout and Spacing Rules (CRITICAL - Prevents Overlapping)**
+#    - To prevent objects from overlapping, you MUST use Manim's relative positioning tools. Do NOT position everything manually at absolute coordinates unless you are certain they won't clash.
+
+#    - **Rule A: Use `.next_to()` for single objects.** This is the primary tool for placing a label or object next to another.
+#      - **Example:** `label = Text("My Circle").next_to(my_circle, UP, buff=0.5)`
+#      - This places `label` above `my_circle` with a gap (`buff`) of 0.5 units.
+
+#    - **Rule B: Use `.arrange()` for groups of objects.** This is the best way to line up multiple items in a row or column with even spacing.
+#      - **Example:** `my_group = VGroup(circle, square, text).arrange(RIGHT, buff=1)`
+#      - This arranges the objects horizontally with a gap of 1 unit between each.
+
+#    - **Rule C: Use `VGroup` and `.move_to()` for layout blocks.** For complex scenes, group related items together, and then position the entire group. This is safer than positioning many individual items.
+#      - **Example:**
+#        `diagram = VGroup(circle, arrow, square).move_to(LEFT * 3)`
+#        `explanation = Text("...").move_to(RIGHT * 3)`
+
+# {mandatoryChecklist}
+# ---
+# TOOL USAGE INSTRUCTIONS (VERY IMPORTANT):
+
+# After you have generated the corrected code, you will call the `createFileAndWriteMainmCode` tool.
+# When you call this tool, you **MUST** provide **BOTH** of the following arguments:
+# 1.  `filename`: The name of the file to write to. Use the exact filename provided in the context above: {filename}.
+# 2.  `content`: The complete and corrected Python code as a single string.
+# """
+
+#     prompt = ChatPromptTemplate.from_messages(
+#         [
+#             ("system", systemPrompt),
+#             ("human", "{input}"),
+#             MessagesPlaceholder(variable_name="agent_scratchpad")
+#         ]
+#     )
+    
+#     agent = create_tool_calling_agent(llmPro, tools, prompt)
+#     agentExecutor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=5)
+    
+#     human_message = f"Please fix the error in the code based on the error message provided. and i want this {description}"
+
+#     result = agentExecutor.invoke({
+#         "input": human_message,
+#         "filename":filename,
+#         "critical":critical,
+#         "important":important,
+#         "mandatoryChecklist":mandatoryChecklist,
+#         "code":code,
+#         "description":description,
+#         "validationErrorHistory":validationErrorHistory,
+#         "validationError":validationError,
+#         "executionErrorHistory":executionErrorHistory,
+#         "executionError":executionError
+
+#     })
+
+#     print("\n--- re_write_manim_code ---\n")
+#     print(result['output'])
+#     return state
+
 def agentReWriteManimCode(state: mainmState):
     tools = [createFileAndWriteMainmCode]
     filename = state.filename
@@ -871,204 +1164,79 @@ def agentReWriteManimCode(state: mainmState):
     state.rewriteAttempts += 1 
     code = read_file(filename)
 
-    print(executionErrorHistory)
-    print(validationErrorHistory)
-    # 1. Define the prompt with placeholders for all variables.
+    print(f"Rewrite attempt #{state.rewriteAttempts}")
+    print(f"Execution errors: {executionErrorHistory}")
+    print(f"Validation errors: {validationErrorHistory}")
+    
     systemPrompt = """
-You are an expert Manim debugger and Python developer, using manim v0.19.
-Your sole task is to fix the provided Manim code file by analyzing all available error information.
+You are a Manim v0.19+ code debugger. Your job is to fix the broken code based on error analysis.
 
-    when you do graph write what you are ploting
-    Example: Plot y = x^2 on an axes with labels and animate the curve being drawn.
-    then write y=x^2 in the graph  and Face should be screen side not in 3d but 2d so user can see what is written
-
-{critical}
-
-{important}
----
-CONTEXT FOR THE FIX:
-
-File to fix: {filename}
-
-Original User Description:
-{description}
-
-Code to fix:
+**CURRENT CODE TO FIX:**
 ```python
 {code}
 ```
 
----
-ERROR ANALYSIS:
+**ERROR ANALYSIS:**
+Current Execution Error: {executionError}
+Current Validation Error: {validationError}
+Previous Execution Failures: {executionErrorHistory}
+Previous Validation Failures: {validationErrorHistory}
 
-You must fix all the errors listed below. Pay close attention to the histories to avoid repeating past mistakes.
+**TARGET:** {description}
 
-1. CURRENT EXECUTION ERROR (Highest Priority - Must Fix):
-{executionError}
+**CRITICAL MANIM v0.19+ REQUIREMENTS:**
+{critical}
 
-2. CURRENT VALIDATION ERROR (High Priority - Also Fix):
-{validationError}
+**IMPORTANT GUIDELINES:**
+{important}
 
-3. PREVIOUS FAILED EXECUTION ATTEMPTS (Do not repeat these runtime errors):
-{executionErrorHistory}
+**FIX STRATEGY:**
+1. Identify the root cause from error messages above
+2. Apply Manim v0.19+ correct syntax from CRITICAL section
+3. Ensure no deprecated methods (.to_center(), .get_graph(), etc.)
+4. Use proper imports: `from manim import Scene, Text, Create, etc.`
+5. Fix layout issues with .next_to(), .arrange(), .move_to(ORIGIN)
+6. Use raw strings for MathTex: `MathTex(r"x^2")`
 
-4. PREVIOUS FAILED VALIDATION ATTEMPTS (Do not repeat these logical errors):
-{validationErrorHistory}
-
----
-
-    **CORRECT v0.19+ SYNTAX TO USE:**
-
-Create a Scene class named MainScene that follows these requirements:
-
-1. Scene Setup:
-   - For 3D concepts: Use ThreeDScene with appropriate camera angles
-        -- Always import lights and 3D objects directly from manim (e.g., from manim import ThreeDScene, Cube, Sphere, DirectionalLight).
-        -- ❌ camera.animate → not supported
-
-            ✅ Use:
-
-            self.set_camera_orientation(...) → instant camera position
-
-            self.move_camera(..., run_time=...) → smooth transition
-
-            self.begin_3dillusion_camera_rotation(rate=...) / self.stop_3dillusion_camera_rotation() → auto rotation
-
-   - For 2D concepts: Use Scene with NumberPlane when relevant
-   - Add title and clear mathematical labels
-
-2. Mathematical Elements:
-   - Use MathTex for equations with proper LaTeX syntax
-   - Include step-by-step derivations when showing formulas
-   - Add mathematical annotations and explanations
-   - Show key points and important relationships
-
-3. Visual Elements:
-   - Create clear geometric shapes and diagrams
-   - Use color coding to highlight important parts
-   - Add arrows or lines to show relationships
-   - Include coordinate axes when relevant
-
-4. Animation Flow:
-   - Break down complex concepts into simple steps
-   - Use smooth transitions between steps
-   - Add pauses (self.wait()) at key moments
-   - Use transform animations to show changes
-
-5. Specific Requirements:
-   - For equations: Show step-by-step solutions
-   - For theorems: Visualize proof steps
-   - For geometry: Show construction process
-   - For 3D: Include multiple camera angles
-   - For graphs: Show coordinate system and gridlines
-
-6. Code Structure:
-   - Import required Manim modules
-   - Use proper class inheritance
-   - Define clear animation sequences
-
-
-7. **Positioning:**
-   - Center objects: object.move_to(ORIGIN)
-   - Move to coordinates: object.move_to([x, y, z]) or object.move_to(np.array([x, y, z]))
-   - Edge positioning: object.to_edge(UP), object.to_edge(LEFT), etc.
-
-8. **Axes and Graphs:**
-   - Create axes: axes = Axes(x_range=[...], y_range=[...])
-   - Plot functions: graph = axes.plot(lambda x: x**2, color=BLUE)
-   - NOT: axes.get_graph() (deprecated)
-
-9. Before writing the main body of the code, write a commented-out "Layout Plan" that describes how you will position the main elements on the screen to avoid overlap.
-Example 
-class MyScene(Scene):
-    def construct(self):
-        # Layout Plan:
-        # 1. Main title will be at the top of the screen (to_edge(UP)).
-        # 2. A circle will be placed on the left side.
-        # 3. An explanation text block will be placed to the right of the circle using .next_to().
-        # 4. The final formula will appear below everything, centered.
-
-        title = Text("My Animation").to_edge(UP)
-        my_circle = Circle().move_to(LEFT * 3)
-        explanation = Text("This circle is an example.").next_to(my_circle, RIGHT, buff=0.5)
-        # ... rest of the code ...
-
-10. **Text and Math (CRITICAL - Prevents LaTeX DVI errors):**
-   - Plain text: Text("Hello World")
-   - Math expressions: MathTex(r"x^2 + y^2 = r^2")
-   - ALWAYS use raw strings (r"") with MathTex
-   - NEVER: MathTex("x^2") without raw string
-   - Code blocks: Code("your_code_here", language="python")
-   - NOT: Code(code="your_code_here") (wrong parameter name)
-
-11. **Colors:**
-   - Use: BLUE, RED, GREEN, YELLOW, etc. (modern constants)
-   - Or: "#FF5733" (hex colors)
-
-12. **Animations:**
-   - Use: Create(), Write(), Transform(), etc.
-   - Proper syntax: self.play(Create(object), run_time=2)
-
-13. **Imports:**
-   - Always use: from manim import WHITE, ORIGN, so on
-   - Or specific imports: from manim import Scene, Text, Create, etc.
-
-14. **Layout and Spacing Rules (CRITICAL - Prevents Overlapping)**
-   - To prevent objects from overlapping, you MUST use Manim's relative positioning tools. Do NOT position everything manually at absolute coordinates unless you are certain they won't clash.
-
-   - **Rule A: Use `.next_to()` for single objects.** This is the primary tool for placing a label or object next to another.
-     - **Example:** `label = Text("My Circle").next_to(my_circle, UP, buff=0.5)`
-     - This places `label` above `my_circle` with a gap (`buff`) of 0.5 units.
-
-   - **Rule B: Use `.arrange()` for groups of objects.** This is the best way to line up multiple items in a row or column with even spacing.
-     - **Example:** `my_group = VGroup(circle, square, text).arrange(RIGHT, buff=1)`
-     - This arranges the objects horizontally with a gap of 1 unit between each.
-
-   - **Rule C: Use `VGroup` and `.move_to()` for layout blocks.** For complex scenes, group related items together, and then position the entire group. This is safer than positioning many individual items.
-     - **Example:**
-       `diagram = VGroup(circle, arrow, square).move_to(LEFT * 3)`
-       `explanation = Text("...").move_to(RIGHT * 3)`
-
+**MANDATORY CHECKLIST:**
 {mandatoryChecklist}
----
-TOOL USAGE INSTRUCTIONS (VERY IMPORTANT):
 
-After you have generated the corrected code, you will call the `createFileAndWriteMainmCode` tool.
-When you call this tool, you **MUST** provide **BOTH** of the following arguments:
-1.  `filename`: The name of the file to write to. Use the exact filename provided in the context above: {filename}.
-2.  `content`: The complete and corrected Python code as a single string.
+**TASK:**
+1. Generate the corrected code that fixes ALL errors listed above
+2. Call createFileAndWriteMainmCode with:
+   - filename: "{filename}"
+   - content: [fixed code as string]
+
+Focus on making the code execute without errors while following v0.19+ syntax.
 """
 
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", systemPrompt),
-            ("human", "{input}"),
-            MessagesPlaceholder(variable_name="agent_scratchpad")
-        ]
-    )
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", systemPrompt.format(
+            code=code,
+            executionError=executionError or "None",
+            validationError=validationError or "None", 
+            executionErrorHistory=executionErrorHistory,
+            validationErrorHistory=validationErrorHistory,
+            description=description,
+            filename=filename,
+            critical=critical,
+            important=important,
+            mandatoryChecklist=mandatoryChecklist
+        )),
+        ("human", "Fix the code to eliminate all errors and make it execute successfully."),
+        MessagesPlaceholder(variable_name="agent_scratchpad")
+    ])
     
-    agent = create_tool_calling_agent(llmFlash, tools, prompt)
-    agentExecutor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=5)
+    agent = create_tool_calling_agent(llmPro, tools, prompt)
+    agentExecutor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=3)
     
-    human_message = f"Please fix the error in the code based on the error message provided. and i want this {description}"
+    try:
+        result = agentExecutor.invoke({"input": f"Fix the code based on the error analysis. Target: {description}"})
+        print(f"\n--- Rewrite attempt #{state.rewriteAttempts} completed ---")
+        print(result.get('output', 'No output'))
+    except Exception as e:
+        print(f"Rewrite failed: {e}")
 
-    result = agentExecutor.invoke({
-        "input": human_message,
-        "filename":filename,
-        "critical":critical,
-        "important":important,
-        "mandatoryChecklist":mandatoryChecklist,
-        "code":code,
-        "description":description,
-        "validationErrorHistory":validationErrorHistory,
-        "validationError":validationError,
-        "executionErrorHistory":executionErrorHistory,
-        "executionError":executionError
-
-    })
-
-    print("\n--- re_write_manim_code ---\n")
-    print(result['output'])
     return state
 
 def agentRunManimCode(state: mainmState):
