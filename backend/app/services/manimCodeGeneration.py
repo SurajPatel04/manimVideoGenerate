@@ -404,6 +404,15 @@ in Manim v0.19+, you should import directly below mention from the top-level man
             sphere.set_fill(color=BLUE, opacity=0.8)
             sphere.set_stroke(color=WHITE, width=1)
         Replace material=PBRMaterial() with .set_fill(...) / .set_stroke(...).
+
+    -- TypeError: Mobject.__init__() got an unexpected keyword argument 'axes_color'
+        axes_color (old Manim) do not use this
+        use this 
+            Axes(
+                x_range=[-5, 5],
+                y_range=[-5, 5],
+                axis_config={"color": BLUE}   # new way
+            )
     </CRITICAL>
 """
 important = """

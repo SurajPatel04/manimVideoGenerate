@@ -166,7 +166,7 @@ Note:
  -for the Text you only write x and y position not z position.
  - In your earlier code you wrote font_size=1.5.
     But in Manim, Text’s font_size is in pixels (defaults to 48). So 1.5 is so tiny it’s basically invisible.
-- Render the 3D surface plot clearly,The text should be white, large, and positioned in front of the viewer so it does not overlap the surface. 
+- Render the 3D surface plot clearly,The text should be white,
     Fix: use something like font_size=48 or bigger.
 
 1. **Determine Animation Type**
