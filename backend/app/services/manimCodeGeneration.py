@@ -32,11 +32,11 @@ MANIM_RENDER_TIMEOUT = 1000
 critical = """
 <CRITICAL>:Ensure that text and objects do not overlap. You MUST write code that is compatible with Manim v0.19+ ONLY. Do NOT use any deprecated or removed methods..
 
-
-If in a Graph there is decimal number need then it should be 2 decimal only
-All written texy in the 2d in the screen way 
-If try to write what is happing if needed
-All text and the scene should remain in the frame. The text and scene transitions should be smooth.
+Note: 
+    If in a Graph there is decimal number need then it should be 2 decimal only
+    All written texy in the 2d in the screen way 
+    If try to write what is happing if needed
+    All text and the scene should remain in the frame. The text and scene transitions should be smooth.
 
 in Manim v0.19+, you should import directly below mention from the top-level manim package. like this from manim import , DirectionalLight,
     This includes:

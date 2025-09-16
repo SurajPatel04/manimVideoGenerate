@@ -9,27 +9,27 @@ from app.services.descriptionGenerate import (
     validateDescription,
     refineDescription,
     router,
-    feasibilityRouter,
-    isUserQueryPossible,
+    # feasibilityRouter,
+    # isUserQueryPossible,
 )
 
 graph_build = StateGraph(DescriptionGenerationState)
 
-graph_build.add_node("isUserQueryPossible", isUserQueryPossible)
+# graph_build.add_node("isUserQueryPossible", isUserQueryPossible)
 graph_build.add_node("generateDetailedDescription", generateDetailedDescription)
 graph_build.add_node("validateDescription", validateDescription)
 graph_build.add_node("refineDescription", refineDescription)
 
-graph_build.add_edge(START, "isUserQueryPossible")
+graph_build.add_edge(START, "generateDetailedDescription")
 
-graph_build.add_conditional_edges(
-    "isUserQueryPossible",
-    feasibilityRouter,
-    {
-        "generateDetailedDescription": "generateDetailedDescription",
-        "END": END,
-    },
-)
+# graph_build.add_conditional_edges(
+#     "isUserQueryPossible",
+#     feasibilityRouter,
+#     {
+#         "generateDetailedDescription": "generateDetailedDescription",
+#         "END": END,
+#     },
+# )
 
 graph_build.add_edge("generateDetailedDescription", "validateDescription")
 

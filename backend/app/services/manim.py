@@ -1,9 +1,11 @@
 from app.schema.ServiceSchema import (
     DescriptionGenerationState, 
-    mainmState
+    mainmState,
+    isQueryPossible
 )
 from app.services.graphForDescriptionGenerate import graph_for_description_generate 
 from app.services.graphForManimCodeGenerate import graph_for_mainm_code_generate
+from app.services.graphForFesibilityCheck import graph_for_query_fesibility_check
 from app.core.queue import taskQueue
 from app.models.UserHistory import Message, UsersHistory
 from app.core.db import init_beanie_for_workers, close_worker_db
@@ -34,8 +36,27 @@ def call_graph(self, query, userID, quality, format, historyId=None):
             
             try:
                 update_progress("Initializing", 10, "Setting up description generation state")
+                update_progress("Checking Feasibility", 20, "Analyzing if user query is possible")
+
+                fesibleState = isQueryPossible(
+                    userQuery=query,
+                    chatName=None
+                )
+
+                fesibleResult = graph_for_query_fesibility_check.invoke(fesibleState)
+                if fesibleResult.get("isFesible") is False:
+                    update_progress("Failed", 100, f"Not feasible: {fesibleResult.get('reason', 'Unknown reason')}")
+                    return {
+                        "success": False,
+                        "message": "Not possible",
+                        "reason": fesibleResult.get('reason'),
+                        "stage": "feasibility_check"
+                    }
                 
-                state=DescriptionGenerationState(
+                update_progress("Description Generated", 40, f"Chat name: {fesibleResult.get('chatName')}")
+                print(fesibleResult)
+                
+                descriptionState=DescriptionGenerationState(
                     userQuery=query,
                     descriptions=[],
                     detailedDescription="",
@@ -46,35 +67,32 @@ def call_graph(self, query, userID, quality, format, historyId=None):
                     isGood=None,
                     detailedDescriptionError= None,
                     format = format,
-                    isFesible=None,
                     chatName=None,
                     reason=None
                 )
 
-                update_progress("Checking Feasibility", 20, "Analyzing if user query is possible")
+
 
                 update_progress("Generating Description", 30, "Detailed description in progress")
                 
-                result = graph_for_description_generate.invoke(state)
+                result = graph_for_description_generate.invoke(descriptionState)
 
-                if result.get("isFesible") is False:
-                    update_progress("Failed", 100, f"Not feasible: {result.get('reason', 'Unknown reason')}")
-                    return {
-                        "success": False,
-                        "message": "Not possible",
-                        "reason": result.get('reason'),
-                        "stage": "feasibility_check"
-                    }
+                # if result.get("isFesible") is False:
+                #     update_progress("Failed", 100, f"Not feasible: {result.get('reason', 'Unknown reason')}")
+                #     return {
+                #         "success": False,
+                #         "message": "Not possible",
+                #         "reason": result.get('reason'),
+                #         "stage": "feasibility_check"
+                #     }
 
-                update_progress("Description Generated", 40, f"Chat name: {result.get('chatName')}")
-                print(result)
 
                 update_progress("Generating Manim Code", 50, "Creating animation code")
                 
-                stat1 = mainmState(
+                manimGenerationState = mainmState(
                     description= result.get("detailedDescription"),
                     isCodeGood=None,
-                    format=state.format,
+                    format=descriptionState.format,
                     error_message="",
                     rewriteAttempts=0,
                     filename="",
@@ -83,7 +101,7 @@ def call_graph(self, query, userID, quality, format, historyId=None):
                     createAgain = 0
                 )
 
-                manimGeneration = graph_for_mainm_code_generate.invoke(stat1)
+                manimGeneration = graph_for_mainm_code_generate.invoke(manimGenerationState)
 
                 code = manimGeneration.get('code')
                 userQuery = query
@@ -141,7 +159,7 @@ def call_graph(self, query, userID, quality, format, historyId=None):
                     else:
                         history = UsersHistory(
                             userId=ObjectId(userID),
-                            chatName=result.get("chatName"),
+                            chatName=fesibleResult.get("chatName"),
                             messages=[message]
                         )
                         await history.insert()
@@ -149,7 +167,7 @@ def call_graph(self, query, userID, quality, format, historyId=None):
                 else:
                     history = UsersHistory(
                         userId=ObjectId(userID),
-                        chatName=result.get("chatName"),
+                        chatName=fesibleResult.get("chatName"),
                         messages=[message]
                     )
                     await history.insert()

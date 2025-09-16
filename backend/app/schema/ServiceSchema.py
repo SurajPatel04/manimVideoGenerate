@@ -12,7 +12,6 @@ class CodeGenPossibility(BaseModel):
 
 class DescriptionGenerationState(BaseModel):
     userQuery:str
-    isFesible: bool | None = None
     reason: Optional[str] = None
     chatName: Optional[str] = None
     descriptions:list[str] = []
@@ -22,6 +21,11 @@ class DescriptionGenerationState(BaseModel):
     AutoComplete: bool
     detailedDescriptionError: Optional[str] = None
     format: str = Field(default="Red", description="The render file format")
+
+
+class isQueryPossible(BaseModel):
+    userQuery: str
+    chatName: Optional[str] = None
 
 class GenDescriptions(BaseModel):
     descriptions: list[str]
