@@ -12,7 +12,6 @@ from app.core.db import init_beanie_for_workers, close_worker_db
 from bson import ObjectId
 import asyncio
 from datetime import datetime
-import time
 import os
 import shutil
 from app.utils.supabaseClient import uploadFile
@@ -47,8 +46,7 @@ def call_graph(self, query, userID, quality, format, historyId=None):
 
                 fesibleResult = graph_for_query_fesibility_check.invoke(fesibleState)
                 print(f"DEBUG: Feasibility check result: {fesibleResult}")
-                
-                # Get feasibility value
+            
                 is_feasible = fesibleResult.get("isFesible")
                 print(f"DEBUG: Extracted feasibility value: {is_feasible}")
                 
@@ -87,16 +85,6 @@ def call_graph(self, query, userID, quality, format, historyId=None):
                 
                 result = graph_for_description_generate.invoke(descriptionState)
 
-                # if result.get("isFesible") is False:
-                #     update_progress("Failed", 100, f"Not feasible: {result.get('reason', 'Unknown reason')}")
-                #     return {
-                #         "success": False,
-                #         "message": "Not possible",
-                #         "reason": result.get('reason'),
-                #         "stage": "feasibility_check"
-                #     }
-
-
                 update_progress("Generating Manim Code", 50, "Creating animation code")
                 
                 manimGenerationState = mainmState(
@@ -126,17 +114,15 @@ def call_graph(self, query, userID, quality, format, historyId=None):
                     current_dir = os.path.dirname(os.path.abspath(__file__))
                     backend_dir = os.path.dirname(os.path.dirname(current_dir))
                     
-                    # Check for file with Manim version suffix first
                     video_file_path_with_suffix = os.path.join(backend_dir, "videos", f"{filename_without_extension}_ManimCE_v0.19.0.{manimGeneration.get('format')}")
                     video_file_path_without_suffix = os.path.join(backend_dir, "videos", f"{filename_without_extension}.{manimGeneration.get('format')}")
                     
-                    # Remove the main video file (try both naming conventions)
                     if os.path.exists(video_file_path_with_suffix):
                         os.remove(video_file_path_with_suffix)
-                        print(f"Successfully removed video file: {video_file_path_with_suffix}")
+                        # print(f"Successfully removed video file: {video_file_path_with_suffix}")
                     elif os.path.exists(video_file_path_without_suffix):
                         os.remove(video_file_path_without_suffix)
-                        print(f"Successfully removed video file: {video_file_path_without_suffix}")
+                        # print(f"Successfully removed video file: {video_file_path_without_suffix}")
                     else:
                         print(f"Video file not found for cleanup: {video_file_path_with_suffix} or {video_file_path_without_suffix}")
                     
@@ -205,7 +191,6 @@ def call_graph(self, query, userID, quality, format, historyId=None):
                     "stage": "unknown"
                 }
         finally:
-            # Clean up database connection
             try:
                 await close_worker_db()
             except Exception as cleanup_error:

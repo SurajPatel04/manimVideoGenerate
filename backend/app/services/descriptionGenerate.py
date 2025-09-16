@@ -199,7 +199,7 @@ load_dotenv()
 
 
 def generateDetailedDescription(state: DescriptionGenerationState):
-    print("\n******Generating detailed description ********\n")
+    # print("\n******Generating detailed description ********\n")
     userQuery = state.userQuery
     structuredLlm = llmFlash.with_structured_output(DetailDescription)
     
@@ -248,7 +248,7 @@ Provide complete technical details for immediate Manim implementation.
     
     try:
         result = structuredLlm.invoke(msg)
-        print(result.description)
+        # print(result.description)
         return state.model_copy(update={
             "detailedDescription": result.description,
         })
@@ -362,12 +362,12 @@ Focus on technical implementability, not creative quality.
     nextStage = ""
     try:
         result = structured_llm.invoke(messages)
-        print("Description is good or not: ", result.isThisGoodDescrription)
+        # print("Description is good or not: ", result.isThisGoodDescrription)
         if result.isThisGoodDescrription:
             nextStage = "createFileAndWriteMainmCode"
         else:
             nextStage = "refineDescription"
-        print("Description Error: ", result.detailedDescriptionError)
+        # print("Description Error: ", result.detailedDescriptionError)
         
         return state.model_copy(update={
             "isGood": result.isThisGoodDescrription,
@@ -437,7 +437,7 @@ Focus on technical implementability, not creative quality.
 #         raise
 
 def refineDescription(state: DescriptionGenerationState):
-    print("**** refineDescription *****")
+    # print("**** refineDescription *****")
     userQuery = state.userQuery
     description = state.detailedDescription
     detailedDescriptionError = state.detailedDescriptionError or "No specific error provided."
@@ -502,8 +502,8 @@ Make the description immediately implementable in Manim code.
     
     try:
         result = structured.invoke(messages)
-        print(f"Refinement attempt #{descriptionRefine}")
-        print(f"Refined description: {result.description}")
+        # print(f"Refinement attempt #{descriptionRefine}")
+        # print(f"Refined description: {result.description}")
         return state.model_copy(update={
             "detailedDescription": result.description,
             "descriptionRefine": descriptionRefine,
