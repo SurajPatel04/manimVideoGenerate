@@ -26,6 +26,8 @@ class DescriptionGenerationState(BaseModel):
 class isQueryPossible(BaseModel):
     userQuery: str
     chatName: Optional[str] = None
+    isFesible: Optional[bool] = None
+    reason: Optional[str] = None
 
 class GenDescriptions(BaseModel):
     descriptions: list[str]

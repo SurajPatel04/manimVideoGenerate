@@ -6,6 +6,7 @@ from langchain_core.messages import (
 )
 from pydantic import ValidationError
 from app.schema.ServiceSchema import isQueryPossible,CodeGenPossibility
+import logging
 def isQuery(state: isQueryPossible):
     userQuery = state.userQuery
     print("\n\n\n Checking User Query \n\n\n")
@@ -42,11 +43,14 @@ The JSON object must conform to this exact structure:
     try:
         result = structuredLlm.invoke(msg)
         print(f"isFesible {result.isFesible} \n reason: {result.reason} \n chatName: {result.chatName}")
-        return state.model_copy(update={
+        
+        updated_state = state.model_copy(update={
             "isFesible":result.isFesible,
             "reason": result.reason,
             "chatName": result.chatName,
-            })
+        })
+        return updated_state
     except (ValidationError, RuntimeError) as err:
+        print(f"DEBUG: Exception in feasibility check: {err}")
         logging.exception("isUserQueryPossible failed", err)
         raise

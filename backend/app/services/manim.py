@@ -37,14 +37,23 @@ def call_graph(self, query, userID, quality, format, historyId=None):
             try:
                 update_progress("Initializing", 10, "Setting up description generation state")
                 update_progress("Checking Feasibility", 20, "Analyzing if user query is possible")
+                print(f"DEBUG: About to check feasibility for query: {query}")
 
                 fesibleState = isQueryPossible(
                     userQuery=query,
                     chatName=None
                 )
+                print(f"DEBUG: Created feasibility state: {fesibleState}")
 
                 fesibleResult = graph_for_query_fesibility_check.invoke(fesibleState)
-                if fesibleResult.get("isFesible") is False:
+                print(f"DEBUG: Feasibility check result: {fesibleResult}")
+                
+                # Get feasibility value
+                is_feasible = fesibleResult.get("isFesible")
+                print(f"DEBUG: Extracted feasibility value: {is_feasible}")
+                
+                if is_feasible is False:
+                    print(f"DEBUG: STOPPING EXECUTION - Query not feasible: {fesibleResult.get('reason')}")
                     update_progress("Failed", 100, f"Not feasible: {fesibleResult.get('reason', 'Unknown reason')}")
                     return {
                         "success": False,
@@ -53,22 +62,23 @@ def call_graph(self, query, userID, quality, format, historyId=None):
                         "stage": "feasibility_check"
                     }
                 
-                update_progress("Description Generated", 40, f"Chat name: {fesibleResult.get('chatName')}")
-                print(fesibleResult)
+                print(f"DEBUG: CONTINUING EXECUTION - Query is feasible")
+                update_progress("Description Generation", 30, f"Chat name: {fesibleResult.get('chatName')}")
+                
+                print(f"DEBUG: CONTINUING EXECUTION - Query is feasible")
+                update_progress("Description Generation", 30, f"Chat name: {fesibleResult.get('chatName')}")
                 
                 descriptionState=DescriptionGenerationState(
                     userQuery=query,
                     descriptions=[],
                     detailedDescription="",
                     descriptionRefine=0,
-                    currentStage="isUserQueryPossible",
-                    nextStage=None,
                     AutoComplete=True,
                     isGood=None,
                     detailedDescriptionError= None,
                     format = format,
-                    chatName=None,
-                    reason=None
+                    chatName=fesibleResult.get('chatName'),
+                    reason=fesibleResult.get('reason')
                 )
 
 
