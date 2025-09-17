@@ -774,10 +774,11 @@ export default function MainPage() {
                   </div>
                   <div className="overflow-y-auto px-2 max-h-[calc(100vh-220px)] pr-1 sidebar-scrollbar">
                     <HistorySidebar 
-                      isOpen={true}
-                      onToggle={() => {}}
-                      onHistoryItemClick={handleHistoryItemClick}
-                      inMainSidebar={true}
+                        isOpen={true}
+                        onToggle={() => {}}
+                        onHistoryItemClick={handleHistoryItemClick}
+                        inMainSidebar={true}
+                        currentHistoryId={currentHistoryId}
                     />
                   </div>
                 </div>
@@ -860,6 +861,7 @@ export default function MainPage() {
                   onToggle={() => {}}
                   onHistoryItemClick={handleHistoryItemClick}
                   inMainSidebar={true}
+                  currentHistoryId={currentHistoryId}
                 />
               </div>
             </div>

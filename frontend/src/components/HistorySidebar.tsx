@@ -9,9 +9,10 @@ interface HistorySidebarProps {
   onToggle: () => void;
   onHistoryItemClick?: (historyItem: UserHistoryItem) => void;
   inMainSidebar?: boolean;
+  currentHistoryId?: string | null;
 }
 
-export default function HistorySidebar({ isOpen, onToggle, onHistoryItemClick, inMainSidebar = false }: HistorySidebarProps) {
+export default function HistorySidebar({ isOpen, onToggle, onHistoryItemClick, inMainSidebar = false, currentHistoryId = null }: HistorySidebarProps) {
   const [historyData, setHistoryData] = useState<UserHistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -125,10 +126,12 @@ export default function HistorySidebar({ isOpen, onToggle, onHistoryItemClick, i
           const isVideo = latestMessage?.link?.includes('.mp4');
           const isGif = latestMessage?.link?.includes('.gif');
           
+          const isActive = currentHistoryId && currentHistoryId === item._id;
+
           return (
             <div
               key={item._id}
-              className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50 hover:border-gray-600 cursor-pointer transition-all duration-200 hover:bg-gray-700/50 group"
+              className={`rounded-lg p-3 border transition-all duration-200 cursor-pointer ${isActive ? 'bg-gradient-to-r from-blue-700/40 to-transparent border-blue-500' : 'bg-gray-800/50 border border-gray-700/50 hover:border-gray-600 hover:bg-gray-700/50'}`}
               onClick={() => onHistoryItemClick?.(item)}
             >
               <div className="flex items-start justify-between gap-2 mb-2">
