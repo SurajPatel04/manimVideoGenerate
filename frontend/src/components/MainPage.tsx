@@ -145,14 +145,8 @@ const Message = memo(({ message, onCodeModalToggle }: {
   const [showCode, setShowCode] = useState(false);
 
   const handleShowCode = useCallback(() => {
-    setShowCode(true);
     onCodeModalToggle(true, message);
-  }, [onCodeModalToggle]);
-
-  const handleHideCode = useCallback(() => {
-    setShowCode(false);
-    onCodeModalToggle(false, null);
-  }, [onCodeModalToggle]);
+  }, [onCodeModalToggle, message]);
 
   const videoSection = useMemo(() => {
     if (message.type !== 'assistant' || !message.videoUrl || message.success === false) {
