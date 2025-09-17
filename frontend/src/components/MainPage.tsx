@@ -140,18 +140,18 @@ const ProgressStepper = memo(({ progress }: { progress?: number }) => {
 
 const Message = memo(({ message, onCodeModalToggle }: { 
   message: MessageType,
-  onCodeModalToggle: (isOpen: boolean) => void 
+  onCodeModalToggle: (isOpen: boolean, message?: MessageType | null) => void 
 }) => {
   const [showCode, setShowCode] = useState(false);
 
   const handleShowCode = useCallback(() => {
     setShowCode(true);
-    onCodeModalToggle(true);
+    onCodeModalToggle(true, message);
   }, [onCodeModalToggle]);
 
   const handleHideCode = useCallback(() => {
     setShowCode(false);
-    onCodeModalToggle(false);
+    onCodeModalToggle(false, null);
   }, [onCodeModalToggle]);
 
   const videoSection = useMemo(() => {
@@ -229,35 +229,7 @@ const Message = memo(({ message, onCodeModalToggle }: {
         </div>
       </div>
 
-      {/* Code Modal */}
-      {showCode && message.code && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-          onClick={handleHideCode}
-        >
-          <div 
-            className="bg-gray-900 rounded-lg max-w-4xl w-full max-h-[80vh] overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between p-4 border-b border-gray-700">
-              <h3 className="text-white text-lg font-semibold">Generated Animation Code</h3>
-              <button
-                onClick={handleHideCode}
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <IconX className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="p-4 overflow-auto max-h-[calc(80vh-80px)]">
-              <CodeBlock
-                language="python"
-                filename={message.filename || "animation.py"}
-                code={message.code}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Code Modal is rendered at top-level in MainPage to avoid sidebar overlap */}
     </>
   );
 }, (prevProps, nextProps) => {
@@ -285,6 +257,7 @@ export default function MainPage() {
   const [inputValue, setInputValue] = useState<string>(""); 
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false); 
+  const [codeModalMessage, setCodeModalMessage] = useState<MessageType | null>(null);
   const [cancelledTasks, setCancelledTasks] = useState<Set<string>>(new Set()); 
   const { user, logout, tokens } = useAuth();
   const navigate = useNavigate();
@@ -937,7 +910,10 @@ export default function MainPage() {
                 <Message 
                   key={msg.id} 
                   message={msg} 
-                  onCodeModalToggle={setIsCodeModalOpen}
+                  onCodeModalToggle={(isOpen: boolean, message?: MessageType | null) => {
+                    setIsCodeModalOpen(isOpen);
+                    setCodeModalMessage(message ?? null);
+                  }}
                 />
               ))}
               <div ref={messagesEndRef} />
@@ -978,6 +954,38 @@ export default function MainPage() {
           </div>
         )}
       </main>
+      {/* Top-level Code Modal to ensure it's above sidebar */}
+      {isCodeModalOpen && codeModalMessage && codeModalMessage.code && (
+        <div 
+          className="fixed inset-0 flex items-center justify-center p-4 z-[99999]"
+          onClick={() => { setIsCodeModalOpen(false); setCodeModalMessage(null); }}
+        >
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-md" />
+
+          <div 
+            className="relative bg-gray-900 rounded-lg max-w-6xl w-full max-h-[85vh] overflow-hidden shadow-[0_25px_50px_-12px_rgba(0,0,0,0.75)] transform transition-transform duration-200 z-[100000]"
+            style={{ margin: '0 1rem' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-gray-700">
+              <h3 className="text-white text-lg font-semibold">Generated Animation Code</h3>
+              <button
+                onClick={() => { setIsCodeModalOpen(false); setCodeModalMessage(null); }}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <IconX className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-4 overflow-auto max-h-[calc(85vh-80px)]">
+              <CodeBlock
+                language="python"
+                filename={codeModalMessage.filename || "animation.py"}
+                code={codeModalMessage.code}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
