@@ -59,6 +59,9 @@ Note:
 
     NameError: name 'Color' is not defined
         Fix: from manim import Color
+
+    NameError: name 'LEFT' is not defined
+        In Manim, these direction vectors are predefined, but you must import them explicitly.
 in Manim v0.19+, you should import directly below mention from the top-level manim package. like this from manim import , DirectionalLight,
     This includes:
     Scene types: Scene, ThreeDScene

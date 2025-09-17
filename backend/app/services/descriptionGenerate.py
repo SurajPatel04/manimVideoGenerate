@@ -199,7 +199,7 @@ load_dotenv()
 
 
 def generateDetailedDescription(state: DescriptionGenerationState):
-    # print("\n******Generating detailed description ********\n")
+    print("\n******Generating detailed description ********\n")
     userQuery = state.userQuery
     structuredLlm = llmFlash.with_structured_output(DetailDescription)
     
@@ -221,7 +221,7 @@ You are a Manim v0.19+ animation planner. Transform the user's request into a de
 - **3D Scene**: Include camera position, rotations, lighting, depth
 
 **KEY SPECIFICATIONS:**
-- Text: Always use font_size ≥ 48, white color, 2D positioning only
+-Text: Use a font_size appropriate to fit on the screen. In Manim, font_size is measured in point size (pt). Use white color and restrict to 2D positioning only.
 - Objects: Define shape, size, color, opacity, and exact coordinates
 - Animations: Include duration and transition type (FadeIn, Write, Transform, etc.)
 - Spacing: Maintain at least 1 unit gap between objects to avoid overlaps
@@ -472,7 +472,7 @@ You are a Manim v0.19+ description refiner. Fix the animation description based 
 - **3D Scene**: Include camera position, rotations, lighting, depth
 
 **KEY SPECIFICATIONS:**
-- Text: Always use font_size ≥ 48, white color, 2D positioning only
+-Text: Use a font_size appropriate to fit on the screen. In Manim, font_size is measured in point size (pt). Use white color and restrict to 2D positioning only.
 - Objects: Define shape, size, color, opacity, and exact coordinates
 - Animations: Include duration and transition type (FadeIn, Write, Transform, etc.)
 - Spacing: Maintain at least 1 unit gap between objects to avoid overlaps
