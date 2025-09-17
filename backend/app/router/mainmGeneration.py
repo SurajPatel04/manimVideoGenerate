@@ -12,16 +12,12 @@ from app.utils.auth import getCurrentUser
 from celery.result import AsyncResult
 from app.core.queue import taskQueue
 from app.models.UserHistory import UsersHistory
+from app.core.redis import get_queue_length
 import json
 
 router = APIRouter(
     prefix="/api/manimGeneration"
 )
-
-
-@router.get("/")
-def hello():
-    return {"data":"hello World"}
 
 # @router.post("/generate", status_code=status.HTTP_201_CREATED)
 # async def generateManimVideo(query: MainmUserModel):
@@ -55,7 +51,7 @@ async def cancel_task(req: CancelRequest,  userId: int = Depends(getCurrentUser)
 @router.get("/result/{task_id}")
 async def get_result(task_id: str, userId: int = Depends(getCurrentUser)):
     result = AsyncResult(task_id, app=taskQueue)
-    
+
     if result.state == 'PROGRESS':
         return {
             "status": "in_progress",
@@ -63,28 +59,31 @@ async def get_result(task_id: str, userId: int = Depends(getCurrentUser)):
             "current_stage": result.info.get('current_stage'),
             "progress": result.info.get('progress'),
             "details": result.info.get('details'),
-            "timestamp": result.info.get('timestamp')
+            "timestamp": result.info.get('timestamp'),
+
         }
     elif result.state == 'SUCCESS':
         return {
             "status": "completed",
             "state": result.state,
-            "data": result.result
+            "data": result.result,
         }
     elif result.state == 'FAILURE':
         return {
             "status": "failed",
             "state": result.state,
-            "error": str(result.info)
+            "error": str(result.info),
         }
     elif result.state == 'REVOKED':
         return {
             "status": "cancelled",
             "state": result.state,
-            "message": "Task was cancelled by user"
+            "message": "Task was cancelled by user",
         }
     else:
+        queue_length = get_queue_length()
         return {
             "status": "pending",
-            "state": result.state
+            "state": result.state,
+            "queue_left": queue_length
         }

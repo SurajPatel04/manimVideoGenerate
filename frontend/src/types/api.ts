@@ -44,6 +44,7 @@ export interface TaskResultResponse {
   details?: string;
   timestamp?: string;
   message?: string;
+  queue_left?: number;
   data?: {
     success: boolean;
     link?: string;

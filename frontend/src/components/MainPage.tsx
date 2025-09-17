@@ -319,7 +319,12 @@ export default function MainPage() {
                   ? `Animation generation failed. Please try again.`
                   : result.status === 'cancelled'
                   ? `Animation generation was cancelled by user.`
-                  : `${result.current_stage || 'Processing'} (${result.progress || 0}%)`
+                  : result.status === 'pending'
+                    ? (() => {
+                        const queuePos = typeof result.queue_left === 'number' ? result.queue_left : null;
+                        return queuePos !== null ? `Your Place in Queue: ${queuePos}` : 'In Queue';
+                      })()
+                    : `${result.current_stage || 'In Queue'}`
               }
             : msg
         ));

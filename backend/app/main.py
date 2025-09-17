@@ -17,10 +17,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-@app.get("/")
-def test( user_id: int=Depends(getCurrentUser)):
-    return {"data":"success"}
-
 app.include_router(mainmGeneration.router)
 app.include_router(userRouter.router)
 
