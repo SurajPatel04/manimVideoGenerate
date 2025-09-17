@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
+import { MdHighQuality } from "react-icons/md";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -285,22 +286,13 @@ export function PlaceholdersAndVanishInput({
           showOptions && "bg-gray-700 text-gray-300 border-gray-500"
         )}
       >
-        <motion.svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+        <motion.div
           animate={{ rotate: showOptions ? 45 : 0 }}
           transition={{ duration: 0.2 }}
-          className="h-4 w-4"
+          className="h-4 w-4 text-gray-400"
         >
-          <path d="M12 5v14M5 12h14" />
-        </motion.svg>
+          <MdHighQuality className="h-4 w-4" />
+        </motion.div>
       </button>
       
       <input
