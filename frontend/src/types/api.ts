@@ -32,24 +32,25 @@ export interface ManimGenerationRequest {
 
 export interface ManimGenerationResponse {
   task_id: string;
-  historyId?: string; // Add optional historyId that might be returned
+  historyId?: string;
 }
 
-// Task Result API Types
+
 export interface TaskResultResponse {
-  status: "in_progress" | "completed" | "failed";
-  state: "PROGRESS" | "SUCCESS" | "FAILURE";
+  status: "in_progress" | "completed" | "failed" | "cancelled";
+  state: "PROGRESS" | "SUCCESS" | "FAILURE" | "REVOKED";
   current_stage?: string;
   progress?: number;
   details?: string;
   timestamp?: string;
+  message?: string;
   data?: {
     success: boolean;
     link?: string;
     historyId?: string;
-    reason?: string; // For failed cases
-    message?: string; // For failed cases
-    stage?: string; // For failed cases
+    reason?: string; 
+    message?: string; 
+    stage?: string; 
     data?: {
       description: string;
       isCodeGood: boolean;
@@ -69,17 +70,16 @@ export interface TaskResultResponse {
     description?: string;
     quality?: string;
     code?: string;
-    filename?: string; // Direct access to filename
+    filename?: string; 
   };
 }
 
-// Cancel Task API Types
+
 export interface CancelTaskResponse {
   status: "revoked";
   taskId: string;
 }
 
-// API Request Types
 export interface LoginRequest {
   email: string;
   password: string;

@@ -24,8 +24,6 @@ export class ManimApiService {
         }
       );
       
-      // Log the full response for debugging
-      console.log('API Response:', response.data);
       
       return response.data;
     } catch (error: any) {
@@ -75,7 +73,6 @@ export class ManimApiService {
         }
       );
       
-      console.log('Task cancelled:', response.data);
       return response.data;
     } catch (error: any) {
       console.error('Task cancellation error:', error);

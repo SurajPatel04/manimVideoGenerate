@@ -223,10 +223,8 @@ const Message = memo(({ message, onCodeModalToggle }: {
         >
           <p className="whitespace-pre-wrap break-words text-sm md:text-base mb-2 leading-relaxed">{message.content}</p>
           
-          {/* Material UI Stepper for assistant messages with tasks */}
           {stepperSection}
 
-          {/* Video player for completed animations */}
           {videoSection}
         </div>
       </div>
@@ -287,6 +285,7 @@ export default function MainPage() {
   const [inputValue, setInputValue] = useState<string>(""); 
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false); 
+  const [cancelledTasks, setCancelledTasks] = useState<Set<string>>(new Set()); 
   const { user, logout, tokens } = useAuth();
   const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -314,6 +313,11 @@ export default function MainPage() {
     const pollTask = async () => {
       try {
         pollCount++;
+        
+        if (cancelledTasks.has(taskId)) {
+          console.log('Task was cancelled locally, stopping polling');
+          return true;
+        }
         
         if (pollCount > maxPollCount) {
           console.warn('Polling timeout reached, stopping polling');
@@ -346,12 +350,14 @@ export default function MainPage() {
                     : `Animation generation failed: ${result.data?.reason || result.data?.message || 'Unknown error'}`
                   : result.status === 'failed'
                   ? `Animation generation failed. Please try again.`
+                  : result.status === 'cancelled'
+                  ? `Animation generation was cancelled by user.`
                   : `${result.current_stage || 'Processing'} (${result.progress || 0}%)`
               }
             : msg
         ));
 
-        if (result.status === 'completed' || result.status === 'failed') {
+        if (result.status === 'completed' || result.status === 'failed' || result.status === 'cancelled') {
           
           setIsGenerating(false);
           
@@ -391,6 +397,18 @@ export default function MainPage() {
                     ...msg, 
                     content: `❌ Animation generation failed. Please try again.`,
                     success: false
+                  }
+                : msg
+            ));
+          } else if (result.status === 'cancelled') {
+            setMessages(prev => prev.map(msg => 
+              msg.taskId === taskId 
+                ? { 
+                    ...msg, 
+                    content: `🚫 Animation generation was cancelled.`,
+                    success: false,
+                    progress: undefined,
+                    stage: undefined
                   }
                 : msg
             ));
@@ -488,12 +506,10 @@ export default function MainPage() {
     }
   }, [isGenerating]);
 
-  // Close user menu when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as Element;
       
-      // Check if the click is on a logout button - if so, don't close the menu here
       if (target.closest('button')?.textContent?.includes('Logout')) {
         return;
       }
@@ -501,14 +517,12 @@ export default function MainPage() {
       const clickedInsideDesktop = userMenuRef.current?.contains(target) ?? false;
       const clickedInsideMobile = mobileUserMenuRef.current?.contains(target) ?? false;
 
-      // Close only if click is outside BOTH menus (desktop and mobile containers)
       if (showUserMenu && !clickedInsideDesktop && !clickedInsideMobile) {
         setShowUserMenu(false);
       }
     }
 
     if (showUserMenu) {
-      // Use setTimeout to ensure the menu is rendered before adding the listener
       setTimeout(() => {
         document.addEventListener('mousedown', handleClickOutside);
       }, 0);
@@ -559,23 +573,7 @@ export default function MainPage() {
     if (!currentTaskId || !tokens?.accessToken) return;
 
     try {
-      await ManimApiService.cancelTask(currentTaskId, tokens.accessToken);
-
-      stopPollingAndReset();
-
-      setMessages(prev => prev.map(msg => 
-        msg.taskId === currentTaskId 
-          ? { 
-              ...msg, 
-              content: 'Animation generation has been cancelled.',
-              progress: undefined,
-              stage: undefined
-            }
-          : msg
-      ));
-
-    } catch (error: any) {
-      console.error('Error cancelling task:', error);
+      setCancelledTasks(prev => new Set([...prev, currentTaskId]));
       
       stopPollingAndReset();
 
@@ -583,9 +581,34 @@ export default function MainPage() {
         msg.taskId === currentTaskId 
           ? { 
               ...msg, 
-              content: 'Process stopped locally (may continue on server).',
+              content: 'Cancelling animation generation...',
               progress: undefined,
               stage: undefined
+            }
+          : msg
+      ));
+
+      await ManimApiService.cancelTask(currentTaskId, tokens.accessToken);
+
+      setMessages(prev => prev.map(msg => 
+        msg.taskId === currentTaskId 
+          ? { 
+              ...msg, 
+              content: '🚫 Animation generation was cancelled.',
+              success: false
+            }
+          : msg
+      ));
+
+    } catch (error: any) {
+      console.error('Error cancelling task:', error);
+      
+      setMessages(prev => prev.map(msg => 
+        msg.taskId === currentTaskId 
+          ? { 
+              ...msg, 
+              content: '🚫 Animation generation was cancelled (local cancellation).',
+              success: false
             }
           : msg
       ));
@@ -597,6 +620,7 @@ export default function MainPage() {
     setCurrentHistoryId(""); 
     setCurrentTaskId(""); 
     setIsGenerating(false);
+    setCancelledTasks(new Set());
     
     if (pollingInterval) {
       clearInterval(pollingInterval);
@@ -609,15 +633,12 @@ export default function MainPage() {
   const handleLogout = useCallback((e?: React.MouseEvent) => {
     e?.preventDefault();
     e?.stopPropagation();
-    console.log('Logout clicked!'); // Debug log
     try {
       logout();
       setShowUserMenu(false);
-      // Force navigation to login page
       navigate('/login', { replace: true });
     } catch (error) {
       console.error('Logout error:', error);
-      // Even if logout fails, clear local state and navigate
       setShowUserMenu(false);
       navigate('/login', { replace: true });
     }
