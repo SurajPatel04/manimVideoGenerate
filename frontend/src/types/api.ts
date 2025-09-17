@@ -37,7 +37,7 @@ export interface ManimGenerationResponse {
 
 
 export interface TaskResultResponse {
-  status: "in_progress" | "completed" | "failed" | "cancelled";
+  status: "pending" | "in_progress" | "completed" | "failed" | "cancelled";
   state: "PROGRESS" | "SUCCESS" | "FAILURE" | "REVOKED";
   current_stage?: string;
   progress?: number;

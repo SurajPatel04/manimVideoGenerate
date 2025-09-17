@@ -324,7 +324,9 @@ export default function MainPage() {
                         const queuePos = typeof result.queue_left === 'number' ? result.queue_left : null;
                         return queuePos !== null ? `Your Place in Queue: ${queuePos}` : 'In Queue';
                       })()
-                    : `${result.current_stage || 'In Queue'}`
+                  : result.status === 'in_progress'
+                    ? `${result.current_stage || 'In Progress'}`
+                  : `${result.current_stage || 'In Queue'}`
               }
             : msg
         ));
