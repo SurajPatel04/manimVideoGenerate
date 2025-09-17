@@ -48,6 +48,17 @@ Note:
     Axes → 2D (takes only x_range, y_range).
     ThreeDAxes → 3D (takes x_range, y_range, z_range).
 
+    TypeError: Mobject.__init__() got an unexpected keyword argument 'x_range'
+        Fix: replace Surface with ParametricSurface and use u_range, v_range.
+
+    Invalid ambient rotation angle.
+      fix: self.begin_ambient_camera_rotation(rate=0.1, about="theta")
+
+    AttributeError: ThreeDAxes object has no attribute 'add_numbers'
+        Fix: ThreeDAxes in Manim v0.19+ does not have .add_numbers(). Use .add_coordinates() instead.
+
+    NameError: name 'Color' is not defined
+        Fix: from manim import Color
 in Manim v0.19+, you should import directly below mention from the top-level manim package. like this from manim import , DirectionalLight,
     This includes:
     Scene types: Scene, ThreeDScene
@@ -169,14 +180,14 @@ in Manim v0.19+, you should import directly below mention from the top-level man
         cube = Cube()
         anim = Rotate(cube, angle=PI/4)
 
-        anim.add_ambient_camera_rotation(rate=0.1)  # ❌ WRONG
+        anim.add_ambient_camera_rotation(rate=0.1)  #WRONG
 
         Correct usage:
             class MyScene(ThreeDScene):
             def construct(self):
                 cube = Cube()
                 self.add(cube)
-                self.add_ambient_camera_rotation(rate=0.1)  # ✅ add rotation to the scene
+                self.add_ambient_camera_rotation(rate=0.1)  # add rotation to the scene
                 self.play(Rotate(cube, angle=PI/4))
                 self.wait(2)
     -- AttributeError: 'Animation_b79f245b' object has no attribute 'set_background'
@@ -866,7 +877,7 @@ def agentCheckFileCode(state: mainmState):
 #         cube = Cube()
 #         anim = Rotate(cube, angle=PI/4)
 
-#         anim.add_ambient_camera_rotation(rate=0.1)  # ❌ WRONG
+#         anim.add_ambient_camera_rotation(rate=0.1)  # WRONG
 #         Correct usage:
 #             class MyScene(ThreeDScene):
 #             def construct(self):

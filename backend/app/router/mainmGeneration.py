@@ -77,6 +77,12 @@ async def get_result(task_id: str, userId: int = Depends(getCurrentUser)):
             "state": result.state,
             "error": str(result.info)
         }
+    elif result.state == 'REVOKED':
+        return {
+            "status": "cancelled",
+            "state": result.state,
+            "message": "Task was cancelled by user"
+        }
     else:
         return {
             "status": "pending",
