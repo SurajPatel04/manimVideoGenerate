@@ -142,7 +142,7 @@ const Message = memo(({ message, onCodeModalToggle }: {
   message: MessageType,
   onCodeModalToggle: (isOpen: boolean, message?: MessageType | null) => void 
 }) => {
-  const [showCode, setShowCode] = useState(false);
+
 
   const handleShowCode = useCallback(() => {
     onCodeModalToggle(true, message);
