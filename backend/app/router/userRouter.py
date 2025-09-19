@@ -25,7 +25,7 @@ from datetime import (
     timedelta, 
     timezone
 )
-from app.schema.UserSchema import TokenData
+from app.schema.UserSchema import TokenData, EmailModel
 from bson import ObjectId
 from app.models.User import Users
 from app.models.UserHistory import UsersHistory
@@ -33,6 +33,9 @@ from app.models.RefreshToken import RefreshToken
 from typing import List
 from app.utils.auth import getCurrentUser
 from app.config import Config
+from app.core.mail import mail, createMessage
+from app.utils.verification import createUrlSafeToken
+
 REFRESH_TOKEN_EXPIRE_DAYS = int(Config.REFRESH_TOKEN_EXPIRE_DAYS)
 
 router = APIRouter(
@@ -45,14 +48,10 @@ async def allUser():
     return post
 
 
-@router.post("/signUp", response_model=UserListOutput, status_code=status.HTTP_201_CREATED)
+@router.post("/signUp", status_code=status.HTTP_201_CREATED)
 async def createUser(user: UserInput):
-    existsUser = await Users.find_one({
-    "$or": [
-            {"email": user.email},
-        ]
-    })
-    print(existsUser)
+    existsUser = await Users.find_one({"email": user.email})
+
     if existsUser:
         if existsUser.email == user.email:
             raise HTTPException(
@@ -63,7 +62,28 @@ async def createUser(user: UserInput):
     user.password = hash(user.password)
     data = Users(**user.model_dump())
     await data.insert()
-    return data
+
+    token = createUrlSafeToken({"email":user.email})
+
+    link = f"http://{Config.DOMAIN}/api/user/signup/verify{token}"
+    html_message = f"""
+        <h1>Verify Your Email</h1>
+        <p>Please click this <a href="{link}">link</a> to verify your email</p>
+        <
+
+    """
+
+    message = createMessage(
+        recipients=[user.email],
+        subject="Verify Email",
+        body=html_message
+    )
+
+    newUser = await mail.send_message(message=message)
+    return {
+        "message":"Account Created! Check email to verify your account",
+        "user":newUser
+        }
 
 @router.post("/login", status_code=status.HTTP_200_OK)
 async def userLogin(userCredentials: LoginRequest):
@@ -138,3 +158,19 @@ async def getUserHistory(
         "pages": (total + limit - 1) // limit,
         "data": history
     }
+
+
+@router.post("/sendMail")
+async def sendMail(emails: EmailModel):
+    emails = emails.addresses
+
+    html = "<h1>Welcome to the app</h1>"
+    message = createMessage(
+        recipients=emails,
+        subject="Welcome",
+        body=html
+    )
+
+    await mail.send_message(message=message)
+
+    return {"message":"Email sent successfully"}

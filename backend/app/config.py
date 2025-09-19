@@ -6,8 +6,9 @@ class Settings(BaseSettings):
     LANGSMITH_API_KEY: str
     LANGSMITH_PROJECT: str
     MONGODB_URL: str
-    ACCESS_TOKEN_SECRET_KEY: str
     ALGORITHM: str
+    SECRET_KEY: str
+    ACCESS_TOKEN_SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_TIME: int
     REFRESH_TOKEN_EXPIRE_DAYS: int
     REFRESH_TOKEN_SECRET_KEY: str
@@ -19,8 +20,13 @@ class Settings(BaseSettings):
     MAIL_PASSWORD: str
     MAIL_PORT: int
     MAIL_SERVER : str
-    MAIL_FROM_EMAIL: str
     MAIL_FROM_NAME: str
+    MAIL_FROM: str
+    MAIL_STARTTLS: bool = True
+    MAIL_SSL_TLS: bool = False
+    USE_CREDENTIALS: bool = True
+    VALIDATE_CERTS: bool = True
+    DOMAIN: str
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
