@@ -13,17 +13,14 @@ from fastapi import (
     status, 
     HTTPException
 )
-from dotenv import load_dotenv
 from app.schema.UserSchema import TokenData
-import os
+from app.config import Config
 
-load_dotenv()
-
-ACCESS_TOKEN_SECRET_KEY = os.getenv("ACCESS_TOKEN_SECRET_KEY", "default_access_secret")
-REFRESH_TOKEN_SECRET_KEY = os.getenv("REFRESH_TOKEN_SECRET_KEY", "default_refresh_secret")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_TIME", 30))
-REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", 7))
+ACCESS_TOKEN_SECRET_KEY = Config.ACCESS_TOKEN_SECRET_KEY
+REFRESH_TOKEN_SECRET_KEY = Config.REFRESH_TOKEN_SECRET_KEY
+ALGORITHM = Config.ALGORITHM
+ACCESS_TOKEN_EXPIRE_MINUTES = Config.ACCESS_TOKEN_EXPIRE_TIME
+REFRESH_TOKEN_EXPIRE_DAYS = Config.REFRESH_TOKEN_EXPIRE_DAYS
 
 oauth2Schema = OAuth2PasswordBearer(tokenUrl="login")
 

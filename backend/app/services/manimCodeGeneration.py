@@ -766,7 +766,7 @@ def agentCreateFile(state: mainmState):
 
     systemPrompt = """
     You are a Manim code generation expert. Your task is to:
-    1. Create complete, working Manim v0.19+ code
+    1. Create complete, working Manim v0.19+ code, Do not include any explanation, markdown, or extra text. Output only valid Manim Python code
     2. MUST use the createFileAndWriteMainmCode tool to save the code
     3. The filename MUST be exactly: {filename}
     4. The class name MUST be exactly: {class_name}
@@ -1193,7 +1193,7 @@ def agentReWriteManimCode(state: mainmState):
     print(f"Validation errors: {validationErrorHistory}")
 
     systemPrompt = """
-You are a Manim v0.19+ code debugger. Your job is to fix the broken code based on error analysis.
+You are a Manim v0.19+ code debugger. Your job is to fix the broken code based on error analysis and Do not include any explanation, markdown, or extra text. Output only valid Manim Python code.
 
 **CURRENT CODE TO FIX:**
 ```python

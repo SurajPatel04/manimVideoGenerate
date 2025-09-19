@@ -1,12 +1,11 @@
 from supabase import create_client
-from dotenv import load_dotenv
+from app.config import Config
 import os
 
-load_dotenv()
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET")
-SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+SUPABASE_URL = Config.SUPABASE_URL
+SUPABASE_BUCKET = Config.SUPABASE_BUCKET
+SUPABASE_SERVICE_ROLE_KEY = Config.SUPABASE_SERVICE_ROLE_KEY
 
 supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 

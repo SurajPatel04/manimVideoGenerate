@@ -1,18 +1,16 @@
 from pymongo import AsyncMongoClient
-from dotenv import load_dotenv
 from beanie import init_beanie
 from app.models.User import Users
 from app.models.RefreshToken import RefreshToken
 from app.models.UserHistory import UsersHistory
-import os
+from app.config import Config
 import asyncio
-load_dotenv()
 
 # Global variable to store the client for workers
 _worker_client = None
 
 async def init_db(app):
-    client = AsyncMongoClient(os.getenv("MONGODB_URL"))
+    client = AsyncMongoClient(Config.MONGODB_URL)
     await init_beanie(
         database=client["manimVideoGenerator"], 
         document_models=[Users, RefreshToken,UsersHistory]

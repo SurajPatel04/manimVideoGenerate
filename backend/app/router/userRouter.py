@@ -32,12 +32,8 @@ from app.models.UserHistory import UsersHistory
 from app.models.RefreshToken import RefreshToken
 from typing import List
 from app.utils.auth import getCurrentUser
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-
-REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS"))
+from app.config import Config
+REFRESH_TOKEN_EXPIRE_DAYS = int(Config.REFRESH_TOKEN_EXPIRE_DAYS)
 
 router = APIRouter(
     prefix="/api/user"

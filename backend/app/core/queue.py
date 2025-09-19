@@ -1,11 +1,8 @@
 from celery import Celery
 import ssl
-import os
-from dotenv import load_dotenv
+from app.config import Config
 
-load_dotenv()
-
-BROKER_URL = os.getenv("REDIS_URL")
+BROKER_URL = Config.REDIS_URL
 
 if not BROKER_URL:
     raise ValueError("REDIS_URL environment variable not set. Please create a .env file.")

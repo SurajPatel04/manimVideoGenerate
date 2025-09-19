@@ -109,3 +109,4 @@ passlib[bcrypt]>=1.7.4
 bcrypt<4.0
 supabase
 pydantic[email]
+fastapi-mail
