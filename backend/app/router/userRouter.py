@@ -36,6 +36,7 @@ from app.config import Config
 from app.core.mail import mail, createMessage
 from app.utils.verification import createUrlSafeToken, decodeUrlSafeToken
 from app.core.templates import render_template
+from app.services.updateUser import UserService
 
 REFRESH_TOKEN_EXPIRE_DAYS = int(Config.REFRESH_TOKEN_EXPIRE_DAYS)
 
@@ -66,7 +67,7 @@ async def createUser(user: UserInput):
 
     token = createUrlSafeToken({"email":user.email})
 
-    link = f"http://{Config.DOMAIN}/api/user/signup/verify{token}"
+    link = f"http://{Config.DOMAIN}/api/user/verify/{token}"
     html_message = render_template("emailVerification.html", link=link, username=user.email)
 
     message = createMessage(
@@ -75,10 +76,10 @@ async def createUser(user: UserInput):
         body=html_message
     )
 
-    newUser = await mail.send_message(message=message)
+    await mail.send_message(message=message)
     return {
         "message":"Account Created! Check email to verify your account",
-        "user":newUser
+        "user":data
         }
 
 @router.post("/login", status_code=status.HTTP_200_OK)
@@ -171,12 +172,17 @@ async def sendMail(emails: EmailModel):
     return {"message":"Email sent successfully"}
 
 
-@router.get("/verify/{token}")
-async def verifyUserAccount(token: str):
-    tokenData = decodeUrlSafeToken(token)
-    userEmail = tokenData.get("email")
-    if userEmail:
-        user = await Users.find_one({"email": user.email})
 
-        if not user:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+@router.get("/verify/{token}", status_code=status.HTTP_200_OK)
+async def verifyUserAccount(token: str):
+    try:
+        tokenData = decodeUrlSafeToken(token)
+        userEmail = tokenData.get("email")
+        if not userEmail:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token payload")
+
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token")
+
+    await UserService.verifyUserByEmail(userEmail)
+    return {"message": "Account verified successfully"}

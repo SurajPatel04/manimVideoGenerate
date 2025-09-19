@@ -21,7 +21,7 @@ class Users(Document):
     password: str
     email: Annotated[EmailStr,Indexed(unique=True)]
     isPaid: bool = Field(default=False)
-    isVerfiyed: bool = Field(default=False)
+    isVerified: bool = Field(default=False)
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
