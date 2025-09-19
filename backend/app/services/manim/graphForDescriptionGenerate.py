@@ -4,7 +4,7 @@ from langgraph.graph import (
     START, 
     END
 )
-from app.services.descriptionGenerate import (
+from app.services.manim.descriptionGenerate import (
     generateDetailedDescription,
     validateDescription,
     refineDescription,

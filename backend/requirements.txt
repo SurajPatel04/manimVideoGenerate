@@ -113,3 +113,4 @@ fastapi-mail
 setuptools
 wheel
 itsdangerous
+jinja2

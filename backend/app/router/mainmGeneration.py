@@ -5,7 +5,7 @@ from fastapi import (
     Depends
 )
 from app.schema.manimGenerationSchema import MainmUserModel, CancelRequest
-from app.services.manim import call_graph
+from app.services.manim.manim import call_graph
 # from app.services.task import call_graph
 from fastapi.responses import StreamingResponse
 from app.utils.auth import getCurrentUser

@@ -5,7 +5,7 @@ from langgraph.graph import (
 )
 from app.schema.ServiceSchema import isQueryPossible
 
-from app.services.queryFeasibilityCheck import isQuery
+from app.services.manim.queryFeasibilityCheck import isQuery
 
 graph_build = StateGraph(isQueryPossible)
 

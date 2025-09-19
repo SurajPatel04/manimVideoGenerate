@@ -29,7 +29,7 @@ async def init_beanie_for_workers():
             pass
     
     # Create new client in current event loop
-    _worker_client = AsyncMongoClient(os.getenv("MONGODB_URL"))
+    _worker_client = AsyncMongoClient(Config.MONGODB_URL)
     await init_beanie(
         database=_worker_client["manimVideoGenerator"], 
         document_models=[Users, RefreshToken, UsersHistory]

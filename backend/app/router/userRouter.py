@@ -34,7 +34,8 @@ from typing import List
 from app.utils.auth import getCurrentUser
 from app.config import Config
 from app.core.mail import mail, createMessage
-from app.utils.verification import createUrlSafeToken
+from app.utils.verification import createUrlSafeToken, decodeUrlSafeToken
+from app.core.templates import render_template
 
 REFRESH_TOKEN_EXPIRE_DAYS = int(Config.REFRESH_TOKEN_EXPIRE_DAYS)
 
@@ -66,12 +67,7 @@ async def createUser(user: UserInput):
     token = createUrlSafeToken({"email":user.email})
 
     link = f"http://{Config.DOMAIN}/api/user/signup/verify{token}"
-    html_message = f"""
-        <h1>Verify Your Email</h1>
-        <p>Please click this <a href="{link}">link</a> to verify your email</p>
-        <
-
-    """
+    html_message = render_template("emailVerification.html", link=link, username=user.email)
 
     message = createMessage(
         recipients=[user.email],
@@ -123,7 +119,6 @@ async def userLogin(userCredentials: LoginRequest):
         "tokenType": "bearer"
     }
 
-from beanie import SortDirection
 
 @router.get("/userHistory", status_code=status.HTTP_200_OK)
 async def getUserHistory(
@@ -174,3 +169,14 @@ async def sendMail(emails: EmailModel):
     await mail.send_message(message=message)
 
     return {"message":"Email sent successfully"}
+
+
+@router.get("/verify/{token}")
+async def verifyUserAccount(token: str):
+    tokenData = decodeUrlSafeToken(token)
+    userEmail = tokenData.get("email")
+    if userEmail:
+        user = await Users.find_one({"email": user.email})
+
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")

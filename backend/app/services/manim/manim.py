@@ -3,9 +3,9 @@ from app.schema.ServiceSchema import (
     mainmState,
     isQueryPossible
 )
-from app.services.graphForDescriptionGenerate import graph_for_description_generate 
-from app.services.graphForManimCodeGenerate import graph_for_mainm_code_generate
-from app.services.graphForFesibilityCheck import graph_for_query_fesibility_check
+from app.services.manim.graphForDescriptionGenerate import graph_for_description_generate 
+from app.services.manim.graphForManimCodeGenerate import graph_for_mainm_code_generate
+from app.services.manim.graphForFesibilityCheck import graph_for_query_fesibility_check
 from app.core.queue import taskQueue
 from app.models.UserHistory import Message, UsersHistory
 from app.core.db import init_beanie_for_workers, close_worker_db

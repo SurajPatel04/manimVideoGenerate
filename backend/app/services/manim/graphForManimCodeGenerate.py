@@ -3,7 +3,7 @@ from langgraph.graph import (
     START, 
     END
 )
-from app.services.manimCodeGeneration import (
+from app.services.manim.manimCodeGeneration import (
     agentCheckFileCode, 
     agentCreateFile, 
     agentReWriteManimCode, 

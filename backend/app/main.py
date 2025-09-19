@@ -13,10 +13,9 @@ async def lifespan(app: FastAPI):
     try:
         yield
     finally:
-        app.state.mongo_client.close()
+        await app.state.mongo_client.close()
 
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(mainmGeneration.router)
 app.include_router(userRouter.router)
-

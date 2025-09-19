@@ -11,7 +11,7 @@ taskQueue = Celery(
     "taskQueue",
     broker=BROKER_URL,
     backend=BROKER_URL,
-    include=["app.services.manim"] 
+    include=["app.services.manim.manim"] 
 )
 
 taskQueue.conf.update(
