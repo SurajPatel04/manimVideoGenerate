@@ -2,6 +2,7 @@ from app.router import (
     mainmGeneration, 
     userRouter
 )
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
@@ -33,7 +34,18 @@ async def user_already_verified_exception_handler(request: Request, exc: UserAlr
         content={"message": str(exc)}
     )
 
+origins = [
+    "http://localhost:5173",  # frontend local dev
+    "https://video.surajpatel.dev",
+    "www.video.surajpatel.dev"
+]
 
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,       # or ["*"] for all origins
+    allow_credentials=True,
+    allow_methods=["*"],         # GET, POST, PUT, DELETE, etc.
+    allow_headers=["*"],         # Authorization, Content-Type, etc.
+)
 app.include_router(mainmGeneration.router)
 app.include_router(userRouter.router)
