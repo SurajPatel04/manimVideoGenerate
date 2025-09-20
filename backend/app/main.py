@@ -9,6 +9,8 @@ from contextlib import asynccontextmanager
 from app.core.db import init_db
 from app.utils.auth import getCurrentUser
 from app.exceptions import UserAlreadyVerifiedException, UserNotFoundException
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,6 +41,9 @@ origins = [
     "https://video.surajpatel.dev",
     "www.video.surajpatel.dev"
 ]
+
+assets_path = Path(__file__).resolve().parent / "assets"
+app.mount("/assets", StaticFiles(directory=str(assets_path)), name="assets")
 
 app.add_middleware(
     CORSMiddleware,

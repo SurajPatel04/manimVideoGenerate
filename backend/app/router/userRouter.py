@@ -38,6 +38,8 @@ from app.utils.verification import createUrlSafeToken, decodeUrlSafeToken
 from app.core.templates import render_template
 from app.services.updateUser import UserService
 from itsdangerous import BadSignature, SignatureExpired
+from fastapi_mail import MessageSchema
+from pathlib import Path
 
 REFRESH_TOKEN_EXPIRE_DAYS = int(Config.REFRESH_TOKEN_EXPIRE_DAYS)
 
@@ -51,37 +53,60 @@ async def allUser():
     return post
 
 
+
 @router.post("/signUp", status_code=status.HTTP_201_CREATED)
 async def createUser(user: UserInput):
     existsUser = await Users.find_one({"email": user.email})
 
     if existsUser:
-        if existsUser.email == user.email:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT, 
-                detail=f"Email already exists"
-            )
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, 
+            detail="Email already exists"
+        )
         
     user.password = hash(user.password)
     data = Users(**user.model_dump())
     await data.insert()
 
     token = createUrlSafeToken({"email":user.email})
-
     link = f"http://{Config.DOMAIN}/api/user/verify/{token}"
-    html_message = render_template("emailVerification.html", link=link, username=user.email)
 
-    message = createMessage(
+    html_message = render_template(
+        "emailVerification.html",
+        link=link,
+        username=user.email,
+    )
+
+    base_dir = Path(__file__).resolve().parent.parent.parent 
+    
+    gif_path = base_dir / "app" / "assets" / "ManimVideo.gif"
+
+    if not gif_path.is_file():
+        raise HTTPException(
+            status_code=500, 
+            detail=f"GIF file not found at path: {gif_path}"
+        )
+
+    message = MessageSchema(
         recipients=[user.email],
         subject="Verify Email",
-        body=html_message
+        body=html_message,
+        subtype="html",
+        attachments=[{
+            # 4. Convert the Path object to a string
+            "file": str(gif_path),
+            "headers": {
+                "Content-ID": "<logogif>" 
+            },
+            "subtype": "gif"
+        }]
     )
 
     await mail.send_message(message=message)
     return {
         "message":"Account Created! Check email to verify your account",
         "user":data
-        }
+    }
 
 @router.post("/login", status_code=status.HTTP_200_OK)
 async def userLogin(userCredentials: LoginRequest):
@@ -178,7 +203,7 @@ async def sendMail(emails: EmailModel):
 async def verifyUserAccount(token: str):
     try:
         # Decode token with expiration handling
-        tokenData = decodeUrlSafeToken(token, max_age=3600)  # 1 hour expiration
+        tokenData = decodeUrlSafeToken(token, max_age=86400)  # 1 hour expiration
         userEmail = tokenData.get("email")
         if not userEmail:
             raise HTTPException(

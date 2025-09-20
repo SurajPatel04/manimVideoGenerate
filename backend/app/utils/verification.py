@@ -13,9 +13,9 @@ def createUrlSafeToken(data: dict):
     return token
 
 
-def decodeUrlSafeToken(token: str):
+def decodeUrlSafeToken(token: str, max_age: int = 86400):
     try:
-        tokenData = serialiser.loads(token, max_age=60)  # token valid for 1 hour
+        tokenData = serialiser.loads(token, max_age)  # token valid for 1 hour
         return tokenData
     except Exception as e:
         logger("Decoder Url Error: ", exc_info=True)

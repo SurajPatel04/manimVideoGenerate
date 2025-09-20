@@ -4,61 +4,8 @@
 <title>Verify Your Email</title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    margin: 0;
-    padding: 0;
-  }
-  .container {
-    width: 100%;
-    max-width: 600px;
-    margin: 0 auto;
-    background-color: #ffffff;
-    border-radius: 8px;
-    overflow: hidden; /* Ensures the border-radius is respected by inner elements */
-  }
-  .content {
-    padding: 20px 40px;
-    color: #555555;
-    font-size: 16px;
-    line-height: 1.6;
-  }
-  .header {
-    background-color: #ffffff;
-    padding: 20px;
-    text-align: center;
-  }
-  .header img {
-    max-width: 180px;
-  }
-  .footer {
-    background-color: #f9f9f9;
-    padding: 20px 40px;
-    text-align: center;
-    font-size: 12px;
-    color: #888888;
-  }
-  .button {
-    display: inline-block;
-    padding: 14px 28px;
-    margin: 30px 0;
-    background-color: #007bff; /* A nice blue color */
-    color: #ffffff !important; /* !important to override link styles */
-    text-decoration: none;
-    border-radius: 6px;
-    font-weight: bold;
-    font-size: 18px;
-  }
-  .fallback-link {
-    font-size: 12px;
-    color: #777777;
-    margin-top: 20px;
-  }
-</style>
 </head>
-<body>
+<body style="font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0;">
   <div style="display:none; max-height:0px; overflow:hidden;">
     Just one more step to get started with Manim Video Generator!
   </div>
@@ -66,53 +13,47 @@
   <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f4f4f4;">
     <tr>
       <td align="center" style="padding: 20px;">
-        <table class="container" border="0" cellspacing="0" cellpadding="0">
+        
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden;">
           
           <tr>
-            <td class="header">
-              <img src="https://your-website.com/path/to/logo.png" alt="Manim Video Generator Logo">
+            <td align="center" style="background-color: #ffffff; padding: 0; text-align: center;">
+              <img src="cid:logogif" alt="Manim Video Generator Logo" style="display: block; width: 100%; max-width: 100%; box-sizing: border-box;">
             </td>
           </tr>
 
           <tr>
-            <td class="content">
+            <td style="padding: 20px 40px; color: #555555; font-size: 16px; line-height: 1.6;">
               <h1 style="color:#333333; text-align:center;">Welcome!</h1>
-              
-              <div style="text-align:center; margin: 20px 0;">
-                <img src="https://i.imgur.com/Uf2o1zV.gif" alt="Email verification animation" width="100">
-              </div>
-
+            
               <p style="text-align:center;">
                 Thanks for signing up for <strong>Manim Video Generator</strong>. Please click the button below to confirm your email address and complete your registration.
               </p>
 
               <p style="text-align:center;">
-                <a href="{{ link }}" class="button">Verify Email Address</a>
+                <a href="{{ link }}" target="_blank" style="display: inline-block; padding: 14px 28px; margin: 30px 0; background-color: #007bff; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 18px;">Verify Email Address</a>
               </p>
 
               <p style="text-align:center;">
                 This link will be valid for the next 24 hours.
               </p>
 
-              <div class="fallback-link" style="text-align:center;">
+              <div style="font-size: 12px; color: #777777; margin-top: 20px; text-align:center;">
                 If the button above doesn't work, copy and paste this link into your browser:<br>
-                <a href="{{ link }}" style="color:#007bff; text-decoration:underline;">{{ link }}</a>
+                <a href="{{ link }}" target="_blank" style="color:#007bff; text-decoration:underline;">{{ link }}</a>
               </div>
             </td>
           </tr>
 
           <tr>
-            <td class="footer">
-              <p>
-                If you did not sign up for this account, you can safely ignore this email.
-              </p>
-              <p>
+            <td style="background-color: #f9f9f9; padding: 20px 40px; text-align: center; font-size: 12px; color: #888888;">
+              <p style="margin: 0;">
                 &copy; 2025 Manim Video Generator. All rights reserved.<br>
-                123 Creative Way, Lucknow, UP, India
               </p>
             </td>
           </tr>
         </table>
+        
       </td>
     </tr>
   </table>
