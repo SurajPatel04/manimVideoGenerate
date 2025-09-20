@@ -14,7 +14,7 @@ export default defineConfig({
   server: {
       proxy: {
         '/api': {
-          target: 'http://localhost:8000/',
+          target: 'https://apimanim.surajpatel.dev',
           changeOrigin: true,
           secure: true,
           // Remove /api prefix if your backend doesn’t use it
