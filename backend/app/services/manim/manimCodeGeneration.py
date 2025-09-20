@@ -25,6 +25,7 @@ import os
 import subprocess
 import uuid
 from app.core.internalServerErrorHandle import retry
+from app.core.logger import logger
 
 load_dotenv()
 
@@ -526,6 +527,7 @@ def run_manim_scene(filename, state: mainmState):
         process.wait()
 
         if process.returncode != 0:
+            logger.error("MANIM EXECUTION FAILED for file '%s'. Full output:\n%s", full_output, exc_info=True)
             return f"MANIM EXECUTION FAILED. The file '{filename}' has an error. Review output below:\n\n{full_output}"
 
         print("--- Finished rendering successfully ---")
@@ -775,6 +777,7 @@ def agentCreateFile(state: mainmState):
     - filename: "{filename}"
     - content: [complete Python code as string]
 
+    Important below is the error you got the most so i am providing error with the fix so avoid these error 
     {critical}
     {important}
     {mandatoryChecklist}
@@ -926,7 +929,9 @@ def agentCheckFileCode(state: mainmState):
     - No deprecated imports (import from `manim` directly)
     - MathTex uses raw strings: `MathTex(r"x^2")` not `MathTex("x^2")`
     - Proper tool calling syntax
-    - No overlapping object placement
+    - No overlapping object placement but check correctly 
+    - Ensure that no mobjects visually overlap unless intended.
+    - Do not set `opacity` in the constructor; use `.set_opacity()` after creation.
     - All objects stay within frame boundaries
 
     **CODE TO VALIDATE:**
@@ -1193,7 +1198,10 @@ def agentReWriteManimCode(state: mainmState):
     print(f"Validation errors: {validationErrorHistory}")
 
     systemPrompt = """
-You are a Manim v0.19+ code debugger. Your job is to fix the broken code based on error analysis and Do not include any explanation, markdown, or extra text. Output only valid Manim Python code.
+You are a Manim v0.19+ code debugger. Your job is to fix the broken code based on error analysis 
+Note: 
+    Your task is to fix the broken code and output **only valid Python code**. 
+    **DO NOT** include explanations, markdown, comments, or any extra text. 
 
 **CURRENT CODE TO FIX:**
 ```python
@@ -1206,10 +1214,11 @@ Current Validation Error: {validationError}
 Previous Execution Failures: {executionErrorHistory}
 Previous Validation Failures: {validationErrorHistory}
 
-**TARGET:** {description}
+**TARGET WHAT THE USER WANT:** {description}
 
-**CRITICAL MANIM v0.19+ REQUIREMENTS:**
-{critical}
+Important below is the error you got the most so i am providing error with the fix so avoid these error 
+{critical}]
+
 
 **IMPORTANT GUIDELINES:**
 {important}
@@ -1235,18 +1244,7 @@ Focus on making the code execute without errors while following v0.19+ syntax.
 """
 
     prompt = ChatPromptTemplate.from_messages([
-        ("system", systemPrompt.format(
-            code=code,
-            executionError=executionError or "None",
-            validationError=validationError or "None",
-            executionErrorHistory=executionErrorHistory,
-            validationErrorHistory=validationErrorHistory,
-            description=description,
-            filename=filename,
-            critical=critical,
-            important=important,
-            mandatoryChecklist=mandatoryChecklist
-        )),
+        ("system", systemPrompt),
         ("human", "Fix the code to eliminate all errors and make it execute successfully."),
         MessagesPlaceholder(variable_name="agent_scratchpad")
     ])
@@ -1255,7 +1253,18 @@ Focus on making the code execute without errors while following v0.19+ syntax.
     agentExecutor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=3)
 
     try:
-        result = agentExecutor.invoke({"input": f"Fix the code based on the error analysis. Target: {description}"})
+        result = agentExecutor.invoke({
+            "code": code,
+            "executionError": executionError or "None",
+            "validationError": validationError or "None",
+            "executionErrorHistory": executionErrorHistory,
+            "validationErrorHistory": validationErrorHistory,
+            "description": description,
+            "filename": filename,
+            "critical": critical,
+            "important": important,
+            "mandatoryChecklist": mandatoryChecklist
+        })
         print(f"\n--- Rewrite attempt #{state.rewriteAttempts} completed ---")
         print(result.get('output', 'No output'))
     except Exception as e:
