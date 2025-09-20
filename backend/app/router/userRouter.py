@@ -37,6 +37,7 @@ from app.core.mail import mail, createMessage
 from app.utils.verification import createUrlSafeToken, decodeUrlSafeToken
 from app.core.templates import render_template
 from app.services.updateUser import UserService
+from itsdangerous import BadSignature, SignatureExpired
 
 REFRESH_TOKEN_EXPIRE_DAYS = int(Config.REFRESH_TOKEN_EXPIRE_DAYS)
 
@@ -176,13 +177,33 @@ async def sendMail(emails: EmailModel):
 @router.get("/verify/{token}", status_code=status.HTTP_200_OK)
 async def verifyUserAccount(token: str):
     try:
-        tokenData = decodeUrlSafeToken(token)
+        # Decode token with expiration handling
+        tokenData = decodeUrlSafeToken(token, max_age=3600)  # 1 hour expiration
         userEmail = tokenData.get("email")
         if not userEmail:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token payload")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid token payload"
+            )
 
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token")
+    except SignatureExpired:
+        # Token has expired
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Token has expired. Please request a new verification email."
+        )
+    except BadSignature:
+        # Token is invalid or tampered
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid token"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired token"
+        )
 
     await UserService.verifyUserByEmail(userEmail)
     return {"message": "Account verified successfully"}
+

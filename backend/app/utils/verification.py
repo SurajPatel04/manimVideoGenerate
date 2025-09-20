@@ -8,14 +8,16 @@ serialiser = URLSafeTimedSerializer(
 
 )
 def createUrlSafeToken(data: dict):
-    token = serialiser.dumps(data,)
+    # itsdangerous.URLSafeTimedSerializer is called “Timed” you don’t need to manually assign a timestamp when creating the token. It automatically adds a timestamp internally when you call dumps().
+    token = serialiser.dumps(data)
     return token
 
 
-def decodeUrlSafeToken(token: dict):
+def decodeUrlSafeToken(token: str):
     try:
-        tokenData = serialiser.loads(token)
+        tokenData = serialiser.loads(token, max_age=60)  # token valid for 1 hour
         return tokenData
-    
     except Exception as e:
         logger("Decoder Url Error: ", exc_info=True)
+        raise
+

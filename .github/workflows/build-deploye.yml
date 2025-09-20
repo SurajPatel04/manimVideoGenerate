@@ -1,37 +1,77 @@
-name: build and Deploye
-on:
-    push:
-        branches: [main]
-jobs:
-    build:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout the code
-              uses: actions/checkout@v2
+# name: build and Deploye
+# on:
+#     push:
+#         branches: [main]
+# jobs:
+#     build:
+#         runs-on: ubuntu-latest
+#         steps:
+#             - name: Checkout the code
+#               uses: actions/checkout@v2
 
             
-            - name: Docker login
-              uses: docker/login-action@v3
-              with:
-                username: ${{secrets.DOCKERHUB_USERNAME}}
-                password: ${{secrets.DOCKERHUB_PASSWORD}}
+#             - name: Docker login
+#               uses: docker/login-action@v3
+#               with:
+#                 username: ${{secrets.DOCKERHUB_USERNAME}}
+#                 password: ${{secrets.DOCKERHUB_PASSWORD}}
 
-            - name: Build and push frontend image
-              uses: docker/build-push-action@v5
-              with:
-                context: ./frontend
-                file: ./frontend/Dockerfile
-                push: true
-                tags: |
-                  ${{ secrets.DOCKERHUB_USERNAME }}/ai-manim-video-generator-frontend:${{ github.sha }}
-                  ${{ secrets.DOCKERHUB_USERNAME }}/ai-manim-video-generator-frontend:latest
+#             - name: Build and push frontend image
+#               uses: docker/build-push-action@v5
+#               with:
+#                 context: ./frontend
+#                 file: ./frontend/Dockerfile
+#                 push: true
+#                 tags: |
+#                   ${{ secrets.DOCKERHUB_USERNAME }}/ai-manim-video-generator-frontend:${{ github.sha }}
+#                   ${{ secrets.DOCKERHUB_USERNAME }}/ai-manim-video-generator-frontend:latest
 
-            - name: Build and push backend image
-              uses: docker/build-push-action@v5
-              with:
-                context: ./backend
-                file: ./backend/Dockerfile
-                push: true
-                tags: |
-                    ${{secrets.DOCKERHUB_USERNAME}}/ai-manim-video-generator-backend:${{github.sha}}
-                    ${{ secrets.DOCKERHUB_USERNAME }}/ai-manim-video-generator-backend:latest
+#             - name: Build and push backend image
+#               uses: docker/build-push-action@v5
+#               with:
+#                 context: ./backend
+#                 file: ./backend/Dockerfile
+#                 push: true
+#                 tags: |
+#                     ${{secrets.DOCKERHUB_USERNAME}}/ai-manim-video-generator-backend:${{github.sha}}
+#                     ${{ secrets.DOCKERHUB_USERNAME }}/ai-manim-video-generator-backend:latest
+
+
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v2
+
+      - name: Docker login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKOKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      
+      # ⬇️ STEP 1: ADD THIS STEP to set up an emulator
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # ⬇️ STEP 2: ADD THIS STEP to create a multi-platform builder
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./
+          file: ./Dockerfile
+          push: true
+          # ⬇️ STEP 3: ADD THIS LINE to build for both platforms
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/ai-manim-video-generator-backend:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/ai-manim-video-generator-backend:latest
