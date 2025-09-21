@@ -6,6 +6,7 @@ import AuthForm from "@/components/AuthForm";
 import MainPage from "@/components/MainPage";
 import Homepage from "@/components/Homepage";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import VerifiedPage from "@/components/VerifiedPage"
 
 function Layout() {
   return (
@@ -33,6 +34,7 @@ const router = createBrowserRouter(
     <Route path="/" element={<Layout />}>
       {/* Public Routes */}
       <Route path="" element={<Homepage />} />
+      <Route path='verify' element={<VerifiedPage/>}/>
       
       <Route element={<PublicRoute />}>
         <Route 
