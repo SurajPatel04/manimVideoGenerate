@@ -1,0 +1,14 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+
+
+# Environment
+.env
+
+# Docker-related
+Dockerfile
+.dockerignore
