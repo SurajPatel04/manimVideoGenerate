@@ -146,3 +146,22 @@
     line-clamp: 3;
   }
 }
+
+/* react-toastify: make error toasts black with white text/icon */
+.Toastify__toast--error {
+  background: #000 !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+}
+.Toastify__toast--error .Toastify__toast-body {
+  color: inherit !important;
+}
+.Toastify__toast--error .Toastify__toast-icon {
+  color: #fff !important;
+}
+.Toastify__toast--error svg {
+  fill: currentColor !important;
+}
+.Toastify__progress-bar--error {
+  background: #fff !important;
+}

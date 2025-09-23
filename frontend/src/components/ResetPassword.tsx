@@ -170,17 +170,7 @@ export default function ResetPassword() {
         </button>
       </form>
 
-      <div className="mt-6 text-center">
-        <p className="text-sm text-neutral-400">
-          Remembered your password?{' '}
-          <button
-            onClick={() => navigate('/login')}
-            className="font-semibold text-blue-400 hover:text-blue-300 transition-colors duration-200"
-          >
-            Sign in
-          </button>
-        </p>
-      </div>
+      {/* Removed 'Remembered your password? Sign in' per request */}
     </div>
   );
 }

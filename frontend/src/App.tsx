@@ -1,4 +1,6 @@
 import './App.css'
+import 'react-toastify/dist/ReactToastify.css';
+import { ToastContainer } from 'react-toastify';
 import { createBrowserRouter, createRoutesFromElements, Route, Navigate, Outlet, RouterProvider } from 'react-router-dom';
 
 import { BackgroundBeams } from "@/components/ui/background-beams";
@@ -83,6 +85,7 @@ function App() {
   return (
     <AuthProvider>
       <RouterProvider router={router} />
+      <ToastContainer />
     </AuthProvider>
   );
 }

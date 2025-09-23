@@ -12,6 +12,7 @@ import {
 } from "@tabler/icons-react";
 import { IconBrandLinkedin } from '@tabler/icons-react';
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from 'react-toastify';
 
 export default function AuthForm() {
   const { login, signup, loading } = useAuth();
@@ -54,8 +55,19 @@ export default function AuthForm() {
     
     if (isLogin) {
       try {
-        const success = await login(formData.email, formData.password);
-        if (success) {
+        const response = await login(formData.email, formData.password);
+
+        // If backend informs the account is not verified, show toast and redirect to the verified page
+        if (response && (response.isVerified === false || response.isVerified === 'False')) {
+          // Show toast using error key from backend if present
+          const errorKey = response.error || response.message || 'account_not_verified';
+          toast.error(typeof errorKey === 'string' ? errorKey : String(errorKey));
+          navigate('/verified');
+          return;
+        }
+
+        // Normal token login: keep previous behavior (clear form). AuthContext saves tokens/user.
+        if (response) {
           setFormData({
             firstName: "",
             lastName: "",
@@ -238,16 +250,7 @@ export default function AuthForm() {
         )}
 
         {isLogin && (
-          <div className="mb-6 flex items-center justify-between">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                className="mr-2 h-4 w-4 rounded border-neutral-600 bg-neutral-800 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-sm text-neutral-300">
-                Remember me
-              </span>
-            </label>
+          <div className="mb-6 flex items-center justify-end">
             <a
               href="#"
               className="text-sm text-blue-400 hover:text-blue-300"

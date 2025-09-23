@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import axios from 'axios';
-import type { LoginResponse, SignupResponse } from '@/types/api';
+// (types were previously imported here; kept intentionally empty because auth responses vary across endpoints)
 
 interface User {
   id: string;
@@ -20,7 +20,7 @@ interface AuthContextType {
   user: User | null;
   tokens: AuthTokens | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<any>;
   signup: (userData: SignupData) => Promise<any>;
   logout: () => void;
   loading: boolean;
@@ -78,11 +78,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return null;
   };
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<any> => {
     setLoading(true);
     try {
       // Make API call to login endpoint
-      const response = await axios.post<LoginResponse>('/api/user/login', {
+      const response = await axios.post('/api/user/login', {
         email,
         password,
       }, {
@@ -92,14 +92,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         },
         timeout: 10000,
       });
-      
-      // Extract tokens and user data from response
+
+      // If backend indicates the account is not verified, return the payload and do not save tokens
+      if (response.data && (response.data.isVerified === false || response.data.isVerified === 'False')) {
+        return response.data;
+      }
+
+      // Otherwise expect tokens and user data
       const { accessToken, refreshToken, tokenType, email: userEmail, firstName, lastName, userId } = response.data;
-      
+
       // Save tokens to localStorage and state
       const authTokens: AuthTokens = { accessToken, refreshToken, tokenType };
       saveTokensToStorage(authTokens);
-      
+
       // Create user object from response data
       const userData: User = {
         id: userId,
@@ -107,10 +112,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         firstName,
         lastName: lastName || '',
       };
-      
+
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
-      return true;
+      return response.data;
     } catch (error: any) {
       console.error('Login failed:', error);
       // Handle specific error messages

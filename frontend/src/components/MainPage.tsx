@@ -138,9 +138,10 @@ const ProgressStepper = memo(({ progress }: { progress?: number }) => {
   );
 });
 
-const Message = memo(({ message, onCodeModalToggle }: { 
+const Message = memo(({ message, onCodeModalToggle, onDownload }: { 
   message: MessageType,
-  onCodeModalToggle: (isOpen: boolean, message?: MessageType | null) => void 
+  onCodeModalToggle: (isOpen: boolean, message?: MessageType | null) => void,
+  onDownload: (url: string, filename?: string | undefined) => Promise<void>
 }) => {
 
 
@@ -176,14 +177,24 @@ const Message = memo(({ message, onCodeModalToggle }: {
           </video>
         )}
         <div className="mt-2 flex gap-2 flex-wrap">
-          <a 
-            href={message.videoUrl} 
-            download
-            className="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs transition-colors flex-shrink-0"
-          >
-            <IconDownload className="h-3 w-3 flex-shrink-0" />
-            <span className="whitespace-nowrap">Download {isGif ? 'GIF' : 'Video'}</span>
-          </a>
+          {isGif ? (
+            <button
+              onClick={() => { if (message.videoUrl) void onDownload(message.videoUrl, message.filename); }}
+              className="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs transition-colors flex-shrink-0"
+            >
+              <IconDownload className="h-3 w-3 flex-shrink-0" />
+              <span className="whitespace-nowrap">Download GIF</span>
+            </button>
+          ) : (
+            <a 
+              href={message.videoUrl} 
+              download
+              className="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs transition-colors flex-shrink-0"
+            >
+              <IconDownload className="h-3 w-3 flex-shrink-0" />
+              <span className="whitespace-nowrap">Download Video</span>
+            </a>
+          )}
           {message.code && (
             <button
               onClick={handleShowCode}
@@ -695,6 +706,49 @@ export default function MainPage() {
     }
   }, [currentHistoryId, tokens?.accessToken, startTaskPolling, generateMessageId]);
 
+  // Download handler for GIFs (and any asset that requires auth or blob download)
+  const handleDownload = useCallback(async (url: string, filename?: string) => {
+    try {
+      // If we have an auth token, fetch as blob and create an object URL so download works even when direct link isn't allowed
+      const headers: Record<string, string> = {};
+      if (tokens?.accessToken) {
+        headers['Authorization'] = `Bearer ${tokens.accessToken}`;
+      }
+
+      const response = await fetch(url, { headers });
+
+      if (!response.ok) {
+        // If fetch fails (CORS or other), fallback to opening the URL in a new tab
+        window.open(url, '_blank');
+        return;
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objectUrl;
+
+      // --- START: NEW ROBUST LOGIC ---
+      const parsedUrl = new URL(url);
+      const isGif = parsedUrl.pathname.toLowerCase().endsWith('.gif');
+      let downloadName = filename || parsedUrl.pathname.split('/').pop() || 'download';
+      if (isGif) {
+        downloadName = downloadName.replace(/\.[^/.]+$/, "") + ".gif";
+      }
+      a.download = downloadName;
+      // --- END: NEW ROBUST LOGIC ---
+
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      // Release memory after a short delay
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000 * 10);
+    } catch (err) {
+      console.error('Download failed, opening in new tab as fallback:', err);
+      window.open(url, '_blank');
+    }
+  }, [tokens?.accessToken]);
+
   const onInputSubmit = (e: React.FormEvent<HTMLFormElement>, options: { format: string; quality: string }) => {
       e.preventDefault();
       
@@ -917,6 +971,7 @@ export default function MainPage() {
                     setIsCodeModalOpen(isOpen);
                     setCodeModalMessage(message ?? null);
                   }}
+                  onDownload={handleDownload}
                 />
               ))}
               <div ref={messagesEndRef} />
