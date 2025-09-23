@@ -3,10 +3,10 @@ import { createBrowserRouter, createRoutesFromElements, Route, Navigate, Outlet,
 
 import { BackgroundBeams } from "@/components/ui/background-beams";
 import AuthForm from "@/components/AuthForm";
+import VerifiedPage from "@/components/VerifiedPage";
 import MainPage from "@/components/MainPage";
 import Homepage from "@/components/Homepage";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import VerifiedPage from "@/components/VerifiedPage"
 import ResetPassword from "@/components/ResetPassword"
 
 function Layout() {
@@ -35,9 +35,8 @@ const router = createBrowserRouter(
     <Route path="/" element={<Layout />}>
       {/* Public Routes */}
       <Route path="" element={<Homepage />} />
-      <Route path='verify' element={<VerifiedPage/>}/>
       <Route path='resetPassword' element={
-        <div className="flex min-h-screen items-center justify-center p-4">
+        <div className="flex min-h-screen box-border items-center justify-center p-4">
           <ResetPassword />
         </div>
       }/>
@@ -46,7 +45,7 @@ const router = createBrowserRouter(
         <Route 
           path="login" 
           element={
-            <div className="flex min-h-screen items-center justify-center p-4">
+            <div className="flex min-h-screen box-border items-center justify-center p-4">
               <AuthForm />
             </div>
           } 
@@ -54,12 +53,20 @@ const router = createBrowserRouter(
         <Route 
           path="signup" 
           element={
-            <div className="flex min-h-screen items-center justify-center p-4">
+            <div className="flex min-h-screen box-border items-center justify-center p-4">
               <AuthForm />
             </div>
           } 
         />
         <Route path="home" element={<Homepage />} />
+        <Route 
+          path="verified"
+          element={
+            <div className="flex min-h-screen box-border items-center justify-center p-4">
+              <VerifiedPage />
+            </div>
+          }
+        />
       </Route>
       
       <Route element={<ProtectedRoute />}>

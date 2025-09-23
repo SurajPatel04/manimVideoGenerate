@@ -113,7 +113,7 @@ export default function ResetPassword() {
           <div className="relative">
             <Input
               id="password"
-              placeholder="••••••••"
+              placeholder=""
               type={showPassword ? "text" : "password"}
               value={formData.password}
               onChange={handleInputChange}
@@ -139,7 +139,7 @@ export default function ResetPassword() {
           <div className="relative">
             <Input
               id="confirmPassword"
-              placeholder="••••••••"
+              placeholder=""
               type={showConfirmPassword ? "text" : "password"}
               value={formData.confirmPassword}
               onChange={handleInputChange}

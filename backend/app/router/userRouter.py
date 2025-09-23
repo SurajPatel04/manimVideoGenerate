@@ -158,9 +158,9 @@ async def userLogin(userCredentials: LoginRequest):
 
         await mail.send_message(message=message)
         return {
+            "isVerified":False,
             "error": "account_not_verified",
             "message": "Please verify your email address. Check your inbox.",
-            "user":UserOutput(**user.model_dump())
         }
         
     if not verifyPassword(userCredentials.password, user.password):

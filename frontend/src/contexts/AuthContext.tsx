@@ -21,7 +21,7 @@ interface AuthContextType {
   tokens: AuthTokens | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  signup: (userData: SignupData) => Promise<boolean>;
+  signup: (userData: SignupData) => Promise<any>;
   logout: () => void;
   loading: boolean;
 }
@@ -123,11 +123,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const signup = async (userData: SignupData): Promise<boolean> => {
+  const signup = async (userData: SignupData): Promise<any> => {
     setLoading(true);
     try {
       // Make API call to signup endpoint
-      const response = await axios.post<SignupResponse>('/api/user/signUp', {
+      const response = await axios.post('/api/user/signUp', {
         firstName: userData.firstName,
         lastName: userData.lastName || '', // lastName is optional
         email: userData.email,
@@ -139,18 +139,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         },
         timeout: 10000,
       });
-      
-      // If signup is successful, create user object from response
-      const newUser: User = {
-        id: response.data.id,
-        email: response.data.email,
-        firstName: response.data.firstName,
-        lastName: response.data.lastName || '',
-      };
-      
-      setUser(newUser);
-      localStorage.setItem('user', JSON.stringify(newUser));
-      return true;
+
+      // If API returns a created user payload, try to set user (backward-compatible)
+      if (response.data && response.data.id) {
+        const newUser: User = {
+          id: response.data.id,
+          email: response.data.email,
+          firstName: response.data.firstName,
+          lastName: response.data.lastName || '',
+        };
+        setUser(newUser);
+        localStorage.setItem('user', JSON.stringify(newUser));
+      }
+
+      // Return the full API response data so callers can react to status/message
+      return response.data;
     } catch (error: any) {
       console.error('Signup failed:', error);
       // Handle specific error messages from the API

@@ -79,24 +79,27 @@ export default function AuthForm() {
       }
       
       try {
-        const success = await signup({
+        const response = await signup({
           firstName: formData.firstName,
           lastName: formData.lastName,
           email: formData.email,
           password: formData.password,
         });
-        
-        if (success) {
-
+        // If backend returns a status:true (signup succeeded, verification email sent),
+        // redirect to the verified page. Otherwise fall back to login.
+        if (response && (response.status === true || response.status === 'True' || response.success === true)) {
+          navigate('/verified');
+        } else {
           navigate('/login');
-          setFormData({
-            firstName: "",
-            lastName: "",
-            email: "",
-            password: "",
-            confirmPassword: "",
-          });
         }
+
+        setFormData({
+          firstName: "",
+          lastName: "",
+          email: "",
+          password: "",
+          confirmPassword: "",
+        });
       } catch (err: any) {
         if (err.message === 'Email already exists') {
           setError("Email already exists");
@@ -182,7 +185,7 @@ export default function AuthForm() {
           <div className="relative">
             <Input
               id="password"
-              placeholder="••••••••"
+              placeholder=""
               type={showPassword ? "text" : "password"}
               value={formData.password}
               onChange={handleInputChange}
@@ -213,7 +216,7 @@ export default function AuthForm() {
             <div className="relative">
               <Input
                 id="confirmPassword"
-                placeholder="••••••••"
+                placeholder=""
                 type={showConfirmPassword ? "text" : "password"}
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
