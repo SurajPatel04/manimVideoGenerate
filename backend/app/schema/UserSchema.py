@@ -31,5 +31,9 @@ class RefreshTokenRequest(BaseModel):
 class EmailModel(BaseModel):
     addresses: List[str]
 
-class PasswordReset(BaseModel):
+class PasswordResetRequest(BaseModel):
     email: EmailStr
+
+class PasswordReset(BaseModel):
+    password: str
+    token: str

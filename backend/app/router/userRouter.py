@@ -10,6 +10,7 @@ from app.schema.UserSchema import (
     UserOutput,
     LoginRequest, 
     RefreshTokenRequest,
+    PasswordResetRequest,
     PasswordReset
 )
 from app.utils.auth import (
@@ -42,6 +43,8 @@ from itsdangerous import BadSignature, SignatureExpired
 from fastapi_mail import MessageSchema
 from pathlib import Path
 from fastapi.responses import RedirectResponse
+
+
 
 REFRESH_TOKEN_EXPIRE_DAYS = int(Config.REFRESH_TOKEN_EXPIRE_DAYS)
 
@@ -159,7 +162,7 @@ async def userLogin(userCredentials: LoginRequest):
         await mail.send_message(message=message)
         return {
             "isVerified":False,
-            "error": "account_not_verified",
+            "error": "Account not verified",
             "message": "Please verify your email address. Check your inbox.",
         }
         
@@ -242,7 +245,109 @@ async def sendMail(emails: EmailModel):
 
     return {"message":"Email sent successfully"}
 
+@router.post("/passwordResetRequest")
+async def passwordChangeRequest(user: PasswordResetRequest):
+    email = await Users.find_one({"email":user.email})
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No account with this email"
+        )
+    token = createUrlSafeToken({"email":user.email})
+    base_dir = Path(__file__).resolve().parent.parent.parent 
+    gif_path = base_dir / "app" / "assets" / "ManimVideo.gif"
 
+    if not gif_path.is_file():
+        raise HTTPException(
+            status_code=500, 
+            detail=f"GIF file not found at path: {gif_path}"
+        )
+    if email.isVerified == False:
+        link = f"http://{Config.DOMAIN}/api/user/verify/{token}"
+
+        html_message = render_template(
+            "emailVerification.html",
+            link=link,
+            username=user.email,
+        )
+
+        message = MessageSchema(
+            recipients=[user.email],
+            subject="Verify Email",
+            body=html_message,
+            subtype="html",
+            attachments=[{
+                # 4. Convert the Path object to a string
+                "file": str(gif_path),
+                "headers": {
+                    "Content-ID": "<logogif>" 
+                },
+                "subtype": "gif"
+            }]
+        )
+
+        await mail.send_message(message=message)
+        return {
+            "isVerified":False,
+            "error": "Account not verified",
+            "message": "Please verify your email address. Check your inbox.",
+        }
+    
+    link = f"http://{Config.FRONTEND_DOMAIN}/resetPassword/token={token}"
+
+    html_message = render_template(
+        "passwordRequest.html",
+        link=link,
+        username=user.email,
+    )
+
+    message = MessageSchema(
+        recipients=[user.email],
+        subject="Password Change Request Email",
+        body=html_message,
+        subtype="html",
+        attachments=[{
+            # 4. Convert the Path object to a string
+            "file": str(gif_path),
+            "headers": {
+            "Content-ID": "<logogif>" 
+            },
+            "subtype": "gif"
+        }]
+    )
+
+    await mail.send_message(message=message)
+    return {
+        "status": True,
+        "message": "Please check your email to reset your password."
+    }
+
+@router.post("/resetPassword")
+async def changePassword(userData: PasswordReset):
+    tokenData = decodeUrlSafeToken(userData.token, max_age=86400)
+    userEmail = tokenData.get("email")
+    if not userEmail:
+        raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid token payload"
+            )
+
+    user = await Users.find_one(Users.email == userEmail)
+    
+    if not user:
+        raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not Found"
+        )
+
+    password = hash(userData.password)
+    user.password = password
+    await user.save()
+    return {
+        "status": True,
+        "message": "Password has been reset successfully."
+    }
+    
 
 @router.get("/verify/{token}", status_code=status.HTTP_200_OK)
 async def verifyUserAccount(token: str):

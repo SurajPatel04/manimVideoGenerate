@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { IconPlus, IconUser, IconLogout, IconMenu2, IconDownload, IconCode, IconX, IconHistory } from "@tabler/icons-react";
 import type { ManimGenerationRequest, UserHistoryItem } from '@/types/api';
 import { ManimApiService } from '@/services/manimApi';
-import { Stepper, Step, StepLabel, Box } from '@mui/material';
+import { Stepper, Step, StepLabel, Box, useTheme, useMediaQuery } from '@mui/material';
 import HistorySidebar from '@/components/HistorySidebar';
 import '@/styles/scrollbar.css';
 
@@ -48,12 +48,20 @@ const SuggestionButton = memo(({ suggestion, onClick }: { suggestion: string, on
 ));
 
 const ProgressStepper = memo(({ progress }: { progress?: number }) => {
-  const steps = [
+  const fullSteps = [
     'Setting up description generation state',
     'Analyzing if user query is possible',
     'Detailed description in progress',
     'Creating animation code and rendering video',
     'Video generation completed successfully'
+  ];
+
+  const shortSteps = [
+    'Setup',
+    'Analyze',
+    'Describe',
+    'Render',
+    'Done'
   ];
 
   const getActiveStep = () => {
@@ -67,48 +75,71 @@ const ProgressStepper = memo(({ progress }: { progress?: number }) => {
 
   const activeStep = getActiveStep();
 
-  return (
-    <Box sx={{ 
-      width: '100%', 
-      mt: 2, 
-      mb: 2,
+  const theme = useTheme();
+  const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
+
+  // Responsive styles: horizontal for desktop, vertical for small screens
+  const stepperSx = isSmall ? {
+    width: '100%',
+    mt: 1,
+    mb: 1,
+    '& .MuiStep-root': {
+      padding: 0,
+      marginBottom: theme.spacing(1),
+    },
+    '& .MuiStepLabel-root': {
+      alignItems: 'flex-start'
+    },
+    '& .MuiStepLabel-label': {
+      fontSize: '0.7rem'
+    }
+  } : {
+    width: '100%',
+    mt: 2,
+    mb: 2,
+    backgroundColor: 'transparent',
+    '& .MuiStepper-root': {
       backgroundColor: 'transparent',
-      '& .MuiStepper-root': {
-        backgroundColor: 'transparent',
-        padding: 0,
+      padding: 0,
+    },
+    '& .MuiStepConnector-root': {
+      top: 22,
+      left: 'calc(-50% + 16px)',
+      right: 'calc(50% + 16px)',
+      '& .MuiStepConnector-line': {
+        borderColor: '#4B5563', 
+        borderTopWidth: 2,
       }
-    }}>
+    },
+    '& .MuiStepConnector-active .MuiStepConnector-line': {
+      borderColor: '#3B82F6',
+    },
+    '& .MuiStepConnector-completed .MuiStepConnector-line': {
+      borderColor: '#10B981',
+    }
+  };
+
+  const steps = isSmall ? shortSteps : fullSteps;
+
+  return (
+    <Box sx={stepperSx}>
       <Stepper 
-        activeStep={activeStep} 
-        alternativeLabel
-        sx={{
-          backgroundColor: 'transparent',
-          width: '100%',
-          '& .MuiStepConnector-root': {
-            top: 22,
-            left: 'calc(-50% + 16px)',
-            right: 'calc(50% + 16px)',
-            '& .MuiStepConnector-line': {
-              borderColor: '#4B5563', 
-              borderTopWidth: 2,
-            }
-          },
-          '& .MuiStepConnector-active .MuiStepConnector-line': {
-            borderColor: '#3B82F6',
-          },
-          '& .MuiStepConnector-completed .MuiStepConnector-line': {
-            borderColor: '#10B981',
-          }
-        }}
+        activeStep={activeStep}
+        orientation={isSmall ? 'vertical' : 'horizontal'}
+        alternativeLabel={!isSmall}
+        sx={{ width: '100%' }}
       >
-        {steps.map((label) => (
+        {steps.map((label, idx) => (
           <Step key={label} sx={{ padding: 0 }}>
             <StepLabel 
               sx={{
                 '& .MuiStepLabel-label': {
                   color: '#9CA3AF',
-                  fontSize: '0.75rem',
-                  marginTop: '8px',
+                  fontSize: isSmall ? '0.7rem' : '0.75rem',
+                  marginTop: isSmall ? '4px' : '8px',
+                  whiteSpace: 'normal',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
                 },
                 '& .MuiStepLabel-label.Mui-active': {
                   color: '#3B82F6',
@@ -119,7 +150,7 @@ const ProgressStepper = memo(({ progress }: { progress?: number }) => {
                 },
                 '& .MuiStepIcon-root': {
                   color: '#4B5563', 
-                  fontSize: '1.5rem',
+                  fontSize: isSmall ? '1.1rem' : '1.5rem',
                 },
                 '& .MuiStepIcon-root.Mui-active': {
                   color: '#3B82F6',
@@ -129,7 +160,12 @@ const ProgressStepper = memo(({ progress }: { progress?: number }) => {
                 },
               }}
             >
-              {label}
+              {/* For small screens, show a tooltip with the full label */}
+              {isSmall ? (
+                <span title={fullSteps[idx]}>{label}</span>
+              ) : (
+                label
+              )}
             </StepLabel>
           </Step>
         ))}

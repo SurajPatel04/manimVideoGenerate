@@ -25,3 +25,6 @@ Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will 
 2025-09-21 22:51:21,252 - celery.backends.redis - WARNING - 
 Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
 
+2025-09-23 16:59:46,447 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
