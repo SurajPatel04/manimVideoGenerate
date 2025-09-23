@@ -126,7 +126,7 @@ async def userLogin(userCredentials: LoginRequest):
     
     if user.isVerified == False:
         token = createUrlSafeToken({"email":user.email})
-        link = f"http://{Config.DOMAIN}/api/user/verify/{token}"
+        link = f"{Config.DOMAIN}/api/user/verify/{token}"
 
         html_message = render_template(
             "emailVerification.html",
@@ -248,7 +248,7 @@ async def passwordChangeRequest(user: PasswordResetRequest):
             detail=f"GIF file not found at path: {gif_path}"
         )
     if email.isVerified == False:
-        link = f"http://{Config.DOMAIN}/api/user/verify/{token}"
+        link = f"{Config.DOMAIN}/api/user/verify/{token}"
 
         html_message = render_template(
             "emailVerification.html",
@@ -278,7 +278,7 @@ async def passwordChangeRequest(user: PasswordResetRequest):
             "message": "Please verify your email address. Check your inbox.",
         }
     
-    link = f"{Config.FRONTEND_DOMAIN}/resetPassword/token={token}"
+    link = f"{Config.DOMAIN}/resetPassword/token={token}"
 
     html_message = render_template(
         "passwordRequest.html",
@@ -367,7 +367,7 @@ async def verifyUserAccount(token: str):
         )
 
     await UserService.verifyUserByEmail(userEmail)
-    return RedirectResponse(url="http://localhost:5173/login?verified=success")
+    return RedirectResponse(url=f"{Config.DOMAIN}/login?verified=success")
 
 
 @router.get("/validateResetToken")
