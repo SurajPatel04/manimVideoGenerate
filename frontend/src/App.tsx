@@ -7,6 +7,7 @@ import MainPage from "@/components/MainPage";
 import Homepage from "@/components/Homepage";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import VerifiedPage from "@/components/VerifiedPage"
+import ResetPassword from "@/components/ResetPassword"
 
 function Layout() {
   return (
@@ -35,6 +36,11 @@ const router = createBrowserRouter(
       {/* Public Routes */}
       <Route path="" element={<Homepage />} />
       <Route path='verify' element={<VerifiedPage/>}/>
+      <Route path='resetPassword' element={
+        <div className="flex min-h-screen items-center justify-center p-4">
+          <ResetPassword />
+        </div>
+      }/>
       
       <Route element={<PublicRoute />}>
         <Route 

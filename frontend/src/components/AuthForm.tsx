@@ -10,6 +10,7 @@ import {
   IconEye,
   IconEyeOff,
 } from "@tabler/icons-react";
+import { IconBrandLinkedin } from '@tabler/icons-react';
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function AuthForm() {
@@ -124,7 +125,7 @@ export default function AuthForm() {
   return (
     <div className="shadow-2xl mx-auto w-full max-w-md rounded-2xl bg-black/40 backdrop-blur-lg border border-white/20 p-4 md:p-8">
       <h2 className="text-xl font-bold text-white">
-        {isLogin ? "Welcome Back" : "Create Your Account"}
+        {isLogin ? "Sign In" : "Create Your Account"}
       </h2>
       <p className="mt-2 max-w-sm text-sm text-neutral-300">
         {isLogin

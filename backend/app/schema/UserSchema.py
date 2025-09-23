@@ -6,7 +6,7 @@ from pydantic import (
 from typing import Optional, List
 from beanie import PydanticObjectId 
 
-class UserListOutput(BaseModel):
+class UserOutput(BaseModel):
     id: PydanticObjectId
     email: str
     firstName: str
@@ -30,3 +30,6 @@ class RefreshTokenRequest(BaseModel):
 
 class EmailModel(BaseModel):
     addresses: List[str]
+
+class PasswordReset(BaseModel):
+    email: EmailStr

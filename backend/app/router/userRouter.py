@@ -6,10 +6,11 @@ from fastapi import (
     Query
 )
 from app.schema.UserSchema import (
-    UserListOutput, 
     UserInput, 
+    UserOutput,
     LoginRequest, 
-    RefreshTokenRequest
+    RefreshTokenRequest,
+    PasswordReset
 )
 from app.utils.auth import (
     createAccessToken, 
@@ -40,6 +41,7 @@ from app.services.updateUser import UserService
 from itsdangerous import BadSignature, SignatureExpired
 from fastapi_mail import MessageSchema
 from pathlib import Path
+from fastapi.responses import RedirectResponse
 
 REFRESH_TOKEN_EXPIRE_DAYS = int(Config.REFRESH_TOKEN_EXPIRE_DAYS)
 
@@ -47,7 +49,7 @@ router = APIRouter(
     prefix="/api/user"
 )
 
-@router.get("/", response_model=List[UserListOutput])
+@router.get("/", response_model=List[UserOutput])
 async def allUser():
     post = await Users.find_all().to_list()
     return post
@@ -104,9 +106,10 @@ async def createUser(user: UserInput):
 
     await mail.send_message(message=message)
     return {
-        "message":"Account Created! Check email to verify your account",
-        "user":data
-    }
+    "status": True,
+    "message": "Account created successfully! Please check your email to verify your account."
+}
+
 
 @router.post("/login", status_code=status.HTTP_200_OK)
 async def userLogin(userCredentials: LoginRequest):
@@ -118,6 +121,48 @@ async def userLogin(userCredentials: LoginRequest):
             detail="Invalid email or password"
         )
     
+    if user.isVerified == False:
+        token = createUrlSafeToken({"email":user.email})
+        link = f"http://{Config.DOMAIN}/api/user/verify/{token}"
+
+        html_message = render_template(
+            "emailVerification.html",
+            link=link,
+            username=user.email,
+        )
+
+        base_dir = Path(__file__).resolve().parent.parent.parent 
+        
+        gif_path = base_dir / "app" / "assets" / "ManimVideo.gif"
+
+        if not gif_path.is_file():
+            raise HTTPException(
+                status_code=500, 
+                detail=f"GIF file not found at path: {gif_path}"
+            )
+
+        message = MessageSchema(
+            recipients=[user.email],
+            subject="Verify Email",
+            body=html_message,
+            subtype="html",
+            attachments=[{
+                # 4. Convert the Path object to a string
+                "file": str(gif_path),
+                "headers": {
+                    "Content-ID": "<logogif>" 
+                },
+                "subtype": "gif"
+            }]
+        )
+
+        await mail.send_message(message=message)
+        return {
+            "error": "account_not_verified",
+            "message": "Please verify your email address. Check your inbox.",
+            "user":UserOutput(**user.model_dump())
+        }
+        
     if not verifyPassword(userCredentials.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -230,5 +275,5 @@ async def verifyUserAccount(token: str):
         )
 
     await UserService.verifyUserByEmail(userEmail)
-    return {"message": "Account verified successfully"}
+    return RedirectResponse(url="http://localhost:5173/login?verified=success")
 

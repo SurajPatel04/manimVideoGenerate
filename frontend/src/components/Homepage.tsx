@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { LayoutTextFlip } from '@/components/ui/layout-text-flip';
+import { IconBrandGithub, IconBrandLinkedin } from '@tabler/icons-react';
 
 export default function Homepage() {
   const { isAuthenticated } = useAuth();
@@ -19,11 +21,42 @@ export default function Homepage() {
 
   return (
     <div className="relative z-10 min-h-screen">
-      {/* Hero Section */}
-      <div className="flex min-h-screen flex-col items-center justify-center p-4">
+      {/* Top-corner social icons: LinkedIn left-top, GitHub right-top */}
+  <div className="absolute left-4 top-4 z-50">
+        <a
+          href="https://www.linkedin.com/"
+          target="_blank"
+          rel="noreferrer"
+          className="text-neutral-300 hover:text-blue-500 transition-colors bg-transparent p-0 m-0 shadow-none focus:outline-none focus:ring-0"
+          aria-label="LinkedIn"
+          style={{ background: 'transparent' }}
+        >
+          <IconBrandLinkedin className="w-6 h-6" />
+        </a>
+      </div>
+
+  <div className="absolute right-4 top-4 z-50">
+        <a
+          href="https://github.com/"
+          target="_blank"
+          rel="noreferrer"
+          className="text-neutral-300 hover:text-white transition-colors bg-transparent p-0 m-0 shadow-none focus:outline-none focus:ring-0"
+          aria-label="GitHub"
+          style={{ background: 'transparent' }}
+        >
+          <IconBrandGithub className="w-6 h-6" />
+        </a>
+      </div>
+      <div className="flex flex-col items-center pt-16 md:pt-24 pb-12 p-4">
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-            Manim Video Generator
+            <div className="flex flex-col items-center gap-4">
+              <LayoutTextFlip
+                text="Manim Video Generator"
+                words={["Mathematical Animations", "3D Visualizations", "Interactive Demos"]}
+                duration={3000}
+              />
+            </div>
           </h1>
           <p className="text-xl text-gray-300 mb-8 max-w-2xl">
             Transform your mathematical concepts into beautiful animations using the power of AI and Manim.
