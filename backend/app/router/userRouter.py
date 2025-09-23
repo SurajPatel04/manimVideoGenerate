@@ -74,7 +74,7 @@ async def createUser(user: UserInput):
     await data.insert()
 
     token = createUrlSafeToken({"email":user.email})
-    link = f"http://{Config.DOMAIN}/api/user/verify/{token}"
+    link = f"{Config.DOMAIN}/api/user/verify/{token}"
 
     html_message = render_template(
         "emailVerification.html",
@@ -278,7 +278,7 @@ async def passwordChangeRequest(user: PasswordResetRequest):
             "message": "Please verify your email address. Check your inbox.",
         }
     
-    link = f"http://{Config.FRONTEND_DOMAIN}/resetPassword/token={token}"
+    link = f"{Config.FRONTEND_DOMAIN}/resetPassword/token={token}"
 
     html_message = render_template(
         "passwordRequest.html",
