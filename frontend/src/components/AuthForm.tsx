@@ -10,7 +10,6 @@ import {
   IconEye,
   IconEyeOff,
 } from "@tabler/icons-react";
-import { IconBrandLinkedin } from '@tabler/icons-react';
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from 'react-toastify';
 
@@ -251,12 +250,13 @@ export default function AuthForm() {
 
         {isLogin && (
           <div className="mb-6 flex items-center justify-end">
-            <a
-              href="#"
+            <button
+              type="button"
+              onClick={() => navigate('/forgetPassword')}
               className="text-sm text-blue-400 hover:text-blue-300"
             >
               Forgot password?
-            </a>
+            </button>
           </div>
         )}
 

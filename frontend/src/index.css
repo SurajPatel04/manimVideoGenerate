@@ -165,3 +165,30 @@
 .Toastify__progress-bar--error {
   background: #fff !important;
 }
+
+/* Make all toasts use dark background and white text to match app theme */
+.Toastify__toast {
+  background: #000 !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+}
+.Toastify__toast .Toastify__toast-body {
+  color: inherit !important;
+}
+.Toastify__toast .Toastify__toast-icon {
+  color: #fff !important;
+}
+.Toastify__toast svg {
+  fill: currentColor !important;
+}
+.Toastify__toast--success {
+  background: #000 !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+}
+.Toastify__progress-bar--success {
+  background: #10b981 !important; /* green */
+}
+.Toastify__close-button {
+  color: #fff !important;
+}

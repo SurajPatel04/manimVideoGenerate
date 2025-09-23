@@ -10,11 +10,56 @@ import MainPage from "@/components/MainPage";
 import Homepage from "@/components/Homepage";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import ResetPassword from "@/components/ResetPassword"
+import ForgotPassword from "@/components/ForgotPassword"
+
+import { useLocation, Link } from 'react-router-dom';
+import { IconBrandGithub, IconBrandLinkedin } from '@tabler/icons-react';
 
 function Layout() {
+  const location = useLocation();
+  const { isAuthenticated } = useAuth();
+  const hideOn = ['/', '/home'];
+  const onMain = location.pathname.startsWith('/main');
+  const showLeft = !onMain && !hideOn.includes(location.pathname); // Manim text on left
+  const showRight = !hideOn.includes(location.pathname) || onMain; // icons on right; always show on main
+
   return (
     <div style={{ position: "relative", minHeight: "100vh", overflow: "hidden", backgroundColor: "black" }}>
       <BackgroundBeams className="z-0" />
+
+      {/* Page-level corner: Manim link on left (hidden on /main), social icons on right (visible on /main and other allowed pages) */}
+      {showLeft && (
+        <div className="absolute top-4 left-4 z-20">
+          <Link to={isAuthenticated ? "/main" : "/"} className="text-white font-semibold hover:text-gray-300">
+            Manim
+          </Link>
+        </div>
+      )}
+
+      {showRight && (
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-4 text-neutral-200">
+          <a
+            href="https://www.linkedin.com/in/suraj-patel-9201b2381/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-blue-500 transition-colors"
+            aria-label="LinkedIn"
+          >
+            <IconBrandLinkedin className="h-6 w-6" />
+          </a>
+
+          <a
+            href="https://github.com/SurajPatel04"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-white transition-colors"
+            aria-label="GitHub"
+          >
+            <IconBrandGithub className="h-6 w-6" />
+          </a>
+        </div>
+      )}
+
       <div className="relative z-10">
         <Outlet />
       </div>
@@ -37,7 +82,8 @@ const router = createBrowserRouter(
     <Route path="/" element={<Layout />}>
       {/* Public Routes */}
       <Route path="" element={<Homepage />} />
-      <Route path='resetPassword' element={
+      <Route path="forgetPassword" element={<ForgotPassword />} />
+      <Route path='resetPassword/*' element={
         <div className="flex min-h-screen box-border items-center justify-center p-4">
           <ResetPassword />
         </div>

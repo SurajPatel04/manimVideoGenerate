@@ -4,23 +4,26 @@ import { useNavigate } from "react-router-dom";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { IconEye, IconEyeOff, IconBrandGithub, IconBrandLinkedin } from "@tabler/icons-react";
+import { IconEye, IconEyeOff } from "@tabler/icons-react";
 import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 export default function ResetPassword() {
-  // use loading from auth context; don't rely on resetPassword method existing
   const { loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
-    email: "",
     password: "",
     confirmPassword: "",
   });
+  const [token, setToken] = useState("");
+  const [tokenValid, setTokenValid] = useState<null | boolean>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -33,6 +36,23 @@ export default function ResetPassword() {
     e.preventDefault();
     setError("");
 
+    let submitToken = token;
+    try {
+      const params = new URLSearchParams(location.search);
+      let t = params.get('token');
+      if (!t) {
+        const m = location.pathname.match(/token=([^/?#]+)/);
+        if (m) t = decodeURIComponent(m[1]);
+      }
+      if (t) submitToken = t;
+    } catch (e) {
+    }
+
+    if (!submitToken) {
+      setError('Missing token. Please use the link from your email.');
+      return;
+    }
+
     if (formData.password.length < 6) {
       setError("Password must be at least 6 characters");
       return;
@@ -43,14 +63,16 @@ export default function ResetPassword() {
       return;
     }
 
-    try {
-      // Call backend reset endpoint. Adjust payload to whatever your API expects.
+  try {
+
+      const payload = {
+        password: formData.password,
+        token: submitToken,
+      };
+
       await axios.post(
-        '/api/user/reset-password',
-        {
-          email: formData.email,
-          newPassword: formData.password,
-        },
+        '/api/user/resetPassword',
+        payload,
         {
           withCredentials: true,
           headers: { 'Content-Type': 'application/json' },
@@ -58,9 +80,9 @@ export default function ResetPassword() {
         }
       );
 
+      toast.success('Password reset successful. You can now sign in.');
       navigate('/login');
     } catch (err: unknown) {
-      console.error('Reset failed:', err);
       let message = 'Reset failed. Please try again.';
 
       const extractMessageFromData = (data: unknown): string | undefined => {
@@ -84,10 +106,53 @@ export default function ResetPassword() {
     }
   };
 
+  React.useEffect(() => {
+    try {
+      const params = new URLSearchParams(location.search);
+      let t = params.get('token');
+      if (!t) {
+        const m = location.pathname.match(/token=([^/?#]+)/);
+        if (m) t = decodeURIComponent(m[1]);
+      }
+      if (t) {
+        setToken(t);
+        (async () => {
+          try {
+            setTokenValid(null);
+            const res = await axios.get('/api/user/validateResetToken', {
+              params: { token: t },
+              withCredentials: true,
+              timeout: 8000,
+            });
+            if (res?.data?.status) {
+              setTokenValid(true);
+            } else {
+              setTokenValid(false);
+            }
+          } catch (e: unknown) {
+            let message = 'Invalid or expired token.';
+            if (axios.isAxiosError(e)) {
+              const d = (e.response?.data as any) || {};
+              message = d.detail || d.message || message;
+            } else if (e instanceof Error) {
+              message = e.message;
+            }
+            setError(message);
+            setTokenValid(false);
+          }
+        })();
+      } else {
+        setTokenValid(false);
+      }
+    } catch (e) {
+      setTokenValid(false);
+    }
+  }, [location]);
+
   return (
     <div className="shadow-2xl mx-auto w-full max-w-md rounded-2xl bg-black/40 backdrop-blur-lg border border-white/20 p-4 md:p-8">
       <h2 className="text-xl font-bold text-white">Reset Password</h2>
-      <p className="mt-2 max-w-sm text-sm text-neutral-300">Enter your email and choose a new password.</p>
+  <p className="mt-2 max-w-sm text-sm text-neutral-300">Choose a new password for your account.</p>
 
       <form className="my-8" onSubmit={handleSubmit}>
         {error && (
@@ -96,17 +161,20 @@ export default function ResetPassword() {
           </div>
         )}
 
-        <LabelInputContainer className="mb-4">
-          <Label htmlFor="email" className="text-white">Email Address</Label>
-          <Input
-            id="email"
-            placeholder="john@example.com"
-            type="email"
-            value={formData.email}
-            onChange={handleInputChange}
-            required
-          />
-        </LabelInputContainer>
+        {tokenValid === false && (
+          <div className="mb-4 rounded-md bg-yellow-500/10 border border-yellow-500/20 p-4 text-sm text-yellow-200">
+            This reset link is invalid or has expired. You can request a new reset link from the Forgot Password page.
+            <div className="mt-3 grid grid-cols-1 gap-2">
+              <button
+                type="button"
+                onClick={() => navigate('/forgetPassword')}
+                className="w-full rounded-md bg-neutral-800 py-2 text-white"
+              >
+                Request new reset link
+              </button>
+            </div>
+          </div>
+        )}
 
         <LabelInputContainer className="mb-4">
           <Label htmlFor="password" className="text-white">New Password</Label>
@@ -163,7 +231,7 @@ export default function ResetPassword() {
           className="group/btn relative block h-10 w-full rounded-md font-medium text-white shadow-lg hover:shadow-gray-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
           style={{ backgroundColor: '#202020' }}
           type="submit"
-          disabled={loading}
+          disabled={loading || tokenValid === false || tokenValid === null}
         >
           {loading ? "Please wait..." : "Reset Password →"}
           <BottomGradient />

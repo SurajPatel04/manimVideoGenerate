@@ -24,7 +24,7 @@ export default function Homepage() {
       {/* Top-corner social icons: LinkedIn left-top, GitHub right-top */}
   <div className="absolute left-4 top-4 z-50">
         <a
-          href="https://www.linkedin.com/"
+          href="https://www.linkedin.com/in/suraj-patel-9201b2381/"
           target="_blank"
           rel="noreferrer"
           className="text-neutral-300 hover:text-blue-500 transition-colors bg-transparent p-0 m-0 shadow-none focus:outline-none focus:ring-0"
@@ -37,7 +37,7 @@ export default function Homepage() {
 
   <div className="absolute right-4 top-4 z-50">
         <a
-          href="https://github.com/"
+          href="https://github.com/SurajPatel04"
           target="_blank"
           rel="noreferrer"
           className="text-neutral-300 hover:text-white transition-colors bg-transparent p-0 m-0 shadow-none focus:outline-none focus:ring-0"
