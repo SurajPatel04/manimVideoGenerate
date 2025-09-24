@@ -21,14 +21,11 @@ export default function HistorySidebar({ isOpen, onToggle, onHistoryItemClick, i
   const [hasMore, setHasMore] = useState(false);
   const [noHistoryFound, setNoHistoryFound] = useState(false);
   const { tokens } = useAuth();
-  // Prevent duplicate/concurrent requests and unnecessary refetches
   const isFetchingRef = useRef(false);
   const fetchedOnceRef = useRef(false);
 
   const fetchHistory = useCallback(async (page: number = 1, reset: boolean = false) => {
     if (!tokens?.accessToken) return;
-
-    // Prevent concurrent fetches
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
 
@@ -48,48 +45,40 @@ export default function HistorySidebar({ isOpen, onToggle, onHistoryItemClick, i
       setCurrentPage(response.page);
       setHasMore(response.page < response.pages);
       
-      // Check if this is a "no history found" case
+
       if (response.total === 0) {
         setNoHistoryFound(true);
       }
     } catch (err: any) {
       console.error('Failed to fetch user history:', err);
       setError(err.message || 'Failed to load history');
-      // Reset to empty array on error to prevent undefined access
       if (reset) {
         setHistoryData([]);
       }
     } finally {
       setLoading(false);
       isFetchingRef.current = false;
-      // mark that we've fetched at least once for this auth session
       if (page === 1 && !reset) {
-        // don't change fetchedOnceRef on pagination loads
+
       }
     }
   }, [tokens?.accessToken]);
 
-  // Fetch history when the sidebar first opens, but only if we haven't fetched yet
   useEffect(() => {
     if (!isOpen || !tokens?.accessToken) return;
     if (fetchedOnceRef.current) return;
-    // Fetch and mark fetchedOnceRef so we don't call again on re-renders
     fetchHistory(1, true).catch(() => {});
     fetchedOnceRef.current = true;
   }, [isOpen, tokens?.accessToken, fetchHistory]);
 
-  // Reset fetchedOnceRef when tokens change (user logs in/out) so history will be fetched again
   useEffect(() => {
     fetchedOnceRef.current = false;
   }, [tokens?.accessToken]);
 
-  // If parent signals a refresh (refreshKey changes), refetch first page and replace data
   useEffect(() => {
     if (refreshKey === undefined || refreshKey === null) return;
     if (!tokens?.accessToken) return;
-    // Allow an explicit refresh even if fetchedOnceRef was set
     fetchedOnceRef.current = false;
-    // Fetch first page and replace data
     fetchHistory(1, true).catch(err => {
       console.warn('HistorySidebar: refresh fetch failed', err);
     });
@@ -121,8 +110,6 @@ export default function HistorySidebar({ isOpen, onToggle, onHistoryItemClick, i
   };
 
   if (!isOpen) return null;
-
-  // Ensure historyData is always an array
   const safeHistoryData = Array.isArray(historyData) ? historyData : [];
 
   if (inMainSidebar) {

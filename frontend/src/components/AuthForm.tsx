@@ -55,16 +55,13 @@ export default function AuthForm() {
       try {
         const response = await login(formData.email, formData.password);
 
-        // If backend informs the account is not verified, show toast and redirect to the verified page
         if (response && (response.isVerified === false || response.isVerified === 'False')) {
-          // Show toast using error key from backend if present
           const errorKey = response.error || response.message || 'account_not_verified';
           toast.error(typeof errorKey === 'string' ? errorKey : String(errorKey));
           navigate('/verified');
           return;
         }
 
-        // Normal token login: keep previous behavior (clear form). AuthContext saves tokens/user.
         if (response) {
           setFormData({
             firstName: "",
@@ -95,8 +92,6 @@ export default function AuthForm() {
           email: formData.email,
           password: formData.password,
         });
-        // If backend returns a status:true (signup succeeded, verification email sent),
-        // redirect to the verified page. Otherwise fall back to login.
         if (response && (response.status === true || response.status === 'True' || response.success === true)) {
           navigate('/verified');
         } else {
@@ -138,9 +133,7 @@ export default function AuthForm() {
   const apiBase = import.meta.env.VITE_API_BASE_URL || "";
 
   const handleGoogleLogin = () => {
-    // Navigate browser to backend OAuth start endpoint. Backend will redirect to Google
-    // and then to the callback which issues tokens. You may want backend to finally
-    // redirect to the frontend with tokens in query or set httpOnly cookies.
+
     window.location.href = `${apiBase}/api/user/google/login`;
   };
 

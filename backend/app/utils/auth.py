@@ -22,9 +22,6 @@ ALGORITHM = Config.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = Config.ACCESS_TOKEN_EXPIRE_TIME
 REFRESH_TOKEN_EXPIRE_DAYS = Config.REFRESH_TOKEN_EXPIRE_DAYS
 
-# This application uses HttpOnly cookie-based tokens only. We intentionally do not
-# accept Authorization header bearer tokens in `getCurrentUser` to keep the
-# authentication surface limited to cookie-based sessions.
 
 def createAccessToken(data: dict):
     toEncode=data.copy()
@@ -75,11 +72,6 @@ def verifyRefreshToken(token: str):
 
 
 def getCurrentUser(request: Request):
-    """Resolve current user from the HttpOnly `accessToken` cookie only.
-
-    This enforces a cookie-only authentication policy for the API. If the cookie
-    is missing or invalid this raises a 401 HTTPException.
-    """
     credentialException = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="could not validate access token",

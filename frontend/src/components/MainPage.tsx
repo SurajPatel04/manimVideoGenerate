@@ -56,7 +56,6 @@ const ProgressStepper = memo(({ progress }: { progress?: number }) => {
     'Video generation completed successfully'
   ];
 
-  // shortSteps removed — always use full desktop labels on all screen sizes
 
   const getActiveStep = () => {
     const currentProgress = progress || 0;
@@ -72,7 +71,6 @@ const ProgressStepper = memo(({ progress }: { progress?: number }) => {
   const theme = useTheme();
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // Responsive styles: horizontal for desktop, vertical for small screens
   const stepperSx = isSmall ? {
     width: '100%',
     mt: 1,
@@ -81,35 +79,29 @@ const ProgressStepper = memo(({ progress }: { progress?: number }) => {
     '& .MuiStep-root': {
       padding: 0,
       marginBottom: theme.spacing(1.2),
-      // ensure the step content flows horizontally (icon + label) for better alignment
       display: 'flex',
       alignItems: 'flex-start',
     },
-    // Align icon and label center vertically and add spacing
     '& .MuiStepLabel-root': {
       alignItems: 'center',
       gap: theme.spacing(1),
-      // make label container take remaining width
       width: '100%',
       paddingLeft: theme.spacing(0.5),
     },
     '& .MuiStepLabel-label': {
       fontSize: '0.75rem',
       color: '#9CA3AF',
-      // allow wrapping for long labels and keep consistent spacing
       whiteSpace: 'normal',
       overflow: 'visible',
       lineHeight: 1.2,
       display: 'block',
     },
-    // Position the vertical connector so it runs under the icon, not under the text
     '& .MuiStepConnector-root.Mui-vertical': {
       marginLeft: '12px',
       top: 10,
       bottom: 10,
     },
     '& .MuiStepConnector-root': {
-      // ensure connector line color matches themed look
       '& .MuiStepConnector-line': {
         borderColor: '#4B5563',
       }
@@ -150,7 +142,6 @@ const ProgressStepper = memo(({ progress }: { progress?: number }) => {
     }
   };
 
-  // Always use the full, descriptive step labels regardless of screen size
   const steps = fullSteps;
 
   return (
@@ -429,7 +420,6 @@ export default function MainPage() {
                   : msg
               ));
 
-              // Signal HistorySidebar to refresh when task completes
               setHistoryRefreshKey(prev => prev + 1);
             } else {
               const failureReason = result.data?.reason || result.data?.message || 'Animation generation failed for unknown reasons.';
@@ -774,10 +764,8 @@ export default function MainPage() {
     }
   }, [currentHistoryId, tokens?.accessToken, startTaskPolling, generateMessageId]);
 
-  // Download handler for GIFs (and any asset that requires auth or blob download)
   const handleDownload = useCallback(async (url: string, filename?: string) => {
     try {
-      // If we have an auth token, fetch as blob and create an object URL so download works even when direct link isn't allowed
       const headers: Record<string, string> = {};
       if (tokens?.accessToken) {
         headers['Authorization'] = `Bearer ${tokens.accessToken}`;
@@ -786,7 +774,6 @@ export default function MainPage() {
       const response = await fetch(url, { headers });
 
       if (!response.ok) {
-        // If fetch fails (CORS or other), fallback to opening the URL in a new tab
         window.open(url, '_blank');
         return;
       }
@@ -796,7 +783,6 @@ export default function MainPage() {
       const a = document.createElement('a');
       a.href = objectUrl;
 
-      // --- START: NEW ROBUST LOGIC ---
       const parsedUrl = new URL(url);
       const isGif = parsedUrl.pathname.toLowerCase().endsWith('.gif');
       let downloadName = filename || parsedUrl.pathname.split('/').pop() || 'download';
@@ -804,12 +790,10 @@ export default function MainPage() {
         downloadName = downloadName.replace(/\.[^/.]+$/, "") + ".gif";
       }
       a.download = downloadName;
-      // --- END: NEW ROBUST LOGIC ---
 
       document.body.appendChild(a);
       a.click();
       a.remove();
-      // Release memory after a short delay
       setTimeout(() => URL.revokeObjectURL(objectUrl), 1000 * 10);
     } catch (err) {
       console.error('Download failed, opening in new tab as fallback:', err);
@@ -889,7 +873,6 @@ export default function MainPage() {
               
               {/* History Section */}
               {sidebarOpen && (
-                // Make this area a flex column where the header and list are separate
                 <div className="flex-1 flex flex-col min-h-0 mt-4">
                   {/* Header (fixed) */}
                   <div className="mb-3 px-2 flex-shrink-0">
