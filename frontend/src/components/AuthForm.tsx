@@ -5,7 +5,6 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
-  IconBrandGithub,
   IconBrandGoogle,
   IconEye,
   IconEyeOff,
@@ -135,6 +134,21 @@ export default function AuthForm() {
       confirmPassword: "",
     });
   };
+
+  const apiBase = import.meta.env.VITE_API_BASE_URL || "";
+
+  const handleGoogleLogin = () => {
+    // Navigate browser to backend OAuth start endpoint. Backend will redirect to Google
+    // and then to the callback which issues tokens. You may want backend to finally
+    // redirect to the frontend with tokens in query or set httpOnly cookies.
+    window.location.href = `${apiBase}/api/user/google/login`;
+  };
+
+  // GitHub login temporarily disabled
+  // const handleGithubLogin = () => {
+  //   // Placeholder: if you implement GitHub OAuth on the backend use similar endpoint
+  //   window.location.href = `${apiBase}/api/user/github/login`;
+  // };
 
   return (
     <div className="shadow-2xl mx-auto w-full max-w-md rounded-2xl bg-black/40 backdrop-blur-lg border border-white/20 p-4 md:p-8">
@@ -273,19 +287,24 @@ export default function AuthForm() {
         <div className="my-8 h-[1px] w-full bg-gradient-to-r from-transparent via-neutral-600 to-transparent" />
 
         <div className="flex flex-col space-y-4">
+          {/* GitHub login temporarily disabled */}
+          {/**
+          <button
+              className="group/btn shadow-lg relative flex h-10 w-full items-center justify-start space-x-2 rounded-md bg-neutral-800/50 backdrop-blur border border-neutral-700 px-4 font-medium text-white hover:bg-neutral-700/50 transition-all duration-200"
+              type="button"
+              onClick={handleGithubLogin}
+            >
+              <IconBrandGithub className="h-4 w-4 text-neutral-300" />
+              <span className="text-sm text-neutral-200">
+                Continue with GitHub
+              </span>
+              <BottomGradient />
+            </button>
+          */}
           <button
             className="group/btn shadow-lg relative flex h-10 w-full items-center justify-start space-x-2 rounded-md bg-neutral-800/50 backdrop-blur border border-neutral-700 px-4 font-medium text-white hover:bg-neutral-700/50 transition-all duration-200"
             type="button"
-          >
-            <IconBrandGithub className="h-4 w-4 text-neutral-300" />
-            <span className="text-sm text-neutral-200">
-              Continue with GitHub
-            </span>
-            <BottomGradient />
-          </button>
-          <button
-            className="group/btn shadow-lg relative flex h-10 w-full items-center justify-start space-x-2 rounded-md bg-neutral-800/50 backdrop-blur border border-neutral-700 px-4 font-medium text-white hover:bg-neutral-700/50 transition-all duration-200"
-            type="button"
+            onClick={handleGoogleLogin}
           >
             <IconBrandGoogle className="h-4 w-4 text-neutral-300" />
             <span className="text-sm text-neutral-200">

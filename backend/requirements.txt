@@ -114,3 +114,4 @@ setuptools
 wheel
 itsdangerous
 jinja2
+authlib

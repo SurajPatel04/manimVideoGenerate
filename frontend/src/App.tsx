@@ -37,7 +37,7 @@ function Layout() {
       )}
 
       {showRight && (
-        <div className="absolute top-4 right-4 z-20 flex items-center gap-4 text-neutral-200">
+        <div className="absolute right-0 md:right-4 top-0 md:top-4 z-20 flex items-center gap-4 text-neutral-200 h-16 md:h-auto pr-4 md:pr-0">
           <a
             href="https://www.linkedin.com/in/suraj-patel-9201b2381/"
             target="_blank"

@@ -3,7 +3,8 @@ from fastapi import (
     status, 
     HTTPException,
     Depends,
-    Query
+    Query,
+    Request
 )
 from app.schema.UserSchema import (
     UserInput, 
@@ -43,6 +44,12 @@ from itsdangerous import BadSignature, SignatureExpired
 from fastapi_mail import MessageSchema
 from pathlib import Path
 from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
+from authlib.integrations.starlette_client import OAuth
+from starlette.config import Config as StarletteConfig
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 
 
@@ -50,6 +57,20 @@ REFRESH_TOKEN_EXPIRE_DAYS = int(Config.REFRESH_TOKEN_EXPIRE_DAYS)
 
 router = APIRouter(
     prefix="/api/user"
+)
+starlette_config = StarletteConfig(environ={
+    "GOOGLE_CLIENT_ID": Config.GOOGLE_CLIENT_ID,
+    "GOOGLE_CLIENT_SECRET": Config.GOOGLE_CLIENT_SECRET,
+})
+
+oauth = OAuth(starlette_config)
+
+oauth.register(
+    name="google",
+    client_id=Config.GOOGLE_CLIENT_ID,
+    client_secret=Config.GOOGLE_CLIENT_SECRET,
+    server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+    client_kwargs={"scope": "openid email profile"},
 )
 
 @router.get("/", response_model=List[UserOutput])
@@ -184,22 +205,27 @@ async def userLogin(userCredentials: LoginRequest):
 
     await tokenDoc.insert()
 
-    return {
-        "accessToken": accessToken,
-        "refreshToken": refreshToken,
+    # Set tokens as HttpOnly cookies (same behavior as Google OAuth callback)
+    is_secure = os.getenv("ENV", "development") == "production"
+    samesite = "none" if is_secure else "lax"
+
+    response = JSONResponse({
         "email": user.email,
         "firstName": user.firstName,
         "lastName": user.lastName,
         "userId": str(user.id),
-        "tokenType": "bearer"
-    }
+    })
+    response.set_cookie("accessToken", accessToken, httponly=True, secure=is_secure, samesite=samesite, max_age=86400, path="/")
+    response.set_cookie("refreshToken", refreshToken, httponly=True, secure=is_secure, samesite=samesite, max_age=604800, path="/")
+
+    return response
 
 
 @router.get("/userHistory", status_code=status.HTTP_200_OK)
 async def getUserHistory(
     current_user: TokenData = Depends(getCurrentUser),
     page: int = Query(1, ge=1),
-    limit: int = Query(5, ge=1, le=100)
+    limit: int = Query(15, ge=1, le=100)
 ):
     user_id = ObjectId(current_user.id)
 
@@ -228,6 +254,16 @@ async def getUserHistory(
         "pages": (total + limit - 1) // limit,
         "data": history
     }
+
+
+@router.post('/logout')
+async def logout(request: Request):
+    """Clear HttpOnly auth cookies on logout."""
+    response = JSONResponse({"status": True, "message": "Logged out"})
+    # Clear cookies by setting empty value and max_age=0
+    response.delete_cookie("accessToken", path="/")
+    response.delete_cookie("refreshToken", path="/")
+    return response
 
 
 @router.post("/passwordResetRequest")
@@ -402,7 +438,6 @@ async def validateResetToken(token: str):
             detail="Invalid or expired token"
         )
 
-    # Optionally, ensure the user still exists
     user = await Users.find_one(Users.email == userEmail)
     if not user:
         raise HTTPException(
@@ -411,4 +446,76 @@ async def validateResetToken(token: str):
         )
 
     return {"status": True, "email": userEmail}
+
+@router.get("/google/login")
+async def googleLogin(request: Request):
+    redirect_uri = request.url_for("googleCallback")
+    return await oauth.google.authorize_redirect(request, redirect_uri)
+
+
+
+@router.get("/google/callback")
+async def googleCallback(request: Request):
+    token = await oauth.google.authorize_access_token(request)
+    userInfo = token.get("userinfo")
+    if not userInfo:
+        try:
+            resp = await oauth.google.get("userinfo", token=token)
+            userInfo = await resp.json()
+        except Exception as e:
+            raise HTTPException(status_code=400, detail="Google login failed: could not fetch userinfo")
+
+    # Extract Google user details
+    email = userInfo["email"]
+    first_name = userInfo.get("given_name", "")
+    last_name = userInfo.get("family_name", "")
+
+    # Check if user already exists in DB
+    user = await Users.find_one(Users.email == email)
+
+    if not user:
+        # Create new user
+        user = Users(
+            firstName=first_name,
+            lastName=last_name,
+            email=email,
+            password="",  # not needed for Google users
+            isVerified=True
+        )
+        await user.insert()
+
+    # Issue your own JWT tokens
+    access_token = createAccessToken({"user_id": str(user.id)})
+    refresh_token = createRefreshToken({"user_id": str(user.id)})
+
+    # Determine secure and samesite cookie attributes based on runtime.
+    # For local HTTP development we avoid Secure=True (browsers will drop those cookies).
+    is_secure = os.getenv("ENV", "development") == "production"
+    samesite = "none" if is_secure else "lax"
+
+    response = RedirectResponse(url=f"{Config.FRONTEND_DOMAIN}/main", status_code=302)
+    # Set both cookies consistently
+    response.set_cookie("accessToken", access_token, httponly=True, secure=is_secure, samesite=samesite, max_age=86400)
+    response.set_cookie("refreshToken", refresh_token, httponly=True, secure=is_secure, samesite=samesite, max_age=604800)
+
+    return response
+
+
+@router.get("/me")
+async def get_current_user_profile(current_user: TokenData = Depends(getCurrentUser)):
+    """Return basic profile for the currently authenticated user.
+    This endpoint is intended for the SPA to call after OAuth redirect to
+    confirm that the HttpOnly cookie-based session is active.
+    """
+    # current_user is a TokenData instance with id set by getCurrentUser
+    user = await Users.find_one({"_id": ObjectId(current_user.id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {
+        "email": user.email,
+        "firstName": user.firstName,
+        "lastName": user.lastName,
+        "userId": str(user.id),
+    }
 

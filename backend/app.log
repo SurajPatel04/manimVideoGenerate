@@ -28,3 +28,255 @@ Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will 
 2025-09-23 16:59:46,447 - celery.backends.redis - WARNING - 
 Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
 
+2025-09-24 10:26:21,169 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
+2025-09-24 10:29:09,375 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
+2025-09-24 10:35:36,321 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
+2025-09-24 10:35:50,561 - httpx - INFO - HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+2025-09-24 10:35:50,818 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
+2025-09-24 10:45:53,342 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
+2025-09-24 10:46:05,065 - httpx - INFO - HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+2025-09-24 10:46:05,560 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
+2025-09-24 10:48:25,382 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
+2025-09-24 10:48:40,279 - httpx - INFO - HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+2025-09-24 10:48:41,014 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
+2025-09-24 13:29:02,594 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
+2025-09-24 13:29:16,624 - httpx - INFO - HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+2025-09-24 13:29:17,111 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
+2025-09-24 13:45:59,062 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
+2025-09-24 13:46:04,101 - httpx - INFO - HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+2025-09-24 13:46:04,364 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
+2025-09-24 14:03:06,210 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
+2025-09-24 14:03:12,289 - httpx - INFO - HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+2025-09-24 14:03:12,810 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
+2025-09-24 14:14:28,303 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
+2025-09-24 14:14:41,980 - httpx - INFO - HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+2025-09-24 14:14:42,760 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
+2025-09-24 14:14:42,776 - app.router.userRouter - INFO - google callback token keys: ['access_token', 'expires_in', 'scope', 'token_type', 'id_token', 'expires_at', 'userinfo']
+2025-09-24 14:17:07,907 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
+2025-09-24 14:17:32,424 - httpx - INFO - HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+2025-09-24 14:17:32,882 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
+2025-09-24 14:17:32,906 - app.router.userRouter - INFO - google callback token keys: ['access_token', 'expires_in', 'scope', 'token_type', 'id_token', 'expires_at', 'userinfo']
+2025-09-24 14:24:13,350 - httpx - INFO - HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+2025-09-24 14:24:13,360 - app.router.userRouter - INFO - google callback token keys: ['access_token', 'expires_in', 'scope', 'token_type', 'id_token', 'expires_at', 'userinfo']
+2025-09-24 14:33:51,631 - httpx - INFO - HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+2025-09-24 14:33:51,649 - app.router.userRouter - INFO - google callback token keys: ['access_token', 'expires_in', 'scope', 'token_type', 'id_token', 'expires_at', 'userinfo']
+2025-09-24 14:40:31,553 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
+2025-09-24 14:40:56,808 - httpx - INFO - HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+2025-09-24 14:40:57,330 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
+2025-09-24 14:40:57,348 - app.router.userRouter - INFO - google callback token keys: ['access_token', 'expires_in', 'scope', 'token_type', 'id_token', 'expires_at', 'userinfo']
+2025-09-24 14:47:01,411 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
+2025-09-24 14:47:23,354 - httpx - INFO - HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+2025-09-24 14:47:23,864 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
+2025-09-24 14:47:23,877 - app.router.userRouter - INFO - google callback token keys: ['access_token', 'expires_in', 'scope', 'token_type', 'id_token', 'expires_at', 'userinfo']
+2025-09-24 15:03:15,646 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
+2025-09-24 15:05:23,680 - httpx - INFO - HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+2025-09-24 15:05:23,964 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
+2025-09-24 15:05:23,967 - app.router.userRouter - INFO - google callback token keys: ['access_token', 'expires_in', 'scope', 'token_type', 'id_token', 'expires_at', 'userinfo']
+2025-09-24 15:08:10,529 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:08:10,914 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-09-24 15:08:13,476 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:08:17,512 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:08:20,385 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:08:24,074 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:08:27,221 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:08:30,415 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:08:33,727 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:08:36,462 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:08:39,912 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:08:43,057 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:08:46,271 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:08:49,471 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:08:52,590 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:08:55,882 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:08:58,598 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:09:01,387 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:09:04,404 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:09:07,620 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:09:10,880 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:09:13,682 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:09:16,672 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:09:19,628 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:09:22,142 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:09:25,190 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:09:28,030 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:09:30,630 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:09:34,037 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:09:36,944 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:09:39,532 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:09:42,383 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:09:45,099 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:09:47,940 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:09:51,577 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:09:54,925 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:09:57,604 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:10:23,574 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:10:23,763 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-09-24 15:10:24,541 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:15:40,972 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
+2025-09-24 15:15:50,176 - httpx - INFO - HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+2025-09-24 15:15:50,491 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
+2025-09-24 15:16:04,097 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:16:04,098 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:16:04,196 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-09-24 15:16:05,905 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:16:05,909 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:16:09,713 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:16:09,714 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:16:12,933 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:16:12,934 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:16:15,933 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:16:15,935 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:16:19,178 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:16:19,178 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:16:21,596 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:16:21,598 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:16:24,810 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:16:24,810 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:16:27,697 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:16:27,698 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:16:30,594 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:16:30,597 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:16:33,288 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:16:33,289 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:16:36,602 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:16:36,602 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:16:40,031 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:16:40,031 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:16:42,866 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:16:42,866 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:16:45,956 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:16:45,959 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:16:48,651 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:16:48,655 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:16:51,510 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:16:51,512 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:16:54,420 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:16:54,423 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:16:57,697 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:16:57,699 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:17:00,589 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:17:00,590 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:17:43,628 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:17:43,634 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:17:43,648 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:17:43,649 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:17:43,939 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-09-24 15:48:50,905 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
+2025-09-24 15:49:03,286 - httpx - INFO - HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+2025-09-24 15:49:03,836 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
+2025-09-24 15:51:23,217 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
+2025-09-24 15:51:42,830 - httpx - INFO - HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+2025-09-24 15:51:43,420 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
+2025-09-24 15:52:12,300 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:52:12,301 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:52:12,577 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-09-24 15:52:15,299 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:52:15,300 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:52:20,512 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:52:20,512 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:52:23,516 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:52:23,520 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:52:24,162 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:52:24,164 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:52:27,091 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:52:27,094 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:52:30,649 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:52:30,652 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 15:52:35,465 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 15:52:35,466 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:02:56,129 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:02:56,130 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:02:56,725 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:02:56,729 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:03:00,198 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:03:00,200 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:03:03,619 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:03:03,621 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:03:06,890 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:03:06,894 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:03:10,219 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:03:10,224 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:03:13,062 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:03:13,070 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:03:16,261 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:03:16,269 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:03:19,152 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:03:19,154 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:03:21,786 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:03:21,787 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:03:24,665 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:03:24,666 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:03:27,667 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:03:27,669 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:03:30,638 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:03:30,640 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:03:33,732 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:03:33,736 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:03:36,630 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:03:36,631 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:03:40,275 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:03:40,278 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:03:43,429 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:03:43,430 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:03:46,251 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:03:46,257 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:03:49,763 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:03:49,768 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:03:53,149 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:03:53,150 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:03:56,783 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:03:56,787 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:03:59,856 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:03:59,857 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:04:39,839 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:04:39,845 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:04:39,877 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:04:39,879 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:04:40,247 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-09-24 16:04:45,890 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:04:45,891 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:04:48,716 - app.utils.auth - WARNING - verifyAccessToken failed: JWTError(JWSError('Not enough segments'))
+2025-09-24 16:04:48,717 - app.utils.auth - WARNING - Authorization header token verification failed: HTTPException(status_code=401, detail='could not validate access token')
+2025-09-24 16:17:32,032 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-09-24 17:00:11,768 - app.utils.auth - WARNING - accessToken cookie not found on request
+2025-09-24 17:02:24,084 - app.utils.auth - WARNING - accessToken cookie not found on request
+2025-09-24 17:02:24,389 - app.utils.auth - WARNING - accessToken cookie not found on request
+2025-09-24 18:21:23,990 - app.utils.auth - WARNING - accessToken cookie not found on request
+2025-09-24 18:21:24,020 - app.utils.auth - WARNING - accessToken cookie not found on request
+2025-09-24 18:22:24,867 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
+2025-09-24 18:22:36,878 - httpx - INFO - HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+2025-09-24 18:22:37,362 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
+2025-09-24 18:45:19,880 - httpx - INFO - HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+2025-09-24 18:53:00,696 - httpx - INFO - HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+2025-09-24 18:55:46,801 - httpx - INFO - HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+2025-09-24 18:58:24,800 - app.utils.auth - WARNING - accessToken cookie not found on request
+2025-09-24 19:04:45,439 - app.utils.auth - WARNING - accessToken cookie not found on request
+2025-09-24 19:04:45,506 - app.utils.auth - WARNING - accessToken cookie not found on request
+2025-09-24 19:04:59,134 - httpx - INFO - HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+2025-09-24 19:10:31,833 - httpx - INFO - HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+2025-09-24 19:18:59,156 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-09-24 20:51:56,597 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-09-24 21:14:25,161 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-09-24 21:16:57,600 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+

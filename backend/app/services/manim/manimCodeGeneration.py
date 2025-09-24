@@ -430,6 +430,14 @@ in Manim v0.19+, you should import directly below mention from the top-level man
             sphere.set_stroke(color=WHITE, width=1)
         Replace material=PBRMaterial() with .set_fill(...) / .set_stroke(...).
 
+    -- does not exist in Manim CE:
+        FadeInFromPixels
+        FadeOutToPixels
+        PixelateIn
+        PixelateOut
+
+        Use FadeIn / FadeOut instead.
+
     </CRITICAL>
 """
 important = """

@@ -11,6 +11,8 @@ from app.utils.auth import getCurrentUser
 from app.exceptions import UserAlreadyVerifiedException, UserNotFoundException
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
+from starlette.middleware.sessions import SessionMiddleware
+from app.config import Config
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -21,6 +23,11 @@ async def lifespan(app: FastAPI):
         await app.state.mongo_client.close()
 
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=Config.SECRET_KEY  # use a strong random value in prod
+)
 
 @app.exception_handler(UserNotFoundException)
 async def user_not_found_exception_handler(request: Request, exc: UserNotFoundException):

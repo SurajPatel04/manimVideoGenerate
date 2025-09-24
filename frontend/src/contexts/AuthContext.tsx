@@ -1,7 +1,6 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import axios from 'axios';
-// (types were previously imported here; kept intentionally empty because auth responses vary across endpoints)
 
 interface User {
   id: string;
@@ -52,14 +51,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [tokens, setTokens] = useState<AuthTokens | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Token management utilities
-  const saveTokensToStorage = (authTokens: AuthTokens) => {
-    localStorage.setItem('accessToken', authTokens.accessToken);
-    localStorage.setItem('refreshToken', authTokens.refreshToken);
-    localStorage.setItem('tokenType', authTokens.tokenType);
-    setTokens(authTokens);
-  };
-
   const clearTokensFromStorage = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
@@ -76,6 +67,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return { accessToken, refreshToken, tokenType };
     }
     return null;
+  };
+
+  // Verify cookie-based session (used by backend Google OAuth flow)
+  const verifyAuthSession = async () => {
+    try {
+      const response = await axios.get('/api/user/me', {
+        withCredentials: true,
+      });
+
+      if (response.data && response.data.userId) {
+        const userData: User = {
+          id: response.data.userId,
+          email: response.data.email,
+          firstName: response.data.firstName,
+          lastName: response.data.lastName || '',
+        };
+        setUser(userData);
+
+        setTokens({ accessToken: 'cookie', refreshToken: 'cookie', tokenType: 'bearer' });
+        localStorage.setItem('user', JSON.stringify(userData));
+      }
+    } catch (error) {
+      logout();
+    }
   };
 
   const login = async (email: string, password: string): Promise<any> => {
@@ -98,27 +113,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return response.data;
       }
 
-      // Otherwise expect tokens and user data
-      const { accessToken, refreshToken, tokenType, email: userEmail, firstName, lastName, userId } = response.data;
-
-      // Save tokens to localStorage and state
-      const authTokens: AuthTokens = { accessToken, refreshToken, tokenType };
-      saveTokensToStorage(authTokens);
-
-      // Create user object from response data
-      const userData: User = {
-        id: userId,
-        email: userEmail,
-        firstName,
-        lastName: lastName || '',
-      };
-
-      setUser(userData);
-      localStorage.setItem('user', JSON.stringify(userData));
-      return response.data;
+      // After backend sets HttpOnly cookies, call /me to fetch user profile
+      try {
+        const me = await axios.get('/api/user/me', { withCredentials: true });
+        if (me.data && me.data.userId) {
+          const userData: User = {
+            id: me.data.userId,
+            email: me.data.email,
+            firstName: me.data.firstName,
+            lastName: me.data.lastName || '',
+          };
+          setUser(userData);
+          localStorage.setItem('user', JSON.stringify(userData));
+          setTokens({ accessToken: 'cookie', refreshToken: 'cookie', tokenType: 'bearer' });
+          return me.data;
+        }
+        return response.data;
+      } catch (errMe) {
+        // If /me fails, fall back to previous response if it provided tokens
+        console.warn('Failed to fetch /me after login', errMe);
+        return response.data;
+      }
     } catch (error: any) {
       console.error('Login failed:', error);
-      // Handle specific error messages
       if (error.response?.status === 401) {
         throw new Error('Invalid email or password');
       }
@@ -134,7 +151,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Make API call to signup endpoint
       const response = await axios.post('/api/user/signUp', {
         firstName: userData.firstName,
-        lastName: userData.lastName || '', // lastName is optional
+        lastName: userData.lastName || '',
         email: userData.email,
         password: userData.password,
       }, {
@@ -161,7 +178,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return response.data;
     } catch (error: any) {
       console.error('Signup failed:', error);
-      // Handle specific error messages from the API
       if (error.response?.status === 409 && error.response?.data?.detail === 'Email already exists') {
         throw new Error('Email already exists');
       }
@@ -172,16 +188,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
+    // Call backend logout to clear HttpOnly cookies, then clear local state
+    try {
+      axios.post('/api/user/logout', {}, { withCredentials: true }).catch(() => {});
+    } catch (e) {}
     setUser(null);
     clearTokensFromStorage();
     localStorage.removeItem('user');
   };
 
-  // Check for existing user and tokens on mount
-  React.useEffect(() => {
+  // Check for existing user and tokens on mount. If none found, verify cookie session
+  useEffect(() => {
     const savedUser = localStorage.getItem('user');
     const storedTokens = getStoredTokens();
-    
+
     if (savedUser && storedTokens) {
       try {
         setUser(JSON.parse(savedUser));
@@ -190,14 +210,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.error('Failed to parse saved user:', error);
         localStorage.removeItem('user');
         clearTokensFromStorage();
+        // Fall through to verify cookie session
+        verifyAuthSession();
       }
+    } else {
+      verifyAuthSession();
     }
   }, []);
 
   const value: AuthContextType = {
     user,
     tokens,
-    isAuthenticated: !!user && !!tokens,
+    isAuthenticated: !!user,
     login,
     signup,
     logout,

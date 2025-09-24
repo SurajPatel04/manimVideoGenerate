@@ -7,14 +7,14 @@ from datetime import (
     timedelta, 
     timezone
 )
-from fastapi.security import OAuth2PasswordBearer
 from fastapi import (
-    Depends, 
     status, 
-    HTTPException
+    HTTPException,
+    Request
 )
 from app.schema.UserSchema import TokenData
 from app.config import Config
+import logging
 
 ACCESS_TOKEN_SECRET_KEY = Config.ACCESS_TOKEN_SECRET_KEY
 REFRESH_TOKEN_SECRET_KEY = Config.REFRESH_TOKEN_SECRET_KEY
@@ -22,7 +22,9 @@ ALGORITHM = Config.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = Config.ACCESS_TOKEN_EXPIRE_TIME
 REFRESH_TOKEN_EXPIRE_DAYS = Config.REFRESH_TOKEN_EXPIRE_DAYS
 
-oauth2Schema = OAuth2PasswordBearer(tokenUrl="login")
+# This application uses HttpOnly cookie-based tokens only. We intentionally do not
+# accept Authorization header bearer tokens in `getCurrentUser` to keep the
+# authentication surface limited to cookie-based sessions.
 
 def createAccessToken(data: dict):
     toEncode=data.copy()
@@ -45,7 +47,9 @@ def verifyAccessToken(token: str, credentialException):
         if user_id is None:
             raise credentialException
         tokenData = TokenData(id=user_id)
-    except JWTError:
+    except JWTError as e:
+        # Log the underlying JWT error for debugging (do not log the token itself)
+        logging.getLogger(__name__).warning("verifyAccessToken failed: %s", repr(e))
         raise credentialException
     
     return tokenData
@@ -63,16 +67,32 @@ def verifyRefreshToken(token: str):
         if user_id is None:
             raise credential_exception
         token_data = TokenData(id=user_id)
-    except JWTError:
+    except JWTError as e:
+        logging.getLogger(__name__).warning("verifyRefreshToken failed: %s", repr(e))
         raise credential_exception
     
     return token_data
 
 
-def getCurrentUser(token: str=Depends(oauth2Schema)):
-    credentialException=HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED, 
+def getCurrentUser(request: Request):
+    """Resolve current user from the HttpOnly `accessToken` cookie only.
+
+    This enforces a cookie-only authentication policy for the API. If the cookie
+    is missing or invalid this raises a 401 HTTPException.
+    """
+    credentialException = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
         detail="could not validate access token",
-        headers={"WWW-authenticate":"Bearer"}
+        headers={"WWW-authenticate": "Bearer"},
     )
-    return verifyAccessToken(token, credentialException)
+
+    cookie_token = request.cookies.get("accessToken")
+    if not cookie_token:
+        logging.getLogger(__name__).warning("accessToken cookie not found on request")
+        raise credentialException
+
+    try:
+        return verifyAccessToken(cookie_token, credentialException)
+    except Exception as e:
+        logging.getLogger(__name__).warning("Cookie accessToken verification failed: %s", repr(e))
+        raise credentialException

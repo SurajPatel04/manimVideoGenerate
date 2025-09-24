@@ -56,13 +56,7 @@ const ProgressStepper = memo(({ progress }: { progress?: number }) => {
     'Video generation completed successfully'
   ];
 
-  const shortSteps = [
-    'Setup',
-    'Analyze',
-    'Describe',
-    'Render',
-    'Done'
-  ];
+  // shortSteps removed — always use full desktop labels on all screen sizes
 
   const getActiveStep = () => {
     const currentProgress = progress || 0;
@@ -83,15 +77,52 @@ const ProgressStepper = memo(({ progress }: { progress?: number }) => {
     width: '100%',
     mt: 1,
     mb: 1,
+    p: 0.5,
     '& .MuiStep-root': {
       padding: 0,
-      marginBottom: theme.spacing(1),
+      marginBottom: theme.spacing(1.2),
+      // ensure the step content flows horizontally (icon + label) for better alignment
+      display: 'flex',
+      alignItems: 'flex-start',
     },
+    // Align icon and label center vertically and add spacing
     '& .MuiStepLabel-root': {
-      alignItems: 'flex-start'
+      alignItems: 'center',
+      gap: theme.spacing(1),
+      // make label container take remaining width
+      width: '100%',
+      paddingLeft: theme.spacing(0.5),
     },
     '& .MuiStepLabel-label': {
-      fontSize: '0.7rem'
+      fontSize: '0.75rem',
+      color: '#9CA3AF',
+      // allow wrapping for long labels and keep consistent spacing
+      whiteSpace: 'normal',
+      overflow: 'visible',
+      lineHeight: 1.2,
+      display: 'block',
+    },
+    // Position the vertical connector so it runs under the icon, not under the text
+    '& .MuiStepConnector-root.Mui-vertical': {
+      marginLeft: '12px',
+      top: 10,
+      bottom: 10,
+    },
+    '& .MuiStepConnector-root': {
+      // ensure connector line color matches themed look
+      '& .MuiStepConnector-line': {
+        borderColor: '#4B5563',
+      }
+    },
+    '& .MuiStepIcon-root': {
+      color: '#4B5563',
+      width: 28,
+      height: 28,
+      fontSize: '1.05rem',
+      marginRight: theme.spacing(0.25),
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
     }
   } : {
     width: '100%',
@@ -119,7 +150,8 @@ const ProgressStepper = memo(({ progress }: { progress?: number }) => {
     }
   };
 
-  const steps = isSmall ? shortSteps : fullSteps;
+  // Always use the full, descriptive step labels regardless of screen size
+  const steps = fullSteps;
 
   return (
     <Box sx={stepperSx}>
@@ -160,12 +192,8 @@ const ProgressStepper = memo(({ progress }: { progress?: number }) => {
                 },
               }}
             >
-              {/* For small screens, show a tooltip with the full label */}
-              {isSmall ? (
-                <span title={fullSteps[idx]}>{label}</span>
-              ) : (
-                label
-              )}
+              {/* Always render the full desktop label for every step */}
+              <span title={fullSteps[idx]}>{fullSteps[idx]}</span>
             </StepLabel>
           </Step>
         ))}
@@ -294,6 +322,7 @@ export default function MainPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [currentHistoryId, setCurrentHistoryId] = useState<string>("");
+  const [historyRefreshKey, setHistoryRefreshKey] = useState<number>(0);
   const [currentTaskId, setCurrentTaskId] = useState<string>("");
   const [inputValue, setInputValue] = useState<string>(""); 
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
@@ -399,6 +428,9 @@ export default function MainPage() {
                     }
                   : msg
               ));
+
+              // Signal HistorySidebar to refresh when task completes
+              setHistoryRefreshKey(prev => prev + 1);
             } else {
               const failureReason = result.data?.reason || result.data?.message || 'Animation generation failed for unknown reasons.';
               setMessages(prev => prev.map(msg => 
@@ -807,20 +839,21 @@ export default function MainPage() {
   return (
     <div className="min-h-screen w-screen flex bg-black">
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#171717] border-b border-gray-700 p-4 flex items-center justify-between">
-        <button
-          onClick={toggleSidebar}
-          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-        >
-          <IconMenu2 className="text-white h-5 w-5" />
-        </button>
-        <h1 className="text-white text-lg font-semibold">Manim Generator</h1>
-        <button
-          onClick={handleNewChat}
-          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-        >
-          <IconPlus className="text-white h-5 w-5" />
-        </button>
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#171717] border-b border-gray-700 p-4 flex items-center">
+        <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+          <button
+            onClick={toggleSidebar}
+            className="p-2 hover:bg-gray-700 rounded-lg transition-colors w-full h-full flex items-center justify-center"
+            aria-label="Open menu"
+          >
+            <IconMenu2 className="text-white h-5 w-5" />
+          </button>
+        </div>
+
+        <h1 className="text-white text-lg font-semibold flex-1 text-center truncate px-2">Manim Generator</h1>
+
+        {/* Right placeholder to keep title centered when + button removed */}
+        <div className="w-10 h-10 flex-shrink-0" aria-hidden="true" />
       </div>
 
       {/* Mobile Sidebar Overlay */}
@@ -834,7 +867,7 @@ export default function MainPage() {
       {/* Desktop Sidebar */}
       <div className="hidden md:block fixed top-0 left-0 h-screen z-30">
         <Sidebar open={sidebarOpen} setOpen={setSidebarOpen}>
-          <SidebarBody className="justify-between gap-10 h-full">
+          <SidebarBody className="justify-between gap-2 h-full">
             <div className="flex flex-col h-full min-h-0">
               <div className="flex-shrink-0 space-y-2 px-2 py-2">
                 <div className={`flex-shrink-0 ${sidebarOpen ? '' : 'flex justify-center'}`}>
@@ -856,29 +889,34 @@ export default function MainPage() {
               
               {/* History Section */}
               {sidebarOpen && (
-                <div className="flex-1 min-h-0 mt-4">
-                  <div className="mb-3 px-2">
+                // Make this area a flex column where the header and list are separate
+                <div className="flex-1 flex flex-col min-h-0 mt-4">
+                  {/* Header (fixed) */}
+                  <div className="mb-3 px-2 flex-shrink-0">
                     <div className="flex items-center gap-2 px-2 py-1">
                       <IconHistory className="h-4 w-4 text-gray-400" />
                       <span className="text-xs text-gray-400 font-medium">Recent</span>
                     </div>
                   </div>
-                  <div className="overflow-y-auto px-2 max-h-[calc(100vh-220px)] pr-1 sidebar-scrollbar">
+
+                  {/* Scrollable history list (grows to fill space) */}
+                  <div className="flex-1 overflow-y-auto px-2 pr-1 sidebar-scrollbar pb-8">
                     <HistorySidebar 
                         isOpen={true}
                         onToggle={() => {}}
                         onHistoryItemClick={handleHistoryItemClick}
                         inMainSidebar={true}
                         currentHistoryId={currentHistoryId}
+                        refreshKey={historyRefreshKey}
                     />
                   </div>
                 </div>
               )}
             </div>
-            <div className="relative flex-shrink-0 px-2 pb-2" ref={userMenuRef}>
+            <div className="relative flex-shrink-0 px-2 py-1 mt-auto" ref={userMenuRef}>
               <button
                 onClick={toggleUserMenu}
-                className={`flex items-center gap-2 p-2 hover:bg-gray-700 rounded-lg cursor-pointer transition-colors w-full ${sidebarOpen ? 'text-left' : 'justify-center'}`}
+                className={`flex items-center gap-2 py-1 px-2 hover:bg-gray-700 rounded-lg cursor-pointer transition-colors w-full ${sidebarOpen ? 'text-left' : 'justify-center'}`}
               >
                 <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shrink-0">
                   <IconUser className="text-white h-4 w-4" />
@@ -939,28 +977,29 @@ export default function MainPage() {
               <span className="text-white text-sm">New chat</span>
             </button>
             {/* History Section for Mobile */}
-            <div className="flex-1 min-h-0">
-              <div className="mb-3 px-2">
+            <div className="flex-1 flex flex-col min-h-0">
+              <div className="mb-3 px-2 flex-shrink-0">
                 <div className="flex items-center gap-2 px-2 py-1">
                   <IconHistory className="h-4 w-4 text-gray-400" />
                   <span className="text-xs text-gray-400 font-medium">Recent</span>
                 </div>
               </div>
-              <div className="overflow-y-auto px-2 max-h-[calc(100vh-220px)] pr-1 sidebar-scrollbar">
+              <div className="flex-1 overflow-y-auto px-2 pr-1 sidebar-scrollbar pb-8">
                 <HistorySidebar 
                   isOpen={true}
                   onToggle={() => {}}
                   onHistoryItemClick={handleHistoryItemClick}
                   inMainSidebar={true}
                   currentHistoryId={currentHistoryId}
+                  refreshKey={historyRefreshKey}
                 />
               </div>
             </div>
           </div>
-          <div className="relative flex-shrink-0" ref={mobileUserMenuRef}>
+          <div className="relative flex-shrink-0 py-1 mt-auto" ref={mobileUserMenuRef}>
             <button
               onClick={toggleUserMenu}
-              className="flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg transition-colors w-full text-left"
+              className="flex items-center gap-2 py-1 px-2 hover:bg-gray-700 rounded-lg transition-colors w-full text-left"
             >
               <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
                 <IconUser className="text-white h-4 w-4" />
