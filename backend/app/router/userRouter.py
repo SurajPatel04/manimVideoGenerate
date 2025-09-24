@@ -449,7 +449,7 @@ async def validateResetToken(token: str):
 
 @router.get("/google/login")
 async def googleLogin(request: Request):
-    redirect_uri = request.url_for("googleCallback")
+    redirect_uri = f"{Config.DOMAIN}/api/user/google/callback"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 
@@ -507,7 +507,6 @@ async def get_current_user_profile(current_user: TokenData = Depends(getCurrentU
     This endpoint is intended for the SPA to call after OAuth redirect to
     confirm that the HttpOnly cookie-based session is active.
     """
-    # current_user is a TokenData instance with id set by getCurrentUser
     user = await Users.find_one({"_id": ObjectId(current_user.id)})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
