@@ -8,7 +8,7 @@ This project automates the complex process of creating mathematical animations. 
 
 Animation Generation Process
 
-![Demo Video](demo.gif)
+![Demo Video](webSiteDemo.gif)
 
 Check out these examples of AI-generated Manim animations:
 
