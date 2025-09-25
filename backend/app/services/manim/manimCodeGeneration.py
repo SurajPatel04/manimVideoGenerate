@@ -626,6 +626,7 @@ def agentCheckFileCode(state: mainmState):
     3. Deprecated method usage detection
     4. Layout/positioning issues that cause overlaps
     5. LaTeX syntax in MathTex (must use raw strings)
+    6. Ensure all LaTeX (Tex/MathTex) or Text objects always face the camera using always_face_camera=True or add_fixed_orientation_mobjects, so the text is readable in front of the screen.
 
     **CRITICAL CHECKS:**
     - No `.to_center()` methods (use `.move_to(ORIGIN)`)
@@ -831,4 +832,3 @@ def shouldStartOverRouter(state: mainmState):
         return "agentCreateFile" # Loop back to the beginning
     else:
         print("Full retry and start-over process failed. Ending.")
-        return "stop"
