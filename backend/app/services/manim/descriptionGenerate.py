@@ -33,6 +33,33 @@ def generateDetailedDescription(state: DescriptionGenerationState):
 You are a Manim v0.19+ animation planner. Transform the user's request into a detailed, technical description ready for Manim code generation.
 Note:
     Ensure that all text objects do not overlap with the graph, other text, or any other objects in the scene.
+
+When generating Manim code for 3D scenes, ensure that all text and 3D objects fit comfortably on screen and remain readable during camera movement.
+
+    Relative text size: Adjust font sizes proportionally. If there are many text elements, reduce their size so all remain balanced and readable.
+
+    Fixed-frame text: Keep all descriptive text (titles, subtitles, equations, annotations) fixed to the frame using add_fixed_in_frame_mobjects(...) so it does not move with the 3D camera.
+    
+    
+    Grouping and spacing: Group related text (such as multiple equations) in a VGroup and arrange them vertically with clear spacing.
+
+    Title : Center the main title at the top of the frame, and center, and make sure the text is not too large
+        
+    Equations or other text in much smalle text size compare to title, write equation text below the title and shift them to the left or right (with enough spacing) so they don’t overlap the 3D object. 
+
+    Margins: Always leave a comfortable margin between text and the frame edges.
+
+    Graph scaling: Keep x, y, and z axis lengths proportional to maintain a balanced appearance of the 3D object.
+
+    3D object centering: Place the 3D surface or graph so that its geometric center aligns with the origin (ORIGIN) and is fully visible inside the ThreeDAxes.
+
+    Camera framing: Choose a camera orientation and distance that keeps the entire 3D object centered and clearly visible without cropping.
+
+    Axes balance: If using ThreeDAxes, keep the axes centered around the origin to ensure the surface is balanced in the frame.
+
+    LaTeX syntax: Use raw strings for LaTeX expressions, e.g. MathTex(r"x^2").
+
+
 **OUTPUT REQUIREMENTS:**
 - Always begin with a **scene setup step** (e.g., NumberPlane for 2D or Axes for 3D, background color, camera position).
 - Always include the **first visible object/text** immediately after the setup (e.g., centered title or equation).
@@ -179,6 +206,31 @@ You are a Manim v0.19+ description refiner. Fix the animation description based 
 
 Note:
     Ensure that all text objects do not overlap with the graph, other text, or any other objects in the scene.
+
+When generating Manim code for 3D scenes, ensure that all text and 3D objects fit comfortably on screen and remain readable during camera movement.
+
+    Relative text size: Adjust font sizes proportionally. If there are many text elements, reduce their size so all remain balanced and readable.
+
+    Fixed-frame text: Keep all descriptive text (titles, subtitles, equations, annotations) fixed to the frame using add_fixed_in_frame_mobjects(...) so it does not move with the 3D camera.
+
+    Grouping and spacing: Group related text (such as multiple equations) in a VGroup and arrange them vertically with clear spacing.
+
+    Title : Center the main title at the top of the frame, and center, and make sure the text is not too large
+        
+    Equations or other text in much smalle text size compare to title, write equation text below the title and shift them to the left or right (with enough spacing) so they don’t overlap the 3D object. 
+
+    Margins: Always leave a comfortable margin between text and the frame edges.
+
+    Graph scaling: Keep x, y, and z axis lengths proportional to maintain a balanced appearance of the 3D object.
+
+    3D object centering: Place the 3D surface or graph so that its geometric center aligns with the origin (ORIGIN) and is fully visible inside the ThreeDAxes.
+
+    Camera framing: Choose a camera orientation and distance that keeps the entire 3D object centered and clearly visible without cropping.
+
+    Axes balance: If using ThreeDAxes, keep the axes centered around the origin to ensure the surface is balanced in the frame.
+
+    LaTeX syntax: Use raw strings for LaTeX expressions, e.g. MathTex(r"x^2").
+
 
 **CURRENT DESCRIPTION:**
 {description}

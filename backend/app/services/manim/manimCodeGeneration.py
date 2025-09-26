@@ -31,46 +31,109 @@ load_dotenv()
 
 MANIM_RENDER_TIMEOUT = 1000
 critical = """
-<CRITICAL>:Ensure that text and objects do not overlap. You MUST write code that is compatible with Manim v0.19+ ONLY. Do NOT use any deprecated or removed methods..
+<CRITICAL>:You MUST write code that is compatible with Manim v0.19+ ONLY. Do NOT use any deprecated or removed methods..
+
+When generating Manim code for 3D scenes, ensure that all text and 3D objects fit comfortably on screen and remain readable during camera movement.
+
+    Relative text size: Adjust font sizes proportionally. If there are many text elements, reduce their size so all remain balanced and readable.
+
+    Fixed-frame text: Keep all descriptive text (titles, subtitles, equations, annotations) fixed to the frame using add_fixed_in_frame_mobjects(...) so it does not move with the 3D camera.
+
+    Grouping and spacing: Group related text (such as multiple equations) in a VGroup and arrange them vertically with clear spacing.
+
+    Title : Center the main title at the top of the frame, and center, and make sure the text is not too large
+
+    Equations or other text in much smalle text size compare to title, write equation text below the title and shift them to the left or right (with enough spacing) so they don’t overlap the 3D object. 
+    
+    Margins: Always leave a comfortable margin between text and the frame edges.
+
+    Graph scaling: Keep x, y, and z axis lengths proportional to maintain a balanced appearance of the 3D object.
+
+    3D object centering: Place the 3D surface or graph so that its geometric center aligns with the origin (ORIGIN) and is fully visible inside the ThreeDAxes.
+
+    Camera framing: Choose a camera orientation and distance that keeps the entire 3D object centered and clearly visible without cropping.
+
+    Axes balance: If using ThreeDAxes, keep the axes centered around the origin to ensure the surface is balanced in the frame.
+
+    LaTeX syntax: Use raw strings for LaTeX expressions, e.g. MathTex(r"x^2").
+
+Here is the Correct Code example
+from manim import *
+
+class Animation_148b09e8(ThreeDScene):
+    def construct(self):
+        # Layout Plan:
+        # 1. ThreeDAxes will be centered at the origin.
+        # 2. The title (parametric equations) will be placed at the top of the screen (UP * 3.5) to avoid overlap with the 3D objects.
+        # 3. The torus surface will be created at the origin, within the axes.
+
+        # Step 1: Create ThreeDAxes and set up the camera
+        self.camera.background_color = BLACK
+        self.set_camera_orientation(phi=75 * DEGREES, theta=-45 * DEGREES, distance=10)
+
+        axes = ThreeDAxes(
+            x_range=[-5, 5, 1],
+            y_range=[-5, 5, 1],
+            z_range=[-3, 3, 1],
+            x_length=10,
+            y_length=10,
+            z_length=6,
+        )
+        self.add(axes)
+
+        # Step 2: Display the parametric equations as a title
+        title = VGroup(
+            MathTex(r"x = (R + r \cos v) \cos u", font_size=36),
+            MathTex(r"y = (R + r \cos v) \sin u", font_size=36),
+            MathTex(r"z = r \sin v", font_size=36)
+        ).arrange(DOWN, buff=0.2)
+        
+        # Use add_fixed_in_frame_mobjects to keep the title static
+        self.add_fixed_in_frame_mobjects(title)
+        title.to_corner(UL)
+
+        self.play(Write(title), run_time=2)
+        self.wait(1)
+
+        # Step 3: Define constants and create the torus surface
+        R = 3
+        r = 1
+
+        torus = Surface(
+            lambda u, v: np.array([
+                (R + r * np.cos(v)) * np.cos(u),
+                (R + r * np.cos(v)) * np.sin(u),
+                r * np.sin(v)
+            ]),
+            u_range=[0, 2 * PI],
+            v_range=[0, 2 * PI],
+            resolution=(32, 32)
+        )
+
+        torus.set_style(fill_color=BLUE_D, fill_opacity=0.8, stroke_color=BLUE_E)
+        torus.move_to(ORIGIN)
+
+        self.play(Create(torus), run_time=3)
+        self.wait(1)
+
+        # Step 4: Rotate the torus around the Z-axis
+        self.play(
+            Rotate(
+                torus, 
+                angle=TAU, 
+                axis=Z_AXIS, 
+                run_time=5, 
+                rate_func=linear
+            )
+        )
+        self.wait(2)
 
 
-Note: 
+Note it is Important: 
     If in a Graph there is decimal number need then it should be 2 decimal only
     All written texy in the 2d in the screen way 
     If try to write what is happing if needed
     All text and the scene should remain in the frame. The text and scene transitions should be smooth.
-    Manim requires raw strings (r"...") for LaTeX expressions in MathTex.
-    Correct usage:
-        MathTex(r"x")
-        MathTex(r"y")
-        MathTex(r"z")
-
-    TypeError: Mobject.__init__() got an unexpected keyword argument 'z_range'
-    Axes → 2D (takes only x_range, y_range).
-    ThreeDAxes → 3D (takes x_range, y_range, z_range).
-
-    TypeError: Mobject.__init__() got an unexpected keyword argument 'x_range'
-        Fix: replace Surface with ParametricSurface and use u_range, v_range.
-
-    Invalid ambient rotation angle.
-      fix: self.begin_ambient_camera_rotation(rate=0.1, about="theta")
-
-    AttributeError: ThreeDAxes object has no attribute 'add_numbers'
-        Fix: ThreeDAxes in Manim v0.19+ does not have .add_numbers(). Use .add_coordinates() instead.
-
-    NameError: name 'Color' is not defined
-        Fix: from manim import Color
-
-    NameError: name 'LEFT' is not defined
-        In Manim, these direction vectors are predefined, but you must import them explicitly.
-in Manim v0.19+, you should import directly below mention from the top-level manim package. like this from manim import , DirectionalLight,
-    This includes:
-    Scene types: Scene, ThreeDScene
-    3D objects: Cube, Sphere, ParametricSurface
-    Lights: DirectionalLight,
-    2D objects: Circle, Square, Text, MathTex, etc.
-    Animations: Create, Write, FadeIn, Transform, etc.
-    Axes & plots: Axes, NumberPlane
 
     Removed in v0.19+
         Lighting Classes:
@@ -111,7 +174,44 @@ in Manim v0.19+, you should import directly below mention from the top-level man
         Scene Setup:
             Use self.set_camera_orientation and self.begin_ambient_camera_rotation for camera positioning and rotation.
 
-    Error you got most and should avoid bello is the error--
+These errors occur frequently, so apply the following fixes to prevent them. The most common errors you should avoid are listed below:
+    Text object has no attribute 'fix_in_frame'
+        Fix -- self.add_fixed_in_frame_mobjects(my_text)
+
+    ValueError: Invalid ambient rotation angle.
+        Fix: Make sure the angle is a number in radians, not degrees or None.
+            Example:
+            # self.begin_ambient_camera_rotation(rate=0.2)   
+            # OR
+            # self.begin_ambient_camera_rotation(rate=0.2, about="theta")  # if specifying axis
+
+
+    TypeError: Mobject.__init__() got an unexpected keyword argument 'z_range'
+    Axes → 2D (takes only x_range, y_range).
+    ThreeDAxes → 3D (takes x_range, y_range, z_range).
+
+    TypeError: Mobject.__init__() got an unexpected keyword argument 'x_range'
+        Fix: replace Surface with ParametricSurface and use u_range, v_range.
+
+    Invalid ambient rotation angle.
+      fix: self.begin_ambient_camera_rotation(rate=0.1, about="theta")
+
+    AttributeError: ThreeDAxes object has no attribute 'add_numbers'
+        Fix: ThreeDAxes in Manim v0.19+ does not have .add_numbers(). Use .add_coordinates() instead.
+
+    NameError: name 'Color' is not defined
+        Fix: from manim import Color
+
+    NameError: name 'LEFT' is not defined
+        In Manim, these direction vectors are predefined, but you must import them explicitly.
+in Manim v0.19+, you should import directly below mention from the top-level manim package. like this from manim import , DirectionalLight,
+    This includes:
+    Scene types: Scene, ThreeDScene
+    3D objects: Cube, Sphere, ParametricSurface
+    Lights: DirectionalLight,
+    2D objects: Circle, Square, Text, MathTex, etc.
+    Animations: Create, Write, FadeIn, Transform, etc.
+    Axes & plots: Axes, NumberPlane
 
     -- TypeError: Mobject.__init__() got an unexpected keyword argument 'disappearing_time'
         How to fix: The TracedPath API changed. In earlier versions, TracedPath had a disappearing_time argument. In v0.19+, it no longer exists.
@@ -146,7 +246,6 @@ in Manim v0.19+, you should import directly below mention from the top-level man
         -- 2D Scenes use a camera.frame to control the view.
         -- 3D Scenes use the camera object directly for control.
 
-    You got These error many time try to overcome these issue:
     - TypeError: Code.__init__() got an unexpected keyword argument 'code'
     - NameError: name 'Text3D' is not defined
     - ValueError: latex error converting to dvi.
@@ -529,7 +628,7 @@ def run_manim_scene(filename, state: mainmState):
 
         full_output = ""
         for line in process.stdout:
-            # print(line, end='')
+            print(line, end='')
             full_output += line
 
         process.wait()
@@ -559,10 +658,12 @@ def agentCreateFile(state: mainmState):
      - The class name MUST be exactly: {class_name}
 
 Note:
-    Ensure that all text objects do not overlap with the graph, other text, or any other objects in the scene.
+    - All code must use real newlines and proper indentation (no literal \\n outside strings).
+    - Use only valid and non-deprecated Manim methods.
+    - The code must be ready to run as a `.py` file without syntax errors.
+`
 
-
-    CRITICAL: You MUST call the createFileAndWriteMainmCode tool with:
+    Must DO thing because it is critical: You MUST call the createFileAndWriteMainmCode tool with:
     - filename: "{filename}"
     - content: [complete Python code as string]
 
@@ -626,7 +727,6 @@ def agentCheckFileCode(state: mainmState):
     3. Deprecated method usage detection
     4. Layout/positioning issues that cause overlaps
     5. LaTeX syntax in MathTex (must use raw strings)
-    6. Ensure all LaTeX (Tex/MathTex) or Text objects always face the camera using always_face_camera=True or add_fixed_orientation_mobjects, so the text is readable in front of the screen.
 
     **CRITICAL CHECKS:**
     - No `.to_center()` methods (use `.move_to(ORIGIN)`)
