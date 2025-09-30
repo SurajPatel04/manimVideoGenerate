@@ -15,9 +15,10 @@ from datetime import datetime
 import os
 import shutil
 from app.utils.supabaseClient import uploadFile
+from app.schema.ServiceSchema import AnimationType
 
 @taskQueue.task(name="call_graph_task", bind=True)
-def call_graph(self, query, userID, quality, format, historyId=None):
+def call_graph(self, query, userID, quality, format, historyId=None, resolution="1920x1080"):
     async def _inner():
         try:
             await init_beanie_for_workers()
@@ -40,15 +41,16 @@ def call_graph(self, query, userID, quality, format, historyId=None):
 
                 fesibleState = isQueryPossible(
                     userQuery=query,
-                    chatName=None
+                    chatName=None,
+                    animationType=None,
                 )
                 print(f"DEBUG: Created feasibility state: {fesibleState}")
 
                 fesibleResult = graph_for_query_fesibility_check.invoke(fesibleState)
                 print(f"DEBUG: Feasibility check result: {fesibleResult}")
             
-                is_feasible = fesibleResult.get("isFesible")
-                print(f"DEBUG: Extracted feasibility value: {is_feasible}")
+                is_feasible = fesibleResult.get("isFeasible")
+                # print(f"DEBUG: Extracted feasibility value: {is_feasible}")
                 
                 if is_feasible is False:
                     print(f"DEBUG: STOPPING EXECUTION - Query not feasible: {fesibleResult.get('reason')}")
@@ -76,7 +78,8 @@ def call_graph(self, query, userID, quality, format, historyId=None):
                     detailedDescriptionError= None,
                     format = format,
                     chatName=fesibleResult.get('chatName'),
-                    reason=fesibleResult.get('reason')
+                    reason=fesibleResult.get('reason'),
+                    animationType=fesibleResult.get("animationType"),
                 )
 
 
@@ -86,7 +89,6 @@ def call_graph(self, query, userID, quality, format, historyId=None):
                 result = graph_for_description_generate.invoke(descriptionState)
 
                 update_progress("Generating Manim Code", 50, "Creating animation code")
-                
                 manimGenerationState = mainmState(
                     description= result.get("detailedDescription"),
                     isCodeGood=None,
@@ -96,7 +98,9 @@ def call_graph(self, query, userID, quality, format, historyId=None):
                     filename="",
                     executionSuccess = None,
                     quality = quality,
-                    createAgain = 0
+                    createAgain = 0,
+                    animationType=fesibleResult.get("animationType"),
+                    resolution=resolution
                 )
 
                 manimGeneration = graph_for_mainm_code_generate.invoke(manimGenerationState)

@@ -28,6 +28,7 @@ export interface ManimGenerationRequest {
   format: string;
   quality: string;
   historyId: string;
+  resolution?: string;
 }
 
 export interface ManimGenerationResponse {

@@ -38,9 +38,9 @@ const PLACEHOLDERS = [
   "Make an animation about the water cycle and climate change",
 ];
 
-const SuggestionButton = memo(({ suggestion, onClick }: { suggestion: string, onClick: (suggestion: string, options?: { format: string; quality: string }) => void }) => (
+const SuggestionButton = memo(({ suggestion, onClick }: { suggestion: string, onClick: (suggestion: string, options?: { format: string; quality: string; resolution?: string }) => void }) => (
   <button
-    onClick={() => onClick(suggestion, { format: "mp4", quality: "ql" })}
+    onClick={() => onClick(suggestion, { format: "mp4", quality: "ql", resolution: "1920x1080" })}
     className="p-3 md:p-4 bg-gray-800 hover:bg-gray-700 rounded-xl border border-gray-700 text-white text-left transition-all duration-200 hover:border-gray-600 w-full"
   >
     <p className="text-xs md:text-sm">{suggestion}</p>
@@ -689,7 +689,7 @@ export default function MainPage() {
 
   const toggleUserMenu = useCallback(() => setShowUserMenu(prev => !prev), []);
 
-  const processSubmission = useCallback(async (text: string, options: { format: string; quality: string } = { format: "mp4", quality: "ql" }) => {
+  const processSubmission = useCallback(async (text: string, options: { format: string; quality: string; resolution?: string } = { format: "mp4", quality: "ql", resolution: "1920x1080" }) => {
     if (!text || !text.trim()) return;
 
     const userMessage: MessageType = { 
@@ -718,7 +718,8 @@ export default function MainPage() {
         userQuery: text.trim(),
         format: options.format,
         quality: options.quality, 
-        historyId: currentHistoryId
+        historyId: currentHistoryId,
+        resolution: options.resolution
       };
 
       const response = await ManimApiService.generateAnimation(requestPayload, tokens.accessToken);
@@ -801,7 +802,7 @@ export default function MainPage() {
     }
   }, [tokens?.accessToken]);
 
-  const onInputSubmit = (e: React.FormEvent<HTMLFormElement>, options: { format: string; quality: string }) => {
+  const onInputSubmit = (e: React.FormEvent<HTMLFormElement>, options: { format: string; quality: string; resolution?: string }) => {
       e.preventDefault();
       
       if (inputValue && inputValue.trim()) {

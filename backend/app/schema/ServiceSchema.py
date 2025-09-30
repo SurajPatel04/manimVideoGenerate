@@ -1,14 +1,25 @@
 from pydantic import BaseModel, Field
 from typing import (
     Optional, 
-    List
+    List,
+    Literal
 )
+from enum import Enum
+
+class AnimationType(str, Enum):
+    GRAPH2D = "GRAPH2D"
+    COMPUTER_DATASTRUCTURE = "COMPUTER_DATASTRUCTURE"
+    GRAPH3D = "GRAPH3D"
+    STATISTICS = "STATISTICS"
+    PHYSICS="PHYSICS"
+    MOBILE_GRAPH2D="MOBILE_GRAPH2D"
 
 # descriptionGenerate Schema
 class CodeGenPossibility(BaseModel):
-    isFesible: bool
+    isFeasible: bool
     reason: str
     chatName: str
+    animationType: AnimationType
 
 class DescriptionGenerationState(BaseModel):
     userQuery:str
@@ -21,12 +32,14 @@ class DescriptionGenerationState(BaseModel):
     AutoComplete: bool
     detailedDescriptionError: Optional[str] = None
     format: str = Field(default="Red", description="The render file format")
+    animationType: AnimationType
 
 
 class isQueryPossible(BaseModel):
     userQuery: str
     chatName: Optional[str] = None
-    isFesible: Optional[bool] = None
+    isFeasible: Optional[bool] = None
+    animationType: Optional[AnimationType] = None
     reason: Optional[str] = None
 
 class GenDescriptions(BaseModel):
@@ -60,3 +73,5 @@ class mainmState(BaseModel):
     quality: str = "ql"
     createAgain: int = 0
     code: Optional[str] = None
+    animationType: AnimationType
+    resolution: str

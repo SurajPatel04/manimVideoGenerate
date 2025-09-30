@@ -14,13 +14,16 @@ export function PlaceholdersAndVanishInput({
 }: {
   placeholders: string[];
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onSubmit: (e: React.FormEvent<HTMLFormElement>, options: { format: string; quality: string }) => void;
+  onSubmit: (e: React.FormEvent<HTMLFormElement>, options: { format: string; quality: string; resolution?: string }) => void;
   onCancel?: () => void;
   isGenerating?: boolean;
 }) {
   const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
   const [format, setFormat] = useState("mp4");
   const [quality, setQuality] = useState("ql");
+  const [resolution, setResolution] = useState("1920x1080");
+  const [customWidth, setCustomWidth] = useState(1920);
+  const [customHeight, setCustomHeight] = useState(1080);
   const [showOptions, setShowOptions] = useState(false);
   const optionsRef = useRef<HTMLDivElement>(null);
 
@@ -210,7 +213,8 @@ export function PlaceholdersAndVanishInput({
       onCancel();
     } else {
       vanishAndSubmit();
-      onSubmit && onSubmit(e, { format, quality });
+      const res = resolution === 'custom' ? `${customWidth}x${customHeight}` : resolution;
+      onSubmit && onSubmit(e, { format, quality, resolution: res });
     }
   };
   return (
@@ -220,7 +224,7 @@ export function PlaceholdersAndVanishInput({
         ref={optionsRef}
         className={cn(
           "mb-3 p-3 rounded-lg bg-[#202020] border border-gray-600 transition-all duration-200",
-          showOptions ? "opacity-100 max-h-32" : "opacity-0 max-h-0 overflow-hidden p-0 mb-0 border-0"
+          showOptions ? "opacity-100 max-h-60 overflow-auto p-3" : "opacity-0 max-h-0 overflow-hidden p-0 mb-0 border-0"
         )}>
         <div className="flex gap-4 items-center flex-wrap">
           <div className="flex flex-col gap-1 min-w-[80px]">
@@ -246,9 +250,55 @@ export function PlaceholdersAndVanishInput({
               <option value="qh">High (qh)</option>
             </select>
           </div>
+          <div className="flex flex-col gap-1 min-w-[140px]">
+            <label className="text-xs text-gray-400 font-medium">Resolution</label>
+            <select
+              value={resolution}
+              onChange={(e) => {
+                const val = e.target.value;
+                setResolution(val);
+                if (val === '1080x1920') {
+                  setCustomWidth(1080);
+                  setCustomHeight(1920);
+                } else if (val === '1920x1080') {
+                  setCustomWidth(1920);
+                  setCustomHeight(1080);
+                }
+              }}
+              className="bg-[#2a2a2a] text-white text-sm rounded px-3 py-1.5 border border-gray-600 focus:outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 transition-colors"
+            >
+              <option value="1080x1920">Mobile (1080 x 1920)</option>
+              <option value="1920x1080">Desktop (1920 x 1080)</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          {resolution === 'custom' && (
+            <div className="flex gap-2 items-end min-w-[180px]">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-400">Width</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={customWidth}
+                  onChange={(e) => setCustomWidth(Number(e.target.value))}
+                  className="bg-[#2a2a2a] text-white text-sm rounded px-3 py-1.5 border border-gray-600 focus:outline-none"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-400">Height</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={customHeight}
+                  onChange={(e) => setCustomHeight(Number(e.target.value))}
+                  className="bg-[#2a2a2a] text-white text-sm rounded px-3 py-1.5 border border-gray-600 focus:outline-none"
+                />
+              </div>
+            </div>
+          )}
           <div className="flex items-end h-full">
             <div className="text-xs text-gray-500 mb-1">
-              {format.toUpperCase()} • {quality === 'ql' ? 'Low' : quality === 'qm' ? 'Medium' : 'High'} Quality
+              {format.toUpperCase()} • {quality === 'ql' ? 'Low' : quality === 'qm' ? 'Medium' : 'High'} Quality • {resolution === 'custom' ? `${customWidth}x${customHeight}` : resolution}
             </div>
           </div>
         </div>
