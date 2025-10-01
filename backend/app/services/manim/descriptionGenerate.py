@@ -26,6 +26,7 @@ from dotenv import load_dotenv
 from langchain_core.tools import tool
 from langgraph.graph import END
 from pydantic import ValidationError
+from app.core.internalServerErrorHandle import retry
 import logging
 from app.schema.ServiceSchema import AnimationType 
 from app.services.manim.animationTypes import (
@@ -65,66 +66,55 @@ validation = """
 
 
 
-def generateDetailedDescription(state: DescriptionGenerationState):
+async def generateDetailedDescription(state: DescriptionGenerationState):
     print("\n******Generating detailed description ********\n")
     animationTypeRule = ANIMATION_MAP.get(state.animationType)
     userQuery = state.userQuery
     structuredLlm = llmFlash.with_structured_output(DetailDescription)
     
     systemPrompt = """
-You are a Manim v0.19+ animation planner. Your task is to transform the user's request into a detailed, technical scene description that can be directly implemented in Manim code.
-
-Use integers in the graph unless decimals are required. If decimals are needed, show them with two decimal places unless the user specifies a different precision
-
-### General Rules
-- Computer Data Structure Scenes: Use 4 to 5 elements by default unless the user specifies otherwise.
-- **No Overlaps**: All text and objects must be carefully positioned to avoid overlapping with the graph, other text, or scene elements.
-
-### ANIMATION RULES - Follow these specific guidelines:
-{animationTypeRule}
-
-### Output Requirements
-Your output must:
-1. **Always begin with a scene setup step**
-   - Define the background (default: black)
-   - Set up NumberPlane (for 2D) or Axes (for 3D)
-   - Specify camera position and angle (for 3D)
-2. **Immediately display the first visible object** after the setup
-   - Typically a centered title, equation, or key object
-3. **For every step, provide**:
-   - Exact object positions (x, y, z for 3D or x, y for 2D)
-   - Specific colors, sizes, and fonts (font_size in pt)
-   - Animation timing and transitions (e.g., FadeIn, Write, Transform)
-   - Camera movements (for 3D scenes)
-   - Minimum 1-unit spacing between objects to prevent overlap
-
-### Animation Types
-- **2D Scene**: Use flat coordinates; include NumberPlane if needed.
-- **3D Scene**: Specify camera setup, rotations, lighting, and depth effects.
-
-### Key Specifications
-- **Text**: Use a clear font with an appropriate `font_size` to fit on screen. Default color: white. Restrict to 2D coordinates.
-- **Objects**: Define shape, size, color, opacity, and exact coordinates.
-- **Animations**: Include duration and transition type for every movement or appearance.
-- **Background**: Default to black unless user specifies another color.
-
-### Structure
-- **Step 1**: Scene setup (axes/plane + camera + background)
-- **Step 2**: Display main text/title/equation centered at (0, 0)
-- **Step 3+**: Sequential object and animation steps with complete technical details
-
-### Example Output Format
-```
-Step 1: Create NumberPlane centered at (0, 0) with x_range=[-5, 5], y_range=[-3, 3], faded grid lines. Background: black.
-Step 2: Display equation 'ax² + bx + c = 0' using MathTex at (0, 2), font_size=64, color=white. Animate with Write over 2 seconds.
-Step 3: Move 'c' term to (3, 2) using Transform over 2 seconds.
-Step 4: Create red cube at (-2, 0, 1) with size=1, opacity=0.8. Rotate around y-axis for 3 seconds.
-```
+You are a **Manim v0.19+ Animation Planner**.  
+Your role: Convert the user’s request into a **step-by-step, technical scene description** (NOT code) in one go that can be directly implemented in Manim.
 
 ---
-You will evaluate the following content using these parameters: **{validation}**.
-Provide **complete technical details** for immediate Manim implementation.
 
+## Core Principles
+- Always assume **Manim v0.19+ syntax** (latest conventions).
+- Use **integers** in graph ranges/labels unless decimals are required. If decimals are needed, show them with **two decimal places** unless the user specifies otherwise.
+- Avoid **overlaps**: Position all text/objects carefully to ensure readability.
+- Maintain **at least 1-unit spacing** between distinct elements.
+- Default **background: black** unless otherwise specified.
+
+---
+
+## Animation Type Rules
+{animationTypeRule}
+
+---
+
+#Output Rules
+
+    Step 1: Scene setup
+        Background: black by default.
+        2D → NumberPlane; 3D → Axes with camera position/angle.
+    Step 2: Show first object (title/equation/key shape) centered at (0,0).
+        Each Step must include:
+        Exact coordinates (x,y) / (x,y,z)
+        Color, size, font, font_size, opacity
+        Animation type + duration
+        Camera moves (for 3D)
+        At least 1-unit spacing between objects
+
+## Example
+Example
+Step 1: Create NumberPlane at (0,0) with x_range=[-5,5], y_range=[-3,3]. Background: black.
+Step 2: Show 'ax² + bx + c = 0' at (0,2), font_size=64, color=white. Animate with Write over 2s.
+Step 3: Move 'c' to (3,2) with Transform over 2s.
+Step 4: Create red cube at (-2,0,1), size=1, opacity=0.8. Rotate around y-axis for 3s.
+
+---
+
+Output only **detailed scene descriptions** (never code).
 """
 
     # msg = [
@@ -145,12 +135,16 @@ Provide **complete technical details** for immediate Manim implementation.
     agent_executor = AgentExecutor(agent=agent,tools=[],verbose=True, max_iterations=3)
 
     try:
-        # result = structuredLlm.invoke(msg)
-        result = agent_executor.invoke({
-            "input": userQuery,
-            "animationTypeRule":animationTypeRule,
-            "validation":validation
-        })
+        result = await retry(
+            agent_executor,
+            {
+                "input": userQuery,
+                "animationTypeRule":animationTypeRule,
+                # "validation":validation
+            },
+            retries=3,
+            delay=1
+        )
         # print(result.description)
         return state.model_copy(update={
             "detailedDescription": result.get("output", "")
@@ -176,7 +170,7 @@ You are a Manim v0.19+ description validator. Evaluate if the animation descript
 
 **VALIDATION CRITERIA:**
 
-### ANIMATION RULES - Follow these specific guidelines:
+## Animation Type Rules use this for the validation
 {animationTypeRule}
 
 **DESCRIPTION TO VALIDATE:**
@@ -222,7 +216,7 @@ Focus on technical implementability, not creative quality.
 
 
 
-def refineDescription(state: DescriptionGenerationState):
+async def refineDescription(state: DescriptionGenerationState):
     print("\n**** refineDescription *****\n")
     animationTypeRule = ANIMATION_MAP.get(state.animationType)
 
@@ -241,7 +235,7 @@ Use integers in the graph unless decimals are required. If decimals are needed, 
 - Decimal Handling: If the user mentions decimal points, ensure all graphs or axes include decimal values as needed.
 - No Overlaps: All text and objects must be carefully positioned to avoid overlapping with the graph, other text, or scene elements.
 
-### ANIMATION RULES - Follow these specific guidelines:
+### ANIMATION RULES - Follow these specific guidelines This is for Manim v0.19+:
 {animationTypeRule}
 
 ### Provided Inputs
@@ -252,44 +246,26 @@ Use integers in the graph unless decimals are required. If decimals are needed, 
 ### Refinement Task
 Revise the **Current Description** to resolve the **Validation Error** while staying faithful to the **User's Original Request** and all technical requirements.
 
-### Output Requirements
-1. **Start with Scene Setup**
-   - Define the background (default: black)
-   - Set up NumberPlane (for 2D) or Axes (for 3D)
-   - Specify camera position and angle (for 3D scenes)
-2. **Follow with the First Visible Object/Text**
-   - Typically a centered title, equation, or key object
-3. **Each Step Must Include**:
-   - Exact object positions (x, y, z for 3D or x, y for 2D)
-   - Specific colors, sizes, and fonts (font_size in pt)
-   - Animation timing and transitions (e.g., FadeIn, Write, Transform)
-   - Camera movements (for 3D scenes)
-   - Minimum 1-unit spacing between objects to prevent overlaps
+#Output Rules
 
-### Animation Types
-- **2D Scene**: Use flat coordinates; include NumberPlane if needed.
-- **3D Scene**: Specify camera setup, rotations, lighting, and depth effects.
+    Step 1: Scene setup
+        Background: black by default.
+        2D → NumberPlane; 3D → Axes with camera position/angle.
+    Step 2: Show first object (title/equation/key shape) centered at (0,0).
+        Each Step must include:
+        Exact coordinates (x,y) / (x,y,z)
+        Color, size, font, font_size, opacity
+        Animation type + duration
+        Camera moves (for 3D)
+        At least 1-unit spacing between objects
 
-### Key Specifications
-- **Text**: Use a clear font with a `font_size` appropriate to fit on screen. Default color: white. Restrict to 2D coordinates.
-- **Objects**: Define shape, size, color, opacity, and exact coordinates.
-- **Animations**: Include duration and transition type for every movement or appearance.
-- **Background**: Default to black unless user specifies another color.
+Example
+Step 1: Create NumberPlane at (0,0) with x_range=[-5,5], y_range=[-3,3]. Background: black.
+Step 2: Show 'ax² + bx + c = 0' at (0,2), font_size=64, color=white. Animate with Write over 2s.
+Step 3: Move 'c' to (3,2) with Transform over 2s.
+Step 4: Create red cube at (-2,0,1), size=1, opacity=0.8. Rotate around y-axis for 3s.
 
-### Structure
-- **Step 1**: Scene setup (axes/plane + camera + background)
-- **Step 2**: Display main text/title/equation centered at (0, 0)
-- **Step 3+**: Sequential object and animation steps with complete technical details
-
-### Example Output Format
-```
-Step 1: Create NumberPlane centered at (0, 0) with x_range=[-5, 5], y_range=[-3, 3], faded grid lines. Background: black.
-Step 2: Display equation 'ax² + bx + c = 0' using MathTex at (0, 2), font_size=64, color=white. Animate with Write over 2 seconds.
-Step 3: Move 'c' term to (3, 2) using Transform over 2 seconds.
-Step 4: Create red cube at (-2, 0, 1) with size=1, opacity=0.8. Rotate around y-axis for 3 seconds.
-```
-You will evaluate the revised description using these parameters: {validation}.
-Provide a fully refined, implementation-ready** Manim scene description.
+Provide a fully refined, implementation-ready** detailed description (no code), technical scene description that can be directly implemented in Manim code.
 """
 
     # messages = [
@@ -315,14 +291,27 @@ Provide a fully refined, implementation-ready** Manim scene description.
         # result = structured.invoke(messages)
         # print(f"Refinement attempt #{descriptionRefine}")
         # print(f"Refined description: {result.description}")
-        result = agent_executor.invoke({
-            "detailedDescriptionError":detailedDescriptionError,
-            "description":description,
-            "input": humanMessage,
-            "animationTypeRule":animationTypeRule,
-            "validation":validation,
-            "userQuery":userQuery
-        })
+        # result = agent_executor.invoke({
+        #     "detailedDescriptionError":detailedDescriptionError,
+        #     "description":description,
+        #     "input": humanMessage,
+        #     "animationTypeRule":animationTypeRule,
+        #     "validation":validation,
+        #     "userQuery":userQuery
+        # })
+        result = await retry(
+            agent_executor,
+            {
+                "detailedDescriptionError":detailedDescriptionError,
+                "description":description,
+                "input": humanMessage,
+                "animationTypeRule":animationTypeRule,
+                # "validation":validation,
+                "userQuery":userQuery
+            },
+            retries=3,
+            delay=1
+        )
         return state.model_copy(update={
             "detailedDescription": result.get("output", ""),
             "descriptionRefine": descriptionRefine,

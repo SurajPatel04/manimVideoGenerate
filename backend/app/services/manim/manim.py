@@ -86,7 +86,7 @@ def call_graph(self, query, userID, quality, format, historyId=None, resolution=
 
                 update_progress("Generating Description", 30, "Detailed description in progress")
                 
-                result = graph_for_description_generate.invoke(descriptionState)
+                result = await graph_for_description_generate.ainvoke(descriptionState)
 
                 update_progress("Generating Manim Code", 50, "Creating animation code")
                 manimGenerationState = mainmState(
@@ -103,7 +103,7 @@ def call_graph(self, query, userID, quality, format, historyId=None, resolution=
                     resolution=resolution
                 )
 
-                manimGeneration = graph_for_mainm_code_generate.invoke(manimGenerationState)
+                manimGeneration = await graph_for_mainm_code_generate.ainvoke(manimGenerationState)
 
                 code = manimGeneration.get('code')
                 userQuery = query
@@ -200,9 +200,10 @@ def call_graph(self, query, userID, quality, format, historyId=None, resolution=
             except Exception as cleanup_error:
                 print(f"Warning: Failed to close database connection: {cleanup_error}")
     
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
     try:
-        return loop.run_until_complete(_inner())
-    finally:
-        loop.close()
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    return loop.run_until_complete(_inner())

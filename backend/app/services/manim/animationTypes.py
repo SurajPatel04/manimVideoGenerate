@@ -1,360 +1,433 @@
 GRAPH2D = """
 <2D Graph Scenes Rule Only>
 
-## Comon Error to avoid
+## Mandatory way to design
 
-1. CoordinateSystem._get_axis_label() got an unexpected keyword argument 'font_size'
+1. Title: Always at the top. Do not include the equation in the title.
+2. Axes: Create axes immediately after the title.
+3. Use integers mostly if needed then use 2 decimal precision.
+4. Only show central axes (no grid).
+5. Equation: Placed below title or in corners (left, right, bottom-left, bottom-right). If no space → fade it out before graph.
+7. Margins: Leave a 5% gap at the bottom, left, and right edges.
+8. Sequence: Title → Axes → Equation (adaptive) → Graph.
 
-    Fix: wrap the label in Text or MathTex with font_size, e.g.
-    x_label = axes.get_x_axis_label(MathTex("x", font_size=28))
-    y_label = axes.get_y_axis_label(MathTex("f(x)", font_size=28))
 
-2. Error Message: Found non-raw strings in MathTex calls. Specifically, 'x' and 'f(x)' should be r'x' and r'f(x)' respectively to ensure proper LaTeX parsing. For example: MathTex(r"x", ...).
+### Deprecated → New (Manim v0.19+)
 
-## Font Size Hierarchy (Mandatory)
+---
+
+## Common Deprecated → New
+
+* `to_edge(...)` still works, but prefer `.next_to()` for finer control.
+* `to_corner(...)` → use `.align_on_border(...)`.
+* `axes.to_center()` → use `axes.move_to(ORIGIN)` or `axes.center()`.
+* `shift(x*RIGHT)` still valid.
+* `scale_in_place(factor)` → use `.scale(factor, about_point=...)`.
+* `fade_in` / `fade_out` methods → use animations: `FadeIn(mobj)` / `FadeOut(mobj)`.
+* `ShowCreation(mobj)`  → `Create(mobj)`.
+* `Write(mobj, run_time=...)`  still valid.
+* `Transform(m1, m2)`  still valid.
+* `SurroundingRectangle(..., buff=0.1)`  still valid.
+* `.start_point or .end_point` -> use `.get_start()` or `.get_end()`.
+
+---
+
+## Axes / Graphs
+
+* `axes.get_graph(f, ...)` → deprecated. Use `axes.plot(f, x_range=[...], color=...)`.
+
+* `axes.get_area(f, ...)` → still valid for one function. For two functions use `FillBetween(...)`.
+
+* `NumberPlane.get_graph(...)` → does not exist. Use `plane.plot(...)`.
+
+* `add_coordinates()` → still valid.
+
+* `DashedLine(dashed_ratio=...)` → still valid in v0.19. Signature: `DashedLine(start, end, dash_length=0.05, dashed_ratio=0.5, **kwargs)`. `num_dashes` is not supported. Alternative: `DashedVMobject(mobject, dash_length=...)`.
+
+* `axes.get_tangent_line(graph, x=..., line_length=...)` → does not exist. Use `TangentLine(graph, alpha, length=...)` where `alpha ∈ [0,1]`. To map `x` to `alpha`, use helpers like `axes.i2gp`.
+
+* `axes.get_vertical_line(x_val=...)` → invalid. Correct: `axes.get_vertical_line(point, **kwargs)`.
+  (use `axes.c2p(x_value, y_value)` or `axes.i2gp(x_value, graph)` to get the point).
+
+* `axes.y_axis_labels` → no attribute. Use `axes.get_axis_labels()`.
+
+* `y_axis_config` must be passed explicitly inside `Axes(...)`, not accessed as an attribute afterwards.
+
+* `axes.get_x_axis_label(...)` and `axes.get_y_axis_label(...)` → still valid, but prefer `axes.get_axis_labels(x_label, y_label)` for paired labels.
+
+---
+
+## Colors / Styles
+
+- `stroke_width` → still valid.
+- `stroke_opacity=...` in constructor → not allowed. Use `.set_stroke(opacity=...)`.
+- `fill_opacity=...` in constructor → still valid.
+- `line_arg_dict` → deprecated.  Use: 
+  - `axis_config={...}` → for styling axes 
+  - `background_line_style={...}` → **only inside Axes or NumberPlane**.
+- `stroke_dash_length` → not valid. Use `DashedLine(...)` or `DashedVMobject(...)`.
+
+---
+
+## Text / Labels
+
+* `TextMobject(...)` → use `Tex(...)`.
+* `TexMobject(...)` → use `Tex(...)`.
+* `edge_buffer` argument (e.g., in `Text`) → not valid. Replace with `.next_to(..., buff=...)` or `.align_on_border(...)`.
+* `Text(..., t2c=...)` → still valid. 
+* `t2s` (text-to-style) → replaced by `.set_color_by_t2s()`.
+
+---
+
+## Shapes
+
+* `ArcBetweenPoints(..., radius=...)` → `ArcBetweenPoints(..., angle=...)`.
+* `Sector(inner_radius=...)` → replaced with `AnnularSector(inner_radius=...)`.
+
+---
+
+## NumberLine
+
+* `NumberLine(default_numbers_to_display=...)` → removed. Use `include_numbers=True` and control with `numbers_to_include=[...]` or `decimal_number_config={...}`.
+* `exclude_zero_from_default_numbers` → removed. Must explicitly control numbers via `numbers_to_include`.
+
+---
+
+## Camera / Scene
+
+* `ThreeDScene.set_camera_orientation(...)` → still valid.
+* `self.move_camera(...)` (old) → use `self.camera.animate.set(...)`.
+* `set_camera_position(...)` → prefer `self.set_camera_orientation(...)`.
+* `self.set_camera_orientation(phi=..., theta=...)` → still valid, but `gamma` is no longer supported.
+
+---
+
+## Geometry / Mobject Methods
+
+* `.start_point` / `.end_point` → replaced with `.get_start()` / `.get_end()`.
+* `.point_from_proportion(alpha)` → still valid.
+* `scale_in_place(factor)` → deprecated. Use `.scale(factor, about_point=...)`.
+* `.fade_in` / `.fade_out` (methods) → removed. Use `FadeIn(mobj)` / `FadeOut(mobj)` animations.
+* `next_to(...)` → still valid and preferred over `to_edge(...)` for finer control.
+* `to_corner(...)` → replaced with `.align_on_border(...)`.
+* `.center()` or `.move_to(ORIGIN)` → replaces older `.to_center()`.
+* `rotate(angle, axis=...)` → still valid.
+* `.get_midpoint()` → preferred over manual midpoint calculations.
+* `.get_vertices()` → still valid for polygons.
+* `.copy()` → still valid.
+
+## Summary of New Errors Fixed
+
+* `TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'length'` → use `line_length`.
+* `TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_val'` → use `x`.
+* `TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'edge_buffer'` → replace with `.next_to(..., buff=...)`.
+* `AttributeError: Axes object has no attribute 'y_axis_labels'` → use `axes.get_axis_labels()`.
+* `AttributeError: NumberLine object has no attribute 'default_numbers_to_display'` → use `include_numbers=True` with `numbers_to_include`.
+* `TypeError: ... got an unexpected keyword argument 'stroke_opacity'` → set via `.set_stroke(opacity=...)`.
+* `AttributeError: NumberLine has no attribute 'exclude_zero_from_default_numbers'` → must use `numbers_to_include`.
+* `TypeError: ... got an unexpected keyword argument 'gamma'` → camera no longer supports gamma.
+* `NameError: name 'UP_LEFT' is not defined` → Use `UL` (UP + LEFT), `UR`, `DL`, `DR` instead.
+
+### Font Size Rules (Hierarchy — Never Violate)
 ```python
-TITLE_SIZE = 46      # Maximum title size
-EQUATION_SIZE = 36   # Equations must be smaller than title
-LABEL_SIZE = 28      # Labels must be smaller than equations
-DESC_SIZE = 24       # Descriptions smallest
+TITLE_SIZE = 46          # Largest - for main titles
+EQUATION_SIZE = 36       # Smaller than title - for math equations
+LABEL_SIZE = 28          # Smaller than equation - for axis labels
+DESC_SIZE = 24           # Smallest - for descriptions
 ```
 
-## Edge Buffers (5% Mandatory)
+### Mandatory Spacing Rules
 ```python
-EDGE_BUFFER = 0.05
-buff_left = config.frame_width * 0.05
-buff_right = config.frame_width * 0.05
-buff_bottom = config.frame_height * 0.05
+TOP_BUFFER = config.frame_height * 0.01      # 1% space from top
+BOTTOM_BUFFER = config.frame_height * 0.05   # 5% space from bottom
+LEFT_BUFFER = config.frame_width * 0.05      # 5% space from left
+RIGHT_BUFFER = config.frame_width * 0.05     # 5% space from right
+AFTER_TITLE_GAP = config.frame_height * 0.05 # 5% gap after title
 ```
+## Mandatory avoid these 
 
-## Decimal Precision (2 Places Only)
+1. NameError: name 'LIGHT_BLUE' is not defined
+    Use valid built-ins (from manim):
+    from manim import BLUE, GREEN, TEAL, YELLOW, RED, ORANGE, PURPLE
+    Or define your own shades:
+    LIGHT_BLUE = "#87CEFA"   # hex for light sky blue
+    LIGHT_GREEN = "#90EE90"  # hex for light green
+
+    Then your code works:
+    self.play(f1.animate.set_color(LIGHT_BLUE).set_opacity(0.4))
+
+    
+2. Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'color'
+    Fix: Import form the manim 
+    from manim import Scene, MathTex, Axes, Write, WHITE
+    or
+    from manim import *
+
+3. NameError: name 'BOTTOM' is not defined
+    Fix: UP, DOWN, LEFT, RIGHT, ORIGIN are valid.
+
+4. NameError: name 'WiggleOutThenIn' is not defined
+    At the top of your script add:
+    from manim import *
+    or,
+    from manim import Scene, Axes, MathTex, FadeIn, WiggleOutThenIn
+
+5.  Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_range'
+    Fix: graph_sin_x = plane.plot(lambda x: np.sin(x), x_range=[-7, 7], color=BLUE)
+
+6. TypeError: Mobject.__init__() got an unexpected keyword argument 'line_arg_dict'
+    Fix: replace it with:
+    background_line_style={...}
+    Use axis_config={...} for Axes.
+
+7. Error Message: Found `stroke_opacity` set in the constructor for `envelope_pos` and `envelope_neg`. According to the validation rules, opacity-related parameters should not be set in the constructor; use `.set_stroke(opacity=...)` or `.set_opacity()` after creation.
+
+8. TypeError: Mobject.__init__() got an unexpected keyword argument 'stroke_dash_length'
+    Fix: 
+    # Option A: directly make dashed
+    line1 = DashedLine(LEFT, RIGHT, dash_length=0.2, num_dashes=20)
+
+
+    # Option B: wrap an existing object
+    base = Line(LEFT, RIGHT)
+    line2 = DashedVMobject(base, dash_length=0.2, num_dashes=20)
+
+
+9. AttributeError: Axes object has no attribute 'to_center'
+    Fix: 
+    axes.move_to(ORIGIN)
+    # or
+    axes.center()
+
+10. TypeError: Mobject.__init__() got an unexpected keyword argument 'background_line_style'
+    Fix:
+    background_line_style is only valid in NumberPlane or Axes, not in general Mobject.
+    So you must pass it when constructing axes/plane, like this:
+
+    axes = Axes(
+        x_range=[-5, 5],
+        y_range=[-3, 3],
+        axis_config={"color": BLUE},              # style for main axes
+        background_line_style={                   # style for grid lines
+            "stroke_color": GREY,
+            "stroke_width": 1,
+            "stroke_opacity": 0.5,
+        }
+    )
+
+11. Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'length'
+    Fix: axes.get_tangent_line(graph_sin, x_tracker.get_value(), line_length=3)
+
+12. TypeError: Mobject.__init__() got an unexpected keyword argument 'x_axis_config'
+    Axes does not accept x_axis_config or y_axis_config as keyword arguments at the top level of Axes(...)
+    Fix:
+    axes = Axes(
+        x_range=[-5, 5, 1],
+        y_range=[-3, 3, 1],
+        axis_config={
+            "include_numbers": True,
+            "font_size": 24,
+            "decimal_number_config": {"num_decimal_places": 0}
+        }
+    )
+    If you need different configs for x and y axes:
+
+    python
+    Copy code
+    axes = Axes(
+        x_range=[-5, 5, 1],
+        y_range=[-3, 3, 1],
+        axis_config={"font_size": 24},  # base style
+    )
+
+    # Then adjust individually
+    axes.x_axis.add_numbers()
+    axes.y_axis.add_numbers()
+
+13. AxisError: axis 1 is out of bounds for array of dimension 1
+    fix:
+    curve1 = axes.plot_parametric_curve(
+        lambda t: (x_func1(t), y_func1(t)),
+        t_range=[0, 2*np.pi, 0.01],
+        color=BLUE
+    )
+
+14. AttributeError: MathTex object has no attribute 'is_about_to_overlap' is_about_to_overlap() doesn’t exist in ManimCE.
+
+
+
+## ANIMATION SEQUENCE (MANDATORY ORDER)
+
+### **STEP 1: Title at Top → Gap 
 ```python
-# Axes
+title = Text("Your Title Here", font_size=TITLE_SIZE)
+title.to_edge(UP, buff=TOP_BUFFER)
+self.play(Write(title))
+
+```
+### **STEP 2: Axes (No Grid, With Margins)**
+```python
+# Calculate usable space
+usable_width = config.frame_width - (LEFT_BUFFER + RIGHT_BUFFER)
+usable_height = config.frame_height * 0.65
+
+# Create axes
 axes = Axes(
-    x_range=[-5, 5, 1],
-    y_range=[-3, 3, 1],
+    x_range=[-1, 10, 1],
+    y_range=[-1, 3, 1],
+    x_length=usable_width,
+    y_length=usable_height,
     axis_config={
         "include_numbers": True,
-        "decimal_number_config": {"num_decimal_places": 2}
+        "font_size": 24,
+        "decimal_number_config": {"num_decimal_places": 0}
     }
 )
 
-# All numbers
-point_label = Text(f"({x:.2f}, {y:.2f})", font_size=28)
-value_text = Text(f"Value: {result:.2f}", font_size=24)
-```
 
-## Space Management - Fade Out Rule
-**When space is insufficient, ALWAYS fade out equation before showing new elements:**
-```python
-# If adding complex elements and space is tight
-self.play(FadeOut(equation))
-self.play(Create(new_element))
-# Optionally bring back later
-self.play(FadeIn(equation))
-```
+# Apply margins
+axes.next_to(title, DOWN, buff=AFTER_TITLE_GAP)
 
-## Animation Sequence (Mandatory)
-1. Title (46pt) → 2. Equation (36pt) → 3. Axes → 4. Labels (28pt) → 5. Graph → 6. Transforms
+# Decimal place override (for fractional steps)
+if x_step < 1:
+    axes.x_axis.decimal_number_config["num_decimal_places"] = 2
+if y_step < 1:
+    axes.y_axis.decimal_number_config["num_decimal_places"] = 2
 
-## Standard Setup
-```python
-# Title
-title = Text("Graph Title", font_size=46)
-title.to_edge(UP, buff=0.3)
-self.play(Write(title))
-
-# Equation (smaller than title)
-equation = MathTex(r"f(x) = x^2", font_size=36)
-equation.to_edge(LEFT, buff=config.frame_width * 0.05).shift(UP*2)
-self.play(Write(equation))
-
-# Axes (with 5% margins)
-axes = Axes(
-    x_range=[-3, 3, 1],
-    y_range=[-2, 2, 1],
-    x_length=8,
-    y_length=5,
-    axis_config={
-        "include_numbers": True,
-        "decimal_number_config": {"num_decimal_places": 2}
-    }
-).move_to(ORIGIN)
-axes.scale_to_fit_width(config.frame_width * 0.9)
+# Animate axes
 self.play(Create(axes))
 
-# Labels (smaller than equation)
-x_label = axes.get_x_axis_label("x", font_size=28)
-y_label = axes.get_y_axis_label("f(x)", font_size=28)
-self.play(Write(x_label), Write(y_label))
+### **STEP 3: Equation (Adaptive Placement with Fallback)**
+- Place equation below title with a 5% gap.
+- If no space available → show equation temporarily then fade it out.
+- Try to place **left, right, bottom-left, or bottom-right or bottom of the edges if eqation is bigger depending on space.
+- equation = MathTex(r"y = f(x)", font_size=EQUATION_SIZE)
 
-# Graph
-graph = axes.plot(lambda x: x**2, x_range=[-3, 3], color=BLUE)
+# Try placements in order:
+# 1. Left under title
+# 2. Right under title
+# 3. Bottom-left
+# 4. Bottom-right
+# If nothing fits → fade out
+
+
+positions = [
+    lambda: equation.next_to(title, DOWN, buff=AFTER_TITLE_GAP).align_on_border(LEFT, buff=LEFT_BUFFER),
+    lambda: equation.next_to(title, DOWN, buff=AFTER_TITLE_GAP).align_on_border(RIGHT, buff=RIGHT_BUFFER),
+    lambda: equation.to_edge(DL, buff=LEFT_BUFFER),
+    lambda: equation.to_edge(DR, buff=RIGHT_BUFFER),
+]
+
+for pos in positions:
+    pos()
+    if (
+        equation.get_left()[0] >= -config.frame_width/2 + LEFT_BUFFER and
+        equation.get_right()[0] <= config.frame_width/2 - RIGHT_BUFFER and
+        equation.get_bottom()[1] >= -config.frame_height/2 + BOTTOM_BUFFER
+    ):
+        self.play(Write(equation))
+        break
+else:
+    # If no space available → fade out
+    self.play(Write(equation))
+    self.wait(1)
+    self.play(FadeOut(equation))
+
+
+```
+
+### **STEP 4: Plot Graph**
+```python
+graph = axes.plot(
+    lambda x: your_function(x),
+    x_range=[min, max],
+    color=BLUE
+)
 self.play(Create(graph))
 ```
 
-## Safe Positioning
+
+---
+
+## QUICK TEMPLATE
 ```python
-# Top-left with buffer
-equation.to_corner(UL, buff=config.frame_width * 0.05)
-
-# Bottom with buffer
-description.to_edge(DOWN, buff=config.frame_height * 0.05)
-
-# Right side with buffer
-legend.to_edge(RIGHT, buff=config.frame_width * 0.05)
-```
-
-## Multi-Graph Colors
-- Primary: `BLUE`
-- Secondary: `GREEN`
-- Reference: `YELLOW`
-- Intersections: `RED`
-
-```python
-graph1 = axes.plot(func1, color=BLUE)
-graph2 = axes.plot(func2, color=GREEN)
-self.play(Create(graph1))
-self.wait(0.5)
-self.play(Create(graph2))
-```
-
-## Points with 2 Decimals
-```python
-x_val, y_val = 2.34, 5.48
-point = Dot(axes.c2p(x_val, y_val), color=RED)
-label = Text(f"({x_val:.2f}, {y_val:.2f})", font_size=28)
-label.next_to(point, UR, buff=0.1)
-```
-
-## Area Visualization
-```python
-area = axes.get_area(graph, x_range=[a, b], color=BLUE, opacity=0.3)
-self.play(Create(area))
-
-# Area value with 2 decimals
-area_value = calculate_area(graph, a, b)
-area_text = Text(f"Area: {area_value:.2f}", font_size=24)
-area_text.to_edge(DOWN, buff=config.frame_height * 0.05)
-```
-
-## Riemann Sums
-```python
-rects = axes.get_riemann_rectangles(
-    graph, x_range=[a, b], dx=0.5, 
-    color=BLUE, fill_opacity=0.5
-)
-self.play(Create(rects))
-
-# Refinement
-for dx in [1, 0.5, 0.25, 0.1]:
-    new_rects = axes.get_riemann_rectangles(graph, dx=dx)
-    self.play(Transform(rects, new_rects), run_time=1)
-```
-
-## Tangent Lines
-```python
-def get_tangent_line(axes, graph, x_val, length=3):
-    point = axes.c2p(x_val, graph.underlying_function(x_val))
-    slope = derivative_at(x_val)
-    return Line(
-        point + LEFT*length/2, 
-        point + RIGHT*length/2, 
-        color=RED
-    )
-
-tangent = get_tangent_line(axes, graph, x_val)
-slope_text = Text(f"Slope: {slope:.2f}", font_size=24)
-slope_text.to_corner(UR, buff=config.frame_width * 0.05)
-```
-
-## Moving Elements
-```python
-x_tracker = ValueTracker(x_start)
-
-moving_dot = always_redraw(lambda:
-    Dot(axes.c2p(
-        x_tracker.get_value(),
-        graph.underlying_function(x_tracker.get_value())
-    ), color=RED)
-)
-
-coord_text = always_redraw(lambda:
-    Text(
-        f"({x_tracker.get_value():.2f}, "
-        f"{graph.underlying_function(x_tracker.get_value()):.2f})",
-        font_size=28
-    ).next_to(moving_dot, UR)
-)
-
-self.play(x_tracker.animate.set_value(x_end), run_time=3)
-```
-
-## Transformations
-```python
-# Morphing graphs
-graph2 = axes.plot(lambda x: np.sin(x), color=GREEN)
-self.play(Transform(graph1, graph2), run_time=3)
-
-# Scaling
-self.play(graph.animate.scale(1.5), run_time=2)
-```
-
-## Parametric Curves
-```python
-curve = axes.plot_parametric_curve(
-    lambda t: np.array([np.cos(t), np.sin(t), 0]),
-    t_range=[0, 2*PI],
-    color=PURPLE
-)
-```
-
-## Piecewise Functions
-```python
-def piecewise(x):
-    return x**2 if x < 0 else np.sqrt(x)
-
-graph = axes.plot(piecewise, x_range=[-2, 4], use_smoothing=False)
-```
-
-## Discontinuous Functions
-```python
-graph1 = axes.plot(lambda x: 1/x, x_range=[-3, -0.1], color=BLUE)
-graph2 = axes.plot(lambda x: 1/x, x_range=[0.1, 3], color=BLUE)
-self.play(Create(graph1), Create(graph2))
-```
-
-## Legend
-```python
-legend = VGroup(
-    Line(ORIGIN, RIGHT*0.5, color=BLUE),
-    Text("f(x)", font_size=24),
-    Line(ORIGIN, RIGHT*0.5, color=GREEN),
-    Text("g(x)", font_size=24)
-).arrange_in_grid(rows=2, cols=2, buff=0.2)
-legend.to_corner(UR, buff=config.frame_width * 0.05)
-```
-
-## Dashed Reference Lines
-```python
-ref_line = DashedLine(
-    axes.c2p(x_val, y_min),
-    axes.c2p(x_val, y_max),
-    color=YELLOW
-)
-```
-
-## Gradient Fills
-```python
-area = axes.get_area(
-    graph, 
-    x_range=[a, b],
-    color=[BLUE, GREEN],
-    opacity=0.5
-)
-```
-
-## Complete Example:
 from manim import *
+import numpy as np
 
-class Animation_6dd97c70(Scene):
+class GraphScene(Scene):
     def construct(self):
-        # Constants for font sizes and buffers
+        # ===== CONSTANTS =====
         TITLE_SIZE = 46
         EQUATION_SIZE = 36
-        LABEL_SIZE = 28
-        DESC_SIZE = 24
-
-        EDGE_BUFFER = 0.05
-        buff_left = config.frame_width * EDGE_BUFFER
-        buff_right = config.frame_width * EDGE_BUFFER
-        buff_bottom = config.frame_height * EDGE_BUFFER
-
-        # Step 1: Scene setup
-        self.camera.background_color = BLACK
-
+        
+        TOP_BUFFER = config.frame_height * 0.01      # 1% from top
+        BOTTOM_BUFFER = config.frame_height * 0.05   # 5% from bottom
+        LEFT_BUFFER = config.frame_width * 0.05      # 5% from left
+        RIGHT_BUFFER = config.frame_width * 0.05     # 5% from right
+        AFTER_TITLE_GAP = config.frame_height * 0.05 # 5% gap after title
+        
+        # ===== STEP 1: TITLE =====
+        title = Text("Your Title", font_size=TITLE_SIZE)
+        title.to_edge(UP, buff=TOP_BUFFER)
+        self.play(Write(title))
+        
+        # ===== STEP 2: AXES (Create first to know space) =====
+        usable_width = config.frame_width - (LEFT_BUFFER + RIGHT_BUFFER)
+        usable_height = config.frame_height * 0.65
+        
         axes = Axes(
-            x_range=[-4 * PI, 4 * PI, PI],
-            y_range=[-1.5, 1.5, 0.5],
-            x_length=12,
-            y_length=5,
+            x_range=[-1, 10, 1],
+            y_range=[-1, 3, 1],
+            x_length=usable_width,
+            y_length=usable_height,
             axis_config={
                 "include_numbers": True,
-                "decimal_number_config": {"num_decimal_places": 2}
-            },
-            x_axis_config={"unit_size": 1.5},
-            y_axis_config={"unit_size": 2}
-        ).move_to(ORIGIN)
-        axes.scale_to_fit_width(config.frame_width * 0.9)
-
-        # Step 2: Display title
-        title = Text("Phase Shift Animation", font_size=TITLE_SIZE, color=WHITE)
-        title.to_edge(UP, buff=0.3)
-        self.play(Write(title), run_time=1)
-
-        # Step 3: Display equation
-        equation = MathTex(r"y = \sin(x + t)", font_size=EQUATION_SIZE, color=WHITE)
-        equation.to_edge(LEFT, buff=config.frame_width * 0.05).shift(UP*2)
-        self.play(Write(equation), run_time=1)
-
-        # Step 4: Animate axes and labels
-        self.play(Create(axes), run_time=1.5)
-
-        x_label_text = Text("x", font_size=LABEL_SIZE)
-        x_label = axes.get_x_axis_label(x_label_text)
-        y_label_text = Text("y", font_size=LABEL_SIZE)
-        y_label = axes.get_y_axis_label(y_label_text)
-        self.play(Write(x_label), Write(y_label), run_time=0.5)
-
-        # Step 5: Initialize and animate the phase-shifted sine wave
-        t_tracker = ValueTracker(0)
-
-        graph = always_redraw(
-            lambda: axes.plot(
-                lambda x: np.sin(x + t_tracker.get_value()),
-                x_range=[-4 * PI, 4 * PI],
-                color=BLUE
-            )
+                "font_size": 24,
+                "decimal_number_config": {"num_decimal_places": 0}
+            }
         )
 
-        self.play(Create(graph), run_time=2)
-        self.play(t_tracker.animate.set_value(4 * PI), run_time=8, rate_func=linear)
-        self.wait(1)
-
-
-## Critical Rules Summary
-1. **Font Hierarchy**: Title(46) > Equation(36) > Label(28) > Desc(24)
-2. **5% Edge Buffer**: All elements from left, right, bottom
-3. **2 Decimal Places**: All numbers use `:.2f`
-4. **Space Management**: Fade out equation if space needed
-5. **Animation Order**: Title → Equation → Axes → Labels → Graph
-6. **No Edge Clipping**: Scale to 90% width/height max
-7. **Label Size**: Always smaller than equation size
-8. **Equation Size**: Always smaller than title size
-
-## Quick Checklist
-- Title 46pt or less
-- Equation 36pt, smaller than title
-- Labels 28pt, smaller than equation
-- 5% buffer from edges (left, right, bottom)
-- All decimals show 2 places if needed otherwise use integer number
-- Equation fades out if space tight
-- Animation sequence correct
-- Colors distinct and visible
-- No text overlap
-- All labels present
-- LaTeX parsing. For example: MathTex(r"x", ...)
-
-## Common Mistakes
-1. Text too large (>46pt title)
-2. Equation larger than title
-3. Labels larger than equation
-4. Elements touching screen edges
-5. Wrong decimal places (not 2)
-6. Keeping equation when space tight
-7. Wrong animation order
-8. Missing 5% buffers
-9. Error Message: Found non-raw strings in MathTex calls. Specifically, 'x' and 'f(x)' should be r'x' and r'f(x)' respectively to ensure proper LaTeX parsing. For example: MathTex(r"x", ...)
+        
+        axes.next_to(title, DOWN, buff=AFTER_TITLE_GAP)
+        self.play(Create(axes))
+        
+        # ===== STEP 3: EQUATION (Place after axes) =====
+        eq = MathTex(r"y = \sin(x)", font_size=EQUATION_SIZE)
+        
+        # Try positions that avoid axes
+        positions = [
+            lambda: eq.next_to(axes, LEFT, buff=0.3).align_to(axes, UP),  # Left side
+            lambda: eq.next_to(axes, RIGHT, buff=0.3).align_to(axes, UP), # Right side
+            lambda: eq.to_edge(DOWN, buff=BOTTOM_BUFFER).to_edge(LEFT, buff=LEFT_BUFFER),   # Bottom-left
+            lambda: eq.to_edge(DOWN, buff=BOTTOM_BUFFER).to_edge(RIGHT, buff=RIGHT_BUFFER), # Bottom-right
+        ]
+        
+        equation_placed = False
+        for pos in positions:
+            pos()
+            # Check if within bounds
+            if (
+                eq.get_left()[0] >= -config.frame_width/2 + LEFT_BUFFER and
+                eq.get_right()[0] <= config.frame_width/2 - RIGHT_BUFFER and
+                eq.get_bottom()[1] >= -config.frame_height/2 + BOTTOM_BUFFER and
+                eq.get_top()[1] <= config.frame_height/2 - TOP_BUFFER
+            ):
+                self.play(Write(eq))
+                equation_placed = True
+                break
+        
+        if not equation_placed:
+            # Fade out if no space
+            eq.move_to(ORIGIN)
+            self.play(Write(eq))
+            self.wait(1)
+            self.play(FadeOut(eq))
+        
+        # ===== STEP 4: GRAPH =====
+        graph = axes.plot(lambda x: np.sin(x), x_range=[-1, 10], color=YELLOW)
+        self.play(Create(graph))
+        self.wait(2)
+```
 
 <2D Graph Scenes Rule Only/>
 """
@@ -408,6 +481,7 @@ GRAPH3D="""
    self.play(FadeIn(equation))
    ```
 
+
 ---
 
 ## Animation Sequence (Mandatory Order)
@@ -425,6 +499,46 @@ GRAPH3D="""
     Shape you need  Manim class  Example
     Standard cube   Cube        Cube(side_length=2)
     Rectangular box Prism       Prism(dimensions=[2,1,3])
+
+2. Mobject.__getattr__.<locals>.getter() takes 1 positional argument but 2 were given
+    Fix: call it with no args, e.g. 
+    mobj.get_center()
+
+3. latex error converting to dvi
+    Fix:
+    Use pure math mode or split into two Tex parts. For example:
+    Option 1 (all math mode, no \textbf):
+    title = Tex(r"3D Surface: $z = \sin(x)\cos(y)$", font_size=48, color=WHITE)
+    
+    Option 2 (use Tex with two parts, bold handled separately):
+    title = Tex(r"\textbf{3D Surface: }", r"$z = \sin(x)\cos(y)$", font_size=48, color=WHITE)
+
+4. 'ThreeDCamera' object has no attribute 'animate'
+    Fix:
+    ThreeDCamera has no .animate. Use move_camera(...) or set_camera_orientation(...) in a ThreeDScene.
+
+5. Unexpected argument None passed to Scene.play().
+    Check every object inside self.play(...) → make sure they are real Animations/Mobjects, not None.
+    For example:
+    x_label = axes.get_x_axis_label(MathTex("x")) 
+    y_label = axes.get_y_axis_label(MathTex("f(x)"))
+    self.play(Write(x_label), Write(y_label))  
+
+6. TypeError: manim.mobject.text.numbers.DecimalNumber() got multiple values for keyword argument 'font_size'
+    Fix:
+
+    Use it only once:
+    DecimalNumber(3.14, num_decimal_places=2, font_size=48)
+    Or set later:
+
+    num = DecimalNumber(3.14)
+    num.set(font_size=48)
+
+7. TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_range'
+    Axes, NumberPlane accept x_range, y_range.
+    axes = Axes(x_range=[-5, 5], y_range=[-3, 3])  
+
+
 
 ## Multi-Element 3D Visualizations
 
@@ -959,7 +1073,7 @@ def get_font_sizes(content_complexity='medium'):
 ## Edge Buffers and Safe Zones
 
 ```python
-EDGE_BUFFER = 0.05       # 5% buffer from all edges
+EDGE_BUFFER = 0.05       # 5% buffer from left, right and bottom edges
 TOP_SAFE_ZONE = 0.30     # Top 30% reserved for text in 3D scenes
 buff_x = config.frame_width * EDGE_BUFFER
 buff_y = config.frame_height * EDGE_BUFFER
@@ -1325,7 +1439,7 @@ self.play(
 
 ✓ **Dynamic Font Sizes**: Adjust based on content complexity  
 ✓ **Title Priority**: Always largest, never fade out  
-✓ **5% Edge Buffer**: All elements respect boundaries  
+✓ **5% Edge Buffer**: left, right and bottom elements respect boundaries  
 ✓ **Decimal Format**: `.2f` for all physics values  
 ✓ **Vector Colors**: Force(RED), Velocity(BLUE), Accel(ORANGE)  
 ✓ **Arrow Syntax**: NO tip_length, cone_height parameters  

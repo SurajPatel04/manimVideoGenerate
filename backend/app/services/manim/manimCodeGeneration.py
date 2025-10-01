@@ -426,7 +426,7 @@ def run_manim_scene(filename, state: mainmState):
     except FileNotFoundError:
         return "Error: 'manim' command not found. Is Manim installed and in your PATH?"
 
-def agentCreateFile(state: mainmState):
+async def agentCreateFile(state: mainmState):
     tools = [createFileAndWriteMainmCode]
     animationTypeRule = ANIMATION_MAP.get(state.animationType)
     # Generate unique name first
@@ -445,13 +445,15 @@ Note:
     - The code must be ready to run as a `.py` file without syntax errors.
     - If there is to many text then the text size should be smaller and fade out some text if not needed
 `
-    
+   
     Must DO thing because it is critical: You MUST call the createFileAndWriteMainmCode tool with:
     - filename: "{filename}"
-    - content: [complete Python code as string]
+    - content: [complete Python code as string
 
+## Very Very Important
     ANIMATION RULES - Follow these specific guidelines:
     {animationTypeRule}
+
 
     """
 
@@ -462,6 +464,7 @@ Note:
     - Filename: {state.filename}
     - Class name: {unique_name}
     - Use createFileAndWriteMainmCode tool to save the code
+    - Follow the ANIMATION RULES FOR CREATING MANIM v0.19+ CODE
     - Complete working Manim v0.19+ code
     """
 
@@ -472,17 +475,30 @@ Note:
     ])
 
     agent = create_tool_calling_agent(llmFlash, tools, prompt=prompt)
-    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=3)
+    agentExecutor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=3)
 
     print(f"--- Creating file: {state.filename} ---")
 
     try:
-        result = agent_executor.invoke({
-            "input": human_message,
-            "filename": state.filename,
-            "class_name": unique_name,
-            "animationTypeRule":animationTypeRule,
-        })
+        # result = agentExecutor.invoke({
+        #     "input": human_message,
+        #     "filename": state.filename,
+        #     "class_name": unique_name,
+        #     "animationTypeRule":animationTypeRule,
+        # })
+
+
+        result = await retry(
+            agentExecutor,
+            {
+                "input": human_message,
+                "filename": state.filename,
+                "class_name": unique_name,
+                "animationTypeRule": animationTypeRule,
+            },
+            retries=3,
+            delay=1
+        )
         print(f"Agent result: {result}")
 
         filepath = f"./temp/{state.filename}"
@@ -499,26 +515,30 @@ Note:
 def agentCheckFileCode(state: mainmState):
     code= read_file(state.filename)
     message = state.description
+    animationTypeRule = ANIMATION_MAP.get(state.animationType)
     systemPrompt = """
     You are a Manim v0.19+ code validator. Your job is to analyze Python code for potential execution errors.
 
-    **VALIDATION FOCUS:**
-    1. Syntax correctness for Manim v0.19+
-    2. Import statement validity
-    3. Deprecated method usage detection
-    4. LaTeX syntax in MathTex (must use raw strings)
 
-    **CRITICAL CHECKS:**
-    - No `.to_center()` methods (use `.move_to(ORIGIN)`)
-    - No deprecated imports (import from `manim` directly)
-    - MathTex uses raw strings: `MathTex(r"x^2")` not `MathTex("x^2")`
-    - Proper tool calling syntax
-    - Do not set `opacity` in the constructor; use `.set_opacity()` after creation.
 
     **CODE TO VALIDATE:**
     ```python
     {code}
     ```
+
+    ## ANIMATION RULES - Follow these specific guidelines for VALIDATION:
+    {animationTypeRule}
+
+    ### Validation Protocol:
+    1. Check if the code follows **all listed rules**.  
+    2. If a violation is found:  
+    - Point out the exact **line/argument/class** causing the issue.  
+    - Suggest the **correct Manim v0.19+ replacement**.  
+    3. If the code is valid:  
+    - Respond with **VALID** and briefly explain why it passes.  
+    4. Never assume older Manim syntax is valid — always validate against **v0.19+ API**.  
+    5. Keep answers concise, structured, and **directly actionable**.  
+
 
     **TASK:**
     Return a JSON object with:
@@ -535,6 +555,7 @@ def agentCheckFileCode(state: mainmState):
     messages = [
         SystemMessage(content=systemPrompt.format(
         code=code,
+        animationTypeRule=animationTypeRule
         )),
         HumanMessage(content=f"{message}")
     ]
@@ -553,7 +574,7 @@ def agentCheckFileCode(state: mainmState):
     return state
 
 
-def agentReWriteManimCode(state: mainmState):
+async def agentReWriteManimCode(state: mainmState):
     tools = [createFileAndWriteMainmCode]
     animationTypeRule = ANIMATION_MAP.get(state.animationType)
     filename = state.filename
@@ -567,18 +588,22 @@ def agentReWriteManimCode(state: mainmState):
 
 
     systemPrompt = """
-You are a Manim v0.19+ code debugger. Your job is to fix the broken code based on error analysis and provide error free Optimise code
+You are a Manim v0.19+ code debugger.  
+Your job is to fix the broken code based on error analysis and provide error-free, optimized code.
 
-Note:
-    1. Ensure that all text objects do not overlap with the graph, other text, or any other objects in the scene.
+## Rules:
+1. Output **only valid Python code** — no explanations, markdown, comments, or extra text.  
+2. Ensure that all text objects do not overlap with the graph, other text, or any other objects in the scene.  
+3. Always follow Manim v0.19+ syntax (no deprecated methods like .to_center(), .get_graph(), etc.).  
+4. Use correct imports: `from manim import *` or explicit imports (`Scene, MathTex, Create, ValueTracker, ...`).  
+5. For text/math: use raw strings, e.g. `MathTex(r"x^2")`.  
+6. Fix layout issues with `.next_to()`, `.arrange()`, `.move_to(ORIGIN)` as needed.  
 
-    2. Your task is to fix the broken code and output **only valid Python code**. 
-    **DO NOT** include explanations, markdown, comments, or any extra text. 
+---
 
 **CURRENT CODE TO FIX:**
 ```python
 {code}
-```
 
 **ERROR ANALYSIS:**
 Current Execution Error: {executionError}
@@ -588,18 +613,10 @@ Previous Validation Failures: {validationErrorHistory}
 
 **TARGET WHAT THE USER WANT:** {description}
 
-### ANIMATION RULES - Follow these specific guidelines:
+## Very Very Important
+# ANIMATION RULES - Follow these specific guidelines:
+If a rule is missing, fix in the most correct Manim v0.19+ way:
 {animationTypeRule}
-
-
-**FIX STRATEGY:**
-1. Identify the root cause from error messages above
-2. Apply Manim v0.19+ correct syntax from CRITICAL section
-3. Ensure no deprecated methods (.to_center(), .get_graph(), etc.)
-4. Use proper imports: `from manim import Scene, Text, Create, etc.`
-5. Fix layout issues with .next_to(), .arrange(), .move_to(ORIGIN)
-6. Use raw strings for MathTex: `MathTex(r"x^2")`
-
 
 **TASK:**
 1. Generate the corrected code that fixes ALL errors listed above
@@ -620,16 +637,32 @@ Focus on making the code execute without errors while following v0.19+ syntax.
     agentExecutor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=3)
 
     try:
-        result = agentExecutor.invoke({
-            "code": code,
-            "executionError": executionError or "None",
-            "validationError": validationError or "None",
-            "executionErrorHistory": executionErrorHistory,
-            "validationErrorHistory": validationErrorHistory,
-            "description": description,
-            "filename": filename,
-            "animationTypeRule":animationTypeRule,
-        })
+        # result = agentExecutor.invoke({
+        #     "code": code,
+        #     "executionError": executionError or "None",
+        #     "validationError": validationError or "None",
+        #     "executionErrorHistory": executionErrorHistory,
+        #     "validationErrorHistory": validationErrorHistory,
+        #     "description": description,
+        #     "filename": filename,
+        #     "animationTypeRule":animationTypeRule,
+        # })
+
+        result = await retry(
+            agentExecutor,
+            {
+                "code": code,
+                "executionError": executionError or "None",
+                "validationError": validationError or "None",
+                "executionErrorHistory": executionErrorHistory,
+                "validationErrorHistory": validationErrorHistory,
+                "description": description,
+                "filename": filename,
+                "animationTypeRule":animationTypeRule,
+            },
+            retries=3,
+            delay=1
+        )
         print(f"\n--- Rewrite attempt #{state.rewriteAttempts} completed ---")
         print(result.get('output', 'No output'))
     except Exception as e:

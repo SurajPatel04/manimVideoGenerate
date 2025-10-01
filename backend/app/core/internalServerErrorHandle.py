@@ -2,10 +2,10 @@ import asyncio
 from google.api_core.exceptions import InternalServerError
 
 
-async def retry(agent_executor, human_message, retries=3, delay=1):
+async def retry(agent_executor, payload, retries=3, delay=1):
     for attempt in range(retries):
         try:
-            return await agent_executor.ainvoke({"input": human_message})
+            return await agent_executor.ainvoke(payload)
         except InternalServerError as e:
             if attempt < retries - 1:
                 wait_time =  delay * (2 ** attempt)
