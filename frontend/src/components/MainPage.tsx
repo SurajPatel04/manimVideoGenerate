@@ -334,7 +334,7 @@ export default function MainPage() {
     let pollCount = 0;
     let consecutiveErrors = 0;
     const maxRetries = 3;
-    const baseInterval = 2000;
+    const baseInterval = 10000;
     const maxInterval = 30000; 
     const maxPollCount = 300; 
     const calculateInterval = () => {

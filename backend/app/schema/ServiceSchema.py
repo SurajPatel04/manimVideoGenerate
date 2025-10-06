@@ -13,6 +13,7 @@ class AnimationType(str, Enum):
     STATISTICS = "STATISTICS"
     PHYSICS="PHYSICS"
     MOBILE_GRAPH2D="MOBILE_GRAPH2D"
+    TEXT="TEXT"
 
 # descriptionGenerate Schema
 class CodeGenPossibility(BaseModel):

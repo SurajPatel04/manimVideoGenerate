@@ -443,12 +443,23 @@ Note:
     - All code must use real newlines and proper indentation (no literal \\n outside strings).
     - Use only valid and non-deprecated Manim methods.
     - The code must be ready to run as a `.py` file without syntax errors.
-    - If there is to many text then the text size should be smaller and fade out some text if not needed
+
 `
    
     Must DO thing because it is critical: You MUST call the createFileAndWriteMainmCode tool with:
     - filename: "{filename}"
     - content: [complete Python code as string
+
+    ## Mandatory way to design
+
+1. Title: Always at the top. Do not include the equation in the title.
+2. Axes: Create axes immediately after the title.
+3. Use integers mostly if needed then use 2 decimal precision and do not include "π".
+4. Only show central axes (no grid).
+5. Equation: Placed below title or in corners (left, right, bottom-left, bottom-right). If no space → fade it out before graph.
+7. Margins: Leave a 5% gap at the bottom, left, and right edges.
+8. Sequence: Title → Axes → Equation (adaptive) → Graph.
+
 
 ## Very Very Important
     ANIMATION RULES - Follow these specific guidelines:
@@ -526,7 +537,9 @@ def agentCheckFileCode(state: mainmState):
     {code}
     ```
 
+
     ## ANIMATION RULES - Follow these specific guidelines for VALIDATION:
+    Always follow ## Mandatory way to design
     {animationTypeRule}
 
     ### Validation Protocol:
@@ -613,9 +626,11 @@ Previous Validation Failures: {validationErrorHistory}
 
 **TARGET WHAT THE USER WANT:** {description}
 
+
 ## Very Very Important
 # ANIMATION RULES - Follow these specific guidelines:
 If a rule is missing, fix in the most correct Manim v0.19+ way:
+Always follow ## Mandatory way to design
 {animationTypeRule}
 
 **TASK:**

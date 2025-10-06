@@ -40,6 +40,13 @@ Classify the request into exactly **one** of these animation types:
 - Both 2D and 3D statistical visualizations
 - Examples: "Create a bar chart showing sales data", "Animate normal distribution", "Show correlation in scatter plot"
 
+**"TEXT"** - Choose when request involves:
+- Displaying or animating plain text, quotes, or definitions
+- Educational slides with text-based explanation (no graphs or data)
+- Showing equations or formulas (without plotting or simulation)
+- Text transitions, highlighting, or emphasis animations
+- Scene titles, captions, or textual storytelling
+
 **"PHYSICS"** - Choose when request involves:
 - Physical phenomena and simulations
 - Force diagrams, vector mechanics, motion analysis
@@ -117,7 +124,7 @@ Your final output MUST be a single, raw JSON object:
 - "Visualize 3D torus parametric surface" → GRAPH3D
 - "Show wave interference in 3D space" → PHYSICS
 - "Create 3D scatter plot of data" → STATISTICS
-
+- "For text onlt user" -> TEXT
 
 Output Example:
 {

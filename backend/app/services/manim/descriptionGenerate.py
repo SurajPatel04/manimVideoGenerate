@@ -60,7 +60,6 @@ validation = """
 - Each step can be directly translated to Manim code
 - Animation sequence is logical and flows well
 - All required parameters are specified
-- No ambiguous or vague instructions
 
 """
 
@@ -73,48 +72,49 @@ async def generateDetailedDescription(state: DescriptionGenerationState):
     structuredLlm = llmFlash.with_structured_output(DetailDescription)
     
     systemPrompt = """
-You are a **Manim v0.19+ Animation Planner**.  
-Your role: Convert the user’s request into a **step-by-step, technical scene description** (NOT code) in one go that can be directly implemented in Manim.
+You are a **Manim v0.19+ Animation Planner**.
+Your task: Convert the user’s request into a **complete, step-by-step scene description**.
+
+**Important:** Only provide detailed scene descriptions. **Do not write Manim code, syntax, or functions.**
 
 ---
 
-## Core Principles
-- Always assume **Manim v0.19+ syntax** (latest conventions).
-- Use **integers** in graph ranges/labels unless decimals are required. If decimals are needed, show them with **two decimal places** unless the user specifies otherwise.
-- Avoid **overlaps**: Position all text/objects carefully to ensure readability.
-- Maintain **at least 1-unit spacing** between distinct elements.
-- Default **background: black** unless otherwise specified.
+## Rules (all must be followed)
+
+1. Use **Manim v0.19+ assumptions**.
+2. Always use **integers** for axes, positions, and labels unless decimals are required. If decimals are needed, use **two decimal places**.
+3. Ensure **no overlaps**: All objects and text must have at least **1 unit spacing**.
+4. Background is **black**, unless otherwise specified.
+5. Every step must specify:
+
+   * Exact **position** (x,y) or (x,y,z)
+   * **Color**
+   * **Size or scale**
+   * **Font and font_size** (if text)
+   * **Animation type** and duration
+   * **Camera moves** (if 3D)
 
 ---
 
 ## Animation Type Rules
+
 {animationTypeRule}
 
 ---
 
-#Output Rules
+## Output Format
 
-    Step 1: Scene setup
-        Background: black by default.
-        2D → NumberPlane; 3D → Axes with camera position/angle.
-    Step 2: Show first object (title/equation/key shape) centered at (0,0).
-        Each Step must include:
-        Exact coordinates (x,y) / (x,y,z)
-        Color, size, font, font_size, opacity
-        Animation type + duration
-        Camera moves (for 3D)
-        At least 1-unit spacing between objects
+* Always use **Step N:** format.
+* Avoid vague descriptions like “place somewhere” or “make visible.”
+* Only provide **detailed scene descriptions**.
+* Include every necessary detail for rendering the scene accurately.
 
-## Example
-Example
-Step 1: Create NumberPlane at (0,0) with x_range=[-5,5], y_range=[-3,3]. Background: black.
-Step 2: Show 'ax² + bx + c = 0' at (0,2), font_size=64, color=white. Animate with Write over 2s.
-Step 3: Move 'c' to (3,2) with Transform over 2s.
-Step 4: Create red cube at (-2,0,1), size=1, opacity=0.8. Rotate around y-axis for 3s.
+### Example
 
----
-
-Output only **detailed scene descriptions** (never code).
+Step 1: Place a NumberPlane at coordinates (0,0) with x_range from -5 to 5 and y_range from -3 to 3. Background color: black. 
+Step 2: Show the text 'ax² + bx + c = 0' at position (0,2), font='Arial', font_size=64, color=white, opacity=1. Animate the writing of the text over 2 seconds. 
+Step 3: Move the character 'c' to position (3,2) using a transformation animation over 2 seconds. 
+Step 4: Place a red cube at coordinates (-2,0,1), size 1, opacity 0.8. Rotate the cube around the y-axis for 3 seconds.
 """
 
     # msg = [
@@ -140,7 +140,7 @@ Output only **detailed scene descriptions** (never code).
             {
                 "input": userQuery,
                 "animationTypeRule":animationTypeRule,
-                # "validation":validation
+                "validation":validation
             },
             retries=3,
             delay=1
@@ -166,31 +166,52 @@ def validateDescription(state: DescriptionGenerationState):
     structured_llm = llmFlash.with_structured_output(CheckDetailedDescription)
     
     system_prompt = """
-You are a Manim v0.19+ description validator. Evaluate if the animation description is technically accurate and implementable.
+You are a **Manim v0.19+ description validator**.
+Your task: Check if the description matches the **user’s original request** and is **technically implementable** under Manim v0.19+.
 
-**VALIDATION CRITERIA:**
+---
 
-## Animation Type Rules use this for the validation
+## Validation Rules
+
+{validation}
+
+## Animation Type Rules
+
 {animationTypeRule}
 
-**DESCRIPTION TO VALIDATE:**
+---
+
+## Description to Validate
+
 {detailedDescription}
 
-**USER'S ORIGINAL REQUEST:**
+## User’s Original Request
+
 {userQuery}
 
-**EVALUATION TASK:**
-Return `true` if the description meets ALL validation criteria above.
-Return `false` and provide specific missing elements in `detailedDescriptionError`.
+---
 
-Focus on technical implementability, not creative quality.
+## Task
+
+* Return `true` if the description matches the **user’s query** and includes all necessary elements for implementation.
+* Return `false` if any required element is missing or does not match the user request.
+* **Do not check Manim syntax or code correctness.**
+* If `false`, list **all discrepancies or missing elements** inside `detailedDescriptionError`, not just one.
+
+  * Example:
+        Step 3: Text object missing font specification.
+        Step 4: Animation duration for movement not provided.
+
+Focus only on **matching the user request and completeness**, ignoring any code or syntax concerns.
+
 """
 
     messages = [
         SystemMessage(content=system_prompt.format(
             detailedDescription=detailedDescription,
             userQuery=userQuery,
-            animationTypeRule=animationTypeRule
+            animationTypeRule=animationTypeRule,
+            validation=validation
         )),
         HumanMessage(content="Validate this description for Manim implementation.")
     ]
@@ -203,7 +224,7 @@ Focus on technical implementability, not creative quality.
             nextStage = "createFileAndWriteMainmCode"
         else:
             nextStage = "refineDescription"
-        # print("Description Error: ", result.detailedDescriptionError)
+        print("Description Error: ", result.detailedDescriptionError)
         
         return state.model_copy(update={
             "isGood": result.isThisGoodDescrription,
@@ -227,45 +248,50 @@ async def refineDescription(state: DescriptionGenerationState):
     descriptionRefine = state.descriptionRefine + 1
     
     systemPrompt = """
-You are a Manim v0.19+ description refiner. Your task is to revise the given animation description so it becomes a complete, technically precise scene specification ready for direct Manim implementation.
+You are a **Manim v0.19+ description refiner**.
+Your task: Revise the given description so it satisfies **all validation rules** in one pass.
 
-Use integers in the graph unless decimals are required. If decimals are needed, show them with two decimal places unless the user specifies a different precision
+Do not just fix the listed errors. Instead:
 
-### Core Rules
-- Decimal Handling: If the user mentions decimal points, ensure all graphs or axes include decimal values as needed.
-- No Overlaps: All text and objects must be carefully positioned to avoid overlapping with the graph, other text, or scene elements.
+* Apply the reported errors **AND** double-check every step against the full validation rules.
+* Ensure the final output is **implementation-ready** in Manim with no missing details.
 
-### ANIMATION RULES - Follow these specific guidelines This is for Manim v0.19+:
+---
+
+## Validation Rules
+
+{validation}
+
+## Animation Type Rules
+
 {animationTypeRule}
 
-### Provided Inputs
-- Current Description: {description}
-- Validation Error to Fix: {detailedDescriptionError}
-- User's Original Request: {userQuery}
+---
 
-### Refinement Task
-Revise the **Current Description** to resolve the **Validation Error** while staying faithful to the **User's Original Request** and all technical requirements.
+## Inputs
 
-#Output Rules
+* Current Description: {description}
+* Reported Errors: {detailedDescriptionError}
+* User’s Request: {userQuery}
 
-    Step 1: Scene setup
-        Background: black by default.
-        2D → NumberPlane; 3D → Axes with camera position/angle.
-    Step 2: Show first object (title/equation/key shape) centered at (0,0).
-        Each Step must include:
-        Exact coordinates (x,y) / (x,y,z)
-        Color, size, font, font_size, opacity
-        Animation type + duration
-        Camera moves (for 3D)
-        At least 1-unit spacing between objects
+---
 
-Example
-Step 1: Create NumberPlane at (0,0) with x_range=[-5,5], y_range=[-3,3]. Background: black.
-Step 2: Show 'ax² + bx + c = 0' at (0,2), font_size=64, color=white. Animate with Write over 2s.
-Step 3: Move 'c' to (3,2) with Transform over 2s.
-Step 4: Create red cube at (-2,0,1), size=1, opacity=0.8. Rotate around y-axis for 3s.
+## Output Format
 
-Provide a fully refined, implementation-ready** detailed description (no code), technical scene description that can be directly implemented in Manim code.
+* Step-by-step description (Step 1, Step 2, …).
+* Each step must specify: position, color, size, font, font_size, opacity, animation type + duration.
+* Titles must be aligned (to_edge(UP)) and scaled properly.
+* Maintain ≥1 unit spacing.
+* Only output **textual description** (never code or syntax).
+
+### Example (Textual Description Only)
+
+
+Step 1: Place a NumberPlane at coordinates (0,0) with x_range from -5 to 5 and y_range from -3 to 3. Background color: black. 
+Step 2: Show the text 'ax² + bx + c = 0' at position (0,2), font='Arial', font_size=64, color=white, opacity=1. Animate the writing of the text over 2 seconds. 
+Step 3: Move the character 'c' to position (3,2) using a transformation animation over 2 seconds. 
+Step 4: Place a red cube at coordinates (-2,0,1), size 1, opacity 0.8. Rotate the cube around the y-axis for 3 seconds.
+
 """
 
     # messages = [
@@ -306,7 +332,7 @@ Provide a fully refined, implementation-ready** detailed description (no code), 
                 "description":description,
                 "input": humanMessage,
                 "animationTypeRule":animationTypeRule,
-                # "validation":validation,
+                "validation":validation,
                 "userQuery":userQuery
             },
             retries=3,
