@@ -1224,513 +1224,812 @@ class Animation_ea6da621(ThreeDScene):
 
 COMPUTER_DATASTRUCTURE="""
 <Computer Data Structure Rule Only>
-# Manim 2D Graph Animation Rules (v0.19+)
-
-## Core Design Principles
-
 ### Mandatory Structure
 1. **Title Placement**: Always centered (not top). Must appear first, then fade out completely before any new object or text appears. Avoid including equations or expressions in the title.
 2. **Numeric Formatting**: Prefer integers; if decimals are needed, use two-decimal precision. Avoid π or symbolic constants in numeric labels.
 3. **Text Placement**: Place texts near screen corners (UL, UR, DL, DR) or top edge, maintaining a 5% screen margin. Ensure texts do not overlap any existing objects; if overlap occurs, fade the text out instead of repositioning unsafely.
 4. **Margin Enforcement**: Maintain 5% margin on all screen sides — top, bottom, left, and right.
+5. **Graph/Object**: Object should not overlap with the text or anything maintain 1% gap
 5. **Scene Sequence**: Must follow this strict order → **Title → FadeOut → Text (Adaptive) → Graph/Object**. No parallel animation that interrupts this order.
 
 ---
 
-## Mandatory Error Prevention Rules
+### 🚨 OVERLAP PREVENTION CHECKLIST (MANDATORY)
 
-### 1. **IndexError: too many indices for array**
-Occurs when `.align_to()` is used on whitespace-only `Text` objects.
-
-**Root Cause**: Empty or space-only `Text` lacks coordinate points.
-
-**Correct Usage:**
-```python
-result_text = Text("X", font_size=LABEL_SIZE, color=TEAL)
-result_text.next_to(label, DOWN, buff=0.2)
-result_text.set_opacity(0)  # Hide until first Transform
-```
-
-**Never use:**
-```python
-text = Text(" ").next_to(label).align_to(label)
-```
-
-### 2. **ValueError: operands could not be broadcast together**
-When moving 2D points to 3D context, extend tuple:
-```python
-circle.move_to((*data['pos'], 0))
-```
-
-### 3. **NameError: Parallel undefined**
-Use:
-```python
-self.play(AnimationGroup(*animations, lag_ratio=0))
-```
-
-### 4. **AttributeError: Camera missing frame_x_radius**
-Replace with:
-```python
-visited_label.align_to(-self.camera.frame_width/2 + LEFT_BUFFER, LEFT)
-```
-
-### 5. **NameError: CENTER_Y undefined**
-Replace with `0` or `ORIGIN[1]`.
-
-### 6. **TypeError: VMobject.set_points() invalid arguments**
-Fix:
-```python
-top_arrow.animate.put_start_and_end_on(start_point, end_point)
-```
-
-### 7. **NameError: BOTTOM undefined**
-Replace with:
-```python
-.to_edge(DOWN, buff=BOTTOM_BUFFER)
-```
-
-### 8. **Overlap Prevention System**
-Always define `self.visible_objects = []` at start.
-
-#### Helper Functions:
-```python
-def check_overlap(obj1, obj2, buffer=0.3):
-    try:
-        box1 = obj1.get_bounding_box()
-        box2 = obj2.get_bounding_box()
-        return not (
-            box1[1] < box2[0] - buffer or
-            box1[0] > box2[1] + buffer or
-            box1[3] < box2[2] - buffer or
-            box1[2] > box2[3] + buffer
-        )
-    except:
-        return False
-```
+#### Rule 1: Sequential Text Display at Same Location
+**If multiple texts need to appear in the same location:**
 
 ```python
-def place_text_safely(text, existing_objects, preferred_positions=None):
-    if preferred_positions is None:
-        preferred_positions = [
-            ('top_left', lambda: text.to_edge(UL, buff=0.3)),
-            ('top_right', lambda: text.to_edge(UR, buff=0.3)),
-            ('bottom_left', lambda: text.to_edge(DL, buff=0.3)),
-            ('bottom_right', lambda: text.to_edge(DR, buff=0.3)),
-        ]
-    for _, func in preferred_positions:
-        func()
-        in_bounds = (
-            text.get_left()[0] >= -config.frame_width/2 + 0.3 and
-            text.get_right()[0] <= config.frame_width/2 - 0.3 and
-            text.get_bottom()[1] >= -config.frame_height/2 + 0.3 and
-            text.get_top()[1] <= config.frame_height/2 - 0.3
-        )
-        overlap = any(check_overlap(text, obj) for obj in existing_objects)
-        if in_bounds and not overlap:
-            return True
-    return False
+# CORRECT - Sequential with complete fadeout
+text1 = Text("First Message", font_size=TEXT_SIZE)
+text1.move_to([0, 3, 0])
+self.play(FadeIn(text1), run_time=0.5)
+self.wait(1.5)
+self.play(FadeOut(text1), run_time=0.5)
+self.wait(0.2)  # Buffer time
+
+text2 = Text("Second Message", font_size=TEXT_SIZE)
+text2.move_to([0, 3, 0])  # Same position as text1
+self.play(FadeIn(text2), run_time=0.5)
+self.wait(1.5)
+self.play(FadeOut(text2), run_time=0.5)
+
+**Timing Pattern:**
+```
+FadeIn(0.5s) → Wait(1.5s) → FadeOut(0.5s) → Buffer(0.2s) → Next Text
 ```
 
-#### Usage Example:
-```python
-self.visible_objects = []
-self.play(Create(boxes))
-self.visible_objects.append(boxes)
-
-status = Text("State: q0", font_size=DESC_SIZE)
-if place_text_safely(status, self.visible_objects):
-    self.play(Write(status))
-    self.visible_objects.append(status)
-else:
-    status.move_to(ORIGIN)
-    self.play(Write(status))
-    self.wait(0.5)
-    self.play(FadeOut(status))
-```
+**RULE: One location = One text at a time. Previous must fade out completely before next appears.**
 
 ---
 
-## Spacing & Font Size Constants
-```python
-TITLE_SIZE = 46
-TEXT_SIZE = 36
-LABEL_SIZE = 28
-DESC_SIZE = 24
+#### Rule 2: Corner Distribution for Simultaneous Texts
+**If multiple texts must be visible simultaneously:**
 
+```python
+# CORRECT - Distributed to corners
+text1 = Text("DFS Preorder", font_size=TEXT_SIZE)
+text1.to_corner(UL, buff=0.5)  # Upper-Left
+
+text2 = Text("Traversal: Left→Right", font_size=TEXT_SIZE)
+text2.to_corner(UR, buff=0.5)  # Upper-Right
+
+text3 = Text("Stack: [1, 2, 4]", font_size=TEXT_SIZE)
+text3.to_corner(DL, buff=0.5)  # Down-Left
+
+text4 = Text("Visited: [1]", font_size=TEXT_SIZE)
+text4.to_corner(DR, buff=0.5)  # Down-Right
+
+self.play(
+    FadeIn(text1), FadeIn(text2), 
+    FadeIn(text3), FadeIn(text4),
+    run_time=1
+)
+
+
+---
+
+#### Rule 3: Vertical Stacking (Alternative)
+**For top-aligned multiple texts:**
+
+```python
 TOP_BUFFER = config.frame_height * 0.05
-BOTTOM_BUFFER = config.frame_height * 0.05
-LEFT_BUFFER = config.frame_width * 0.05
-RIGHT_BUFFER = config.frame_width * 0.05
-AFTER_TITLE_GAP = config.frame_height * 0.05
+VERTICAL_SPACING = 0.8  # Minimum 8% screen height
+
+top_y = config.frame_height/2 - TOP_BUFFER
+
+text1 = Text("Line 1", font_size=TEXT_SIZE)
+text1.move_to([0, top_y, 0])
+
+text2 = Text("Line 2", font_size=TEXT_SIZE)
+text2.move_to([0, top_y - VERTICAL_SPACING, 0])  # Stack below
+
+text3 = Text("Line 3", font_size=TEXT_SIZE)
+text3.move_to([0, top_y - 2*VERTICAL_SPACING, 0])  # Stack below
+
+self.play(FadeIn(text1), FadeIn(text2), FadeIn(text3), run_time=1)
 ```
 
 ---
 
-## Modern vs Deprecated Syntax
-| Deprecated | Updated (v0.19+) |
-|-------------|------------------|
-| `ShowCreation()` | `Create()` |
-| `TextMobject` / `TexMobject` | `Tex()` / `MathTex()` |
-| `scale_in_place()` | `.scale(..., about_point=...)` |
-| `UP_LEFT` | `UL` (also UR, DL, DR) |
+#### Rule 4: Object-Text Collision Detection
+**Before placing any text, verify no collision with graph/object:**
 
-**Color Rules:** Use only Manim’s named colors or hex codes.
-**Opacity Rules:** Use `.set_stroke(opacity=...)` after creation.
-
----
-
-## Text & Label Practices
-- Use proper `font_size` constants.
-- Avoid raw pixel scaling.
-- Maintain visibility contrast (no dim text on dark background).
-
----
-
-## Mandatory Animation Order
-
-1. **Title (Center, FadeOut)**
 ```python
-title = Text("Your Title", font_size=TITLE_SIZE)
-title.move_to(ORIGIN)
-self.play(Write(title))
-self.wait(1)
-self.play(FadeOut(title))
+# CORRECT - Check bounding boxes
+graph_top = graph.get_top()[1]
+graph_bottom = graph.get_bottom()[1]
+graph_left = graph.get_left()[0]
+graph_right = graph.get_right()[0]
+
+# Place text safely above graph
+label_y = graph_top + 0.5  # 0.5 unit gap
+label = Text("Graph Label", font_size=LABEL_SIZE)
+label.move_to([0, label_y, 0])
+
+# Verify no overlap
+if label.get_bottom()[1] > graph_top:
+    # Safe - no overlap
+    self.play(FadeIn(label))
+else:
+    # Overlap detected - reposition or fade out conflicting object
+    label.move_to([0, graph_top + 1, 0])
 ```
 
-2. **Adaptive Text Placement (After Title FadeOut)**
-```python
-func_text = Text("y = f(x)", font_size=TEXT_SIZE)
-positions = [UL, UR, DL, DR]
-placed = False
-for pos in positions:
-    func_text.to_edge(pos, buff=TOP_BUFFER)
-    if within_bounds(func_text):
-        self.play(Write(func_text))
-        placed = True
-        break
-if not placed:
-    func_text.move_to(ORIGIN)
-    self.play(Write(func_text))
-    self.wait(0.5)
-    self.play(FadeOut(func_text))
-```
+**Minimum Gap Rules:**
+- Text ↔ Graph: 1% screen height = `config.frame_height * 0.01`
+- Text ↔ Text: 8% screen height = `config.frame_height * 0.08`
+- Text ↔ Edge: 5% margin from screen border
 
-3. **Graph or Object Rendering**
+---
+
+#### Rule 5: Dynamic Text Abbreviation
+**If text is too long and causes overlap:**
+
 ```python
-self.play(Create(graph))
+# CORRECT - Abbreviate or reduce font
+original_text = "Depth First Search Preorder Traversal (Recursive)"
+
+# Option A: Abbreviate
+short_text = Text("DFS Preorder (Recursive)", font_size=TEXT_SIZE)
+
+# Option B: Reduce font dynamically
+if len(original_text) > 30:
+    font_size = TEXT_SIZE * 0.8  # 80% of original
+else:
+    font_size = TEXT_SIZE
+
+label = Text(original_text, font_size=font_size)
+
+# Option C: Multi-line
+label = Text(
+    "Depth First Search\nPreorder Traversal", 
+    font_size=TEXT_SIZE,
+    line_spacing=1.2
+)
 ```
 
 ---
 
-## Key Checklist
--- Always `from manim import *`
--- Maintain font hierarchy (Title > Text > Label > Desc)
--- Enforce 5% screen margins
--- Use adaptive placement for text
--- Replace deprecated syntax
--- Avoid object overlap
--- Use correct color and opacity handling
--- Apply proper animation order
+#### Rule 6: Pre-Animation Overlap Check
+**Always verify positions before animating:**
 
-## QUICK TEMPLATE
+```python
+def check_overlap(obj1, obj2, min_gap=0.1):
+    # Check if two objects overlap with minimum gap
+    box1 = obj1.get_bounding_box_vertices()
+    box2 = obj2.get_bounding_box_vertices()
+    
+    # Get bounds
+    obj1_right = box1[2][0]
+    obj1_left = box1[0][0]
+    obj1_top = box1[1][1]
+    obj1_bottom = box1[0][1]
+    
+    obj2_right = box2[2][0]
+    obj2_left = box2[0][0]
+    obj2_top = box2[1][1]
+    obj2_bottom = box2[0][1]
+    
+    # Check horizontal overlap
+    h_overlap = not (obj1_right + min_gap < obj2_left or 
+                     obj2_right + min_gap < obj1_left)
+    
+    # Check vertical overlap
+    v_overlap = not (obj1_top + min_gap < obj2_bottom or 
+                     obj2_top + min_gap < obj1_bottom)
+    
+    return h_overlap and v_overlap
+
+# Usage
+text1 = Text("Label 1", font_size=TEXT_SIZE).move_to([0, 2, 0])
+text2 = Text("Label 2", font_size=TEXT_SIZE).move_to([0, 2, 0])
+
+if check_overlap(text1, text2):
+    # Collision detected - use sequential display
+    self.play(FadeIn(text1), run_time=0.5)
+    self.wait(1)
+    self.play(FadeOut(text1), run_time=0.5)
+    self.play(FadeIn(text2), run_time=0.5)
+else:
+    # Safe to show simultaneously
+    self.play(FadeIn(text1), FadeIn(text2), run_time=0.5)
+```
+
+---
+
+#### Rule 7: Group Management for Complex Scenes
+**Use VGroup to manage related objects:**
+
+```python
+# CORRECT - Group and manage together
+top_labels = VGroup()
+
+label1 = Text("Method: DFS", font_size=TEXT_SIZE)
+label1.to_corner(UL, buff=0.5)
+top_labels.add(label1)
+
+label2 = Text("Order: Preorder", font_size=TEXT_SIZE)
+label2.to_corner(UR, buff=0.5)
+top_labels.add(label2)
+
+# Show all together
+self.play(FadeIn(top_labels), run_time=1)
+
+# Clear all together before next scene
+self.play(FadeOut(top_labels), run_time=0.5)
+self.wait(0.2)
+
+# Now safe to add new labels
+new_label = Text("New Scene", font_size=TEXT_SIZE)
+new_label.to_corner(UL, buff=0.5)
+self.play(FadeIn(new_label), run_time=0.5)
+```
+
+---
+
+#### Rule 8: Scene Transition Protocol
+**Between major scene changes:**
+
+```python
+# CORRECT - Complete fadeout before new scene
+# Scene 1: Show graph with labels
+graph = ...
+labels = VGroup(label1, label2, label3)
+self.play(Create(graph), FadeIn(labels))
+self.wait(2)
+
+# Transition: Clear everything
+self.play(
+    FadeOut(graph), 
+    FadeOut(labels),
+    run_time=1
+)
+self.wait(0.5)  # Buffer
+
+# Scene 2: New content (no overlap risk)
+new_graph = ...
+new_labels = VGroup(new_label1, new_label2)
+self.play(Create(new_graph), FadeIn(new_labels))
+```
+
+---
+
+### OVERLAP PREVENTION SUMMARY
+
+**MUST DO:**
+1. Sequential display if same location (FadeOut → Wait → FadeIn)
+2. Corner distribution if simultaneous (UL, UR, DL, DR)
+3. Vertical stacking with 8% spacing minimum
+4. 1% gap between text and graph/objects
+5. 5% margin from screen edges
+6. Complete fadeout before scene transitions
+7. Group related objects with VGroup
+8. Abbreviate long text to prevent overflow
+
+---
+
+### Deprecated → New (Manim v0.19+)
+
+---
+
+## Common Deprecated → New
+
+* `to_edge(...)` still works, but prefer `.next_to()` for finer control.
+* `to_corner(...)` → use `.align_on_border(...)`.
+* `axes.to_center()` → use `axes.move_to(ORIGIN)` or `axes.center()`.
+* `shift(x*RIGHT)` still valid.
+* `scale_in_place(factor)` → use `.scale(factor, about_point=...)`.
+* `fade_in` / `fade_out` methods → use animations: `FadeIn(mobj)` / `FadeOut(mobj)`.
+* `ShowCreation(mobj)`  → `Create(mobj)`.
+* `Write(mobj, run_time=...)`  still valid.
+* `Transform(m1, m2)`  still valid.
+* `SurroundingRectangle(..., buff=0.1)`  still valid.
+* `.start_point or .end_point` -> use `.get_start()` or `.get_end()`.
+
+---
+
+## Colors / Styles
+
+- `stroke_width` → still valid.
+- `stroke_opacity=...` in constructor → not allowed. Use `.set_stroke(opacity=...)`.
+- `fill_opacity=...` in constructor → still valid.
+- `line_arg_dict` → deprecated.  Use: 
+  - `axis_config={...}` → for styling axes 
+  - `background_line_style={...}` → **only inside Axes or NumberPlane**.
+- `stroke_dash_length` → not valid. Use `DashedLine(...)` or `DashedVMobject(...)`.
+
+---
+
+## Text / Labels
+
+* `TextMobject(...)` → use `Tex(...)`.
+* `TexMobject(...)` → use `Tex(...)`.
+* `edge_buffer` argument (e.g., in `Text`) → not valid. Replace with `.next_to(..., buff=...)` or `.align_on_border(...)`.
+* `Text(..., t2c=...)` → still valid. 
+* `t2s` (text-to-style) → replaced by `.set_color_by_t2s()`.
+
+---
+
+## Shapes
+
+* `ArcBetweenPoints(..., radius=...)` → `ArcBetweenPoints(..., angle=...)`.
+* `Sector(inner_radius=...)` → replaced with `AnnularSector(inner_radius=...)`.
+
+---
+
+## NumberLine
+
+* `NumberLine(default_numbers_to_display=...)` → removed. Use `include_numbers=True` and control with `numbers_to_include=[...]` or `decimal_number_config={...}`.
+* `exclude_zero_from_default_numbers` → removed. Must explicitly control numbers via `numbers_to_include`.
+
+---
+
+## Camera / Scene
+
+* `ThreeDScene.set_camera_orientation(...)` → still valid.
+* `self.camera.animate.set(phi=..., theta=...)` → replaces old `self.move_camera(...)`.
+* `self.set_camera_orientation(...)` → replaces old `set_camera_position(...)`.
+* `self.set_camera_orientation(phi=..., theta=...)` → still valid; `gamma` is no longer supported.
+
+
+---
+
+## Geometry / Mobject Methods
+
+* `.start_point` / `.end_point` → replaced with `.get_start()` / `.get_end()`.
+* `.point_from_proportion(alpha)` → still valid.
+* `scale_in_place(factor)` → deprecated. Use `.scale(factor, about_point=...)`.
+* `.fade_in` / `.fade_out` (methods) → removed. Use `FadeIn(mobj)` / `FadeOut(mobj)` animations.
+* `next_to(...)` → still valid and preferred over `to_edge(...)` for finer control.
+* `to_corner(...)` → replaced with `.align_on_border(...)`.
+* `.center()` or `.move_to(ORIGIN)` → replaces older `.to_center()`.
+* `rotate(angle, axis=...)` → still valid.
+* `.get_midpoint()` → preferred over manual midpoint calculations.
+* `.get_vertices()` → still valid for polygons.
+* `.copy()` → still valid.
+
+## Summary of New Errors Fixed
+
+* `TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'length'` → use `line_length`.
+* `TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_val'` → use `x`.
+* `TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'edge_buffer'` → replace with `.next_to(..., buff=...)`.
+* `AttributeError: Axes object has no attribute 'y_axis_labels'` → use `axes.get_axis_labels()`.
+* `AttributeError: NumberLine object has no attribute 'default_numbers_to_display'` → use `include_numbers=True` with `numbers_to_include`.
+* `TypeError: ... got an unexpected keyword argument 'stroke_opacity'` → set via `.set_stroke(opacity=...)`.
+* `AttributeError: NumberLine has no attribute 'exclude_zero_from_default_numbers'` → must use `numbers_to_include`.
+* `TypeError: ... got an unexpected keyword argument 'gamma'` → camera no longer supports gamma.
+* `NameError: name 'UP_LEFT' is not defined` → Use `UL` (UP + LEFT), `UR`, `DL`, `DR` instead.
+
+### Font Size Rules (adjustable based on content length)
+TITLE_SIZE = 46       # not fixed, can change based on title length
+TEXT_SIZE = 36    # not fixed, can change based on TEXT_SIZE length
+LABEL_SIZE = 28       # not fixed, can change based on axis label length
+DESC_SIZE = 24        # not fixed, can change based on description length
+
+Text(...) →  font_size works.
+MathTex(...) →  font_size works.
+Axes(..., axis_config={"font_size": ...}) →  font_size works.
+axes.get_graph_label(...) →  font_size not allowed. Use: axes.get_graph_label(graph, label=MathTex(r"x^2", font_size=24))
+```
+
+### Mandatory Spacing Rules
+```python
+TOP_BUFFER = config.frame_height * 0.05      # 5% space from top
+BOTTOM_BUFFER = config.frame_height * 0.05   # 5% space from bottom
+LEFT_BUFFER = config.frame_width * 0.05      # 5% space from left
+RIGHT_BUFFER = config.frame_width * 0.05     # 5% space from right
+```
+## Mandatory avoid these 
+
+1. NameError: name 'LIGHT_BLUE' is not defined
+    Use valid built-ins (from manim):
+    from manim import BLUE, GREEN, TEAL, YELLOW, RED, ORANGE, PURPLE
+    Or define your own shades:
+    LIGHT_BLUE = "#87CEFA"   # hex for light sky blue
+    LIGHT_GREEN = "#90EE90"  # hex for light green
+
+    Then your code works:
+    self.play(f1.animate.set_color(LIGHT_BLUE).set_opacity(0.4))
+
+    
+2. Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'color'
+    Fix: Import form the manim 
+    from manim import Scene, MathTex, Axes, Write, WHITE
+    or
+    from manim import *
+
+3. NameError: name 'BOTTOM' is not defined
+    Fix: UP, DOWN, LEFT, RIGHT, ORIGIN are valid.
+
+4. NameError: name 'WiggleOutThenIn' is not defined
+    At the top of your script add:
+    from manim import *
+    or,
+    from manim import Scene, Axes, MathTex, FadeIn, WiggleOutThenIn
+
+5.  Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_range'
+    Fix: graph_sin_x = plane.plot(lambda x: np.sin(x), x_range=[-7, 7], color=BLUE)
+
+6. TypeError: Mobject.__init__() got an unexpected keyword argument 'line_arg_dict'
+    Fix: replace it with:
+    background_line_style={...}
+    Use axis_config={...} for Axes.
+
+7. Error Message: Found `stroke_opacity` set in the constructor for `envelope_pos` and `envelope_neg`. According to the validation rules, opacity-related parameters should not be set in the constructor; use `.set_stroke(opacity=...)` or `.set_opacity()` after creation.
+
+8. TypeError: Mobject.__init__() got an unexpected keyword argument 'stroke_dash_length'
+    Fix: 
+    # Option A: directly make dashed
+    line1 = DashedLine(LEFT, RIGHT, dash_length=0.2, num_dashes=20)
+
+
+    # Option B: wrap an existing object
+    base = Line(LEFT, RIGHT)
+    line2 = DashedVMobject(base, dash_length=0.2, num_dashes=20)
+
+
+9. AttributeError: Axes object has no attribute 'to_center'
+    Fix: 
+    axes.move_to(ORIGIN)
+    # or
+    axes.center()
+
+10. TypeError: Mobject.__init__() got an unexpected keyword argument 'background_line_style'
+    Fix:
+    background_line_style is only valid in NumberPlane or Axes, not in general Mobject.
+    So you must pass it when constructing axes/plane, like this:
+
+    axes = Axes(
+        x_range=[-5, 5],
+        y_range=[-3, 3],
+        axis_config={"color": BLUE},              # style for main axes
+        background_line_style={                   # style for grid lines
+            "stroke_color": GREY,
+            "stroke_width": 1,
+            "stroke_opacity": 0.5,
+        }
+    )
+
+11. Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'length'
+    Fix: axes.get_tangent_line(graph_sin, x_tracker.get_value(), line_length=3)
+
+12. TypeError: Mobject.__init__() got an unexpected keyword argument 'x_axis_config'
+    Axes does not accept x_axis_config or y_axis_config as keyword arguments at the top level of Axes(...)
+    Fix:
+    axes = Axes(
+    x_range=[-5, 5, 1],
+    y_range=[-3, 3, 1],
+    axis_config={"font_size": 24},
+    )
+
+    or, if you need separate configs:
+
+    axes = Axes(
+        x_range=[-5, 5, 1],
+        y_range=[-3, 3, 1],
+        x_axis_config={"font_size": 24},
+        y_axis_config={"font_size": 30},
+    )
+
+13. AxisError: axis 1 is out of bounds for array of dimension 1
+    fix:
+    curve1 = axes.plot_parametric_curve(
+        lambda t: (x_func1(t), y_func1(t)),
+        t_range=[0, 2*np.pi, 0.01],
+        color=BLUE
+    )
+
+14. AttributeError: MathTex object has no attribute 'is_about_to_overlap' is_about_to_overlap() doesn't exist in ManimCE.
+
+15. Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 't_range'
+    Fix:
+    curve = axes.plot_parametric_curve(
+        lambda t: np.array([t, np.sin(t), 0]),
+        t_range=[-PI, PI, 0.05],
+        color=BLUE
+    )
+
+16. AttributeError: ParametricFunction object has no attribute 'x_to_alpha'
+    Fix: x_to_alpha works only on Axes.plot, not on ParametricFunction.
+    tangent_line = always_redraw(
+        lambda: TangentLine(graph_sin, x=x_tracker.get_value(), length=4)
+    )
+
+17. AttributeError: Axes object has no attribute 'x_to_proportion'
+    In new Manim (v0.19+), Axes has no x_to_proportion.
+    Fix: 
+    tangent_line = always_redraw(
+        lambda: TangentLine(graph_sin, x=x_tracker.get_value(), length=4)
+    )
+
+18. TypeError: Mobject.__init__() got an unexpected keyword argument 'dash_length'
+    Fix: 
+    envelope_pos_graph = axes.plot(lambda x: np.sin(x), x_range=[-7,7], color=BLUE)
+    envelope_pos = DashedVMobject(envelope_pos_graph)
+    envelope_pos.set_dash(dash_length=0.1, dashed_ratio=0.5)
+
+19. IndexError: list index out of range
+    use a tiny visible placeholder, e.g.:
+
+    MathTex(r"\;", font_size=LABEL_SIZE)  # thin space
+    # or
+    MathTex(r"0", font_size=LABEL_SIZE)
+
+20. AttributeError: MathTex object has no attribute 'bounding_box'
+    Fix: use properties or new methods:
+
+    mobj.width
+    mobj.height
+    mobj.get_center()
+    mobj.get_bounding_box_vertices()
+
+21. TypeError: Mobject.__init__() got an unexpected keyword argument 'number_constructor_kwargs'
+    Fix: remove it and customize numbers after creation:
+    axes = Axes(x_range=[-2.5*np.pi, 2.5*np.pi, np.pi/2], y_range=[-1.5, 1.5, 0.5])
+    for x_val in axes.x_axis.numbers:
+        x_val.set_color(BLUE)
+
+22. NameError: name 'FillBetween' is not defined
+    FillBetween isn't auto-imported in v0.19+.
+    Fix: 
+    Add this line:
+    from manim.mobject.graphing.utils import FillBetween
+    Or use axes.get_area() as an alternative.
+
+23. TypeError: Mobject.__init__() got an unexpected keyword argument 'color_map'
+    Fix:
+
+    surface = Surface(..., resolution=(30,30))
+    surface.set_style(fill_color=BLUE, fill_opacity=0.7)
+
+    For gradient:
+    surface.set_fill_by_value(axes=axes, colors=[(BLUE,-1),(GREEN,0),(RED,1)])
+
+24. NameError: name 'ParametricSurface' is not defined
+    Fix:
+    NameError: name 'ParametricSurface' is not defined
+    
+25. TypeError: Mobject.__init__() got an unexpected keyword argument 'res_u'
+    Error comes from res_u / res_v → not valid in v0.19.
+    Fix:
+    resolution=(20, 20)
+
+26. TypeError: Mobject.__init__() got an unexpected keyword argument 'dash_length'
+    Fix for current version: use num_dashes instead:
+    envelope_pos = DashedVMobject(envelope_pos_graph, num_dashes=50, dashed_ratio=0.5)
+    envelope_neg = DashedVMobject(envelope_neg_graph, num_dashes=50, dashed_ratio=0.5)
+
+27. AttributeError: 'Camera' object has no attribute 'frame'
+    Fix:
+    step2_title.to_edge(UP, buff=TOP_BUFFER)
+
+28. AttributeError: VGroup object has no attribute 'last_mobject'
+    Fix:
+    Use this output_num_mobj.next_to(output_numbers_group[-1], RIGHT, buff=0.5)
+
+    
+## ANIMATION SEQUENCE (MANDATORY ORDER)
+
+### STEP 1: Title in center only
+title = Text("Your Title Here", font_size=TITLE_SIZE)
+title.move_to(ORIGIN)   # center of screen
+
+self.play(Write(title, run_time=1.5))
+self.wait(3)
+
+## QUICK STATISTICS TEMPLATE
 ```python
 from manim import *
 import numpy as np
-import random
 
 class BubbleSortAnimation(Scene):
     def construct(self):
         # ===== CONSTANTS =====
         TITLE_SIZE = 46
+        TEXT_SIZE = 36
+        LABEL_SIZE = 28
         DESC_SIZE = 24
-        NUMBER_SIZE = 36
-        BOX_SIZE = 0.9
+
+        TOP_BUFFER = config.frame_height * 0.05
+        BOTTOM_BUFFER = config.frame_height * 0.05
+        LEFT_BUFFER = config.frame_width * 0.05
+        RIGHT_BUFFER = config.frame_width * 0.05
 
         self.camera.background_color = "#0a0a0a"
 
-        # ===== STEP 1: Title =====
-        title = Text("Bubble Sort Visualization", font_size=TITLE_SIZE, color=WHITE, weight=BOLD)
+        # ===== STEP 1: Display the title =====
+        title = Text("Bubble Sort Algorithm", font="Montserrat", font_size=TITLE_SIZE, color=WHITE, weight=BOLD)
         title.move_to(ORIGIN)
 
         self.play(Write(title, run_time=1.5))
         self.wait(1)
 
-        # Star-burst fadeout
-        self.play(
-            LaggedStart(
-                *[
-                    letter.animate.shift(
-                        np.array([random.uniform(-2, 2), random.uniform(-2, 2), 0])
-                    ).scale(0.5).set_opacity(0)
-                    for letter in title
-                ],
-                lag_ratio=0.1,
-                run_time=2
-            )
-        )
-
-        # ===== STEP 2: Create Array with Boxes =====
-        array_values = [5, 3, 8, 4, 2, 7, 6]
-        
-        boxes = VGroup()
-        numbers = VGroup()
-        indices = VGroup()
-
-        # Create boxes with numbers
-        for i, val in enumerate(array_values):
-            # Create box
-            box = Square(
-                side_length=BOX_SIZE,
-                fill_color=BLUE,
-                fill_opacity=0.3,
-                stroke_color=WHITE,
-                stroke_width=3
-            )
-            
-            # Number inside box
-            number = Text(str(val), font_size=NUMBER_SIZE, color=WHITE, weight=BOLD)
-            
-            # Index below box
-            index = Text(f"[{i}]", font_size=22, color=GRAY)
-            
-            boxes.add(box)
-            numbers.add(number)
-            indices.add(index)
-
-        # Arrange boxes
-        boxes.arrange(RIGHT, buff=0.3)
-        boxes.move_to(ORIGIN)
-        
-        # Position numbers and indices
-        for i in range(len(array_values)):
-            numbers[i].move_to(boxes[i].get_center())
-            indices[i].next_to(boxes[i], DOWN, buff=0.2)
-
-        # Animate creation
-        self.play(
-            LaggedStart(*[Create(box) for box in boxes], lag_ratio=0.1),
-            LaggedStart(*[Write(number) for number in numbers], lag_ratio=0.1),
-            LaggedStart(*[FadeIn(index) for index in indices], lag_ratio=0.1),
-            run_time=2
-        )
-        self.wait(1)
-
-        # Status texts
-        status = Text("Starting Bubble Sort...", font_size=DESC_SIZE, color=WHITE).to_edge(UP, buff=0.3)
-        pass_text = Text("", font_size=22, color=YELLOW).next_to(status, DOWN, buff=0.3)
-        comparison_text = Text("", font_size=22, color=ORANGE).next_to(pass_text, DOWN, buff=0.2)
-        
-        self.play(Write(status))
-        self.add(pass_text, comparison_text)
+        # Fade out title
+        self.play(FadeOut(title), run_time=1)
         self.wait(0.5)
 
-        # Pointer for j only
-        j_pointer = Arrow(start=UP*0.5, end=DOWN*0.2, color=YELLOW, buff=0.1, stroke_width=6)
-        j_label = Text("j", font_size=28, color=YELLOW, weight=BOLD)
-        
-        # Bracket to show sorted region
-        sorted_bracket = None
-        sorted_label = None
+        # ===== STEP 2: Setup description and array =====
+        top_y = config.frame_height/2 - TOP_BUFFER
 
-        # ===== STEP 3: Bubble Sort with Detailed Animation =====
-        n = len(array_values)
-
-        for i in range(n):
-            # Update pass information
-            new_pass = Text(
-                f"Pass {i+1}/{n}: Comparing elements from index 0 to {n-i-2}",
-                font_size=22, color=YELLOW
-            ).next_to(status, DOWN, buff=0.3)
-            self.play(Transform(pass_text, new_pass), run_time=0.5)
-            
-            # Show sorted region bracket if there are sorted elements
-            if i > 0:
-                # Create bracket over sorted region
-                sorted_start = boxes[n-i].get_right()
-                sorted_end = boxes[n-1].get_left()
-                
-                new_bracket = BraceBetweenPoints(
-                    sorted_start + DOWN*0.8,
-                    sorted_end + DOWN*0.8,
-                    direction=DOWN,
-                    color=GREEN
-                )
-                new_label = Text("Sorted", font_size=20, color=GREEN).next_to(new_bracket, DOWN, buff=0.1)
-                
-                if sorted_bracket is None:
-                    self.play(Create(new_bracket), Write(new_label), run_time=0.5)
-                    sorted_bracket = new_bracket
-                    sorted_label = new_label
-                else:
-                    self.play(
-                        Transform(sorted_bracket, new_bracket),
-                        Transform(sorted_label, new_label),
-                        run_time=0.5
-                    )
-            
-            for j in range(n - i - 1):
-                # Update comparison text
-                new_comp = Text(
-                    f"Comparing index [{j}] = {numbers[j].text} with [{j+1}] = {numbers[j+1].text}",
-                    font_size=22, color=ORANGE
-                ).next_to(pass_text, DOWN, buff=0.2)
-                self.play(Transform(comparison_text, new_comp), run_time=0.4)
-
-                # Show j pointer
-                j_pointer.next_to(boxes[j], UP, buff=0.2)
-                j_label.next_to(j_pointer, UP, buff=0.1)
-                if i == 0 and j == 0:
-                    self.play(GrowArrow(j_pointer), Write(j_label), run_time=0.4)
-                else:
-                    self.play(
-                        j_pointer.animate.next_to(boxes[j], UP, buff=0.2),
-                        j_label.animate.next_to(j_pointer, UP, buff=0.1),
-                        run_time=0.4
-                    )
-
-                box1 = boxes[j]
-                box2 = boxes[j + 1]
-                num1 = numbers[j]
-                num2 = numbers[j + 1]
-
-                # Highlight comparison
-                self.play(
-                    box1.animate.set_fill(YELLOW, opacity=0.6).set_stroke(YELLOW, width=4),
-                    box2.animate.set_fill(YELLOW, opacity=0.6).set_stroke(YELLOW, width=4),
-                    run_time=0.3
-                )
-                self.wait(0.3)
-
-                if int(num1.text) > int(num2.text):
-                    # Show swap action
-                    swap_text = Text(
-                        f"SWAP! {num1.text} > {num2.text}, swapping positions",
-                        font_size=22, color=RED
-                    ).next_to(pass_text, DOWN, buff=0.2)
-                    self.play(Transform(comparison_text, swap_text), run_time=0.4)
-
-                    # Change to swap color
-                    self.play(
-                        box1.animate.set_fill(RED, opacity=0.6).set_stroke(RED, width=4),
-                        box2.animate.set_fill(RED, opacity=0.6).set_stroke(RED, width=4),
-                        run_time=0.2
-                    )
-
-                    # Calculate swap positions
-                    box1_target = boxes[j+1].get_center()
-                    box2_target = boxes[j].get_center()
-
-                    # Swap animation - lift, swap, lower
-                    self.play(
-                        box1.animate.shift(UP * 0.8),
-                        num1.animate.shift(UP * 0.8),
-                        box2.animate.shift(UP * 0.8),
-                        num2.animate.shift(UP * 0.8),
-                        run_time=0.3
-                    )
-                    
-                    self.play(
-                        box1.animate.move_to(box1_target + UP * 0.8),
-                        num1.animate.move_to(box1_target + UP * 0.8),
-                        box2.animate.move_to(box2_target + UP * 0.8),
-                        num2.animate.move_to(box2_target + UP * 0.8),
-                        run_time=0.5
-                    )
-                    
-                    self.play(
-                        box1.animate.move_to(box1_target),
-                        num1.animate.move_to(box1_target),
-                        box2.animate.move_to(box2_target),
-                        num2.animate.move_to(box2_target),
-                        run_time=0.3
-                    )
-
-                    # Update references after swap
-                    boxes[j], boxes[j+1] = boxes[j+1], boxes[j]
-                    numbers[j], numbers[j+1] = numbers[j+1], numbers[j]
-
-                else:
-                    no_swap_text = Text(
-                        f"No swap: {num1.text} ≤ {num2.text}, already in order",
-                        font_size=22, color=GREEN
-                    ).next_to(pass_text, DOWN, buff=0.2)
-                    self.play(Transform(comparison_text, no_swap_text), run_time=0.4)
-                    self.wait(0.3)
-
-                # Reset color
-                self.play(
-                    box1.animate.set_fill(BLUE, opacity=0.3).set_stroke(WHITE, width=3),
-                    box2.animate.set_fill(BLUE, opacity=0.3).set_stroke(WHITE, width=3),
-                    run_time=0.3
-                )
-
-            # Mark element as sorted
-            sorted_text = Text(
-                f"Position {n-i-1} now sorted!",
-                font_size=22, color=GREEN
-            ).next_to(pass_text, DOWN, buff=0.2)
-            self.play(Transform(comparison_text, sorted_text), run_time=0.4)
-            self.play(
-                boxes[n-i-1].animate.set_fill(GREEN, opacity=0.5).set_stroke(GREEN, width=4),
-                run_time=0.5
-            )
-            self.wait(0.5)
-
-        # First element is also sorted
-        self.play(
-            boxes[0].animate.set_fill(GREEN, opacity=0.5).set_stroke(GREEN, width=4),
-            run_time=0.5
+        # Description text at top
+        desc_text = Text(
+            "Compare adjacent elements and swap if in wrong order",
+            font="Montserrat",
+            font_size=DESC_SIZE,
+            color="#87CEFA"
         )
-        
-        # Update bracket to cover all elements
-        if sorted_bracket:
-            final_bracket = BraceBetweenPoints(
-                boxes[0].get_right() + DOWN*0.8,
-                boxes[n-1].get_left() + DOWN*0.8,
-                direction=DOWN,
-                color=GREEN
-            )
-            final_label = Text("All Sorted", font_size=20, color=GREEN).next_to(final_bracket, DOWN, buff=0.1)
-            self.play(
-                Transform(sorted_bracket, final_bracket),
-                Transform(sorted_label, final_label),
-                run_time=0.5
-            )
+        desc_text.move_to([0, top_y - 0.4, 0])
 
-        # ===== STEP 4: Final Message =====
-        self.play(FadeOut(j_pointer), FadeOut(j_label), run_time=0.4)
-        if sorted_bracket:
-            self.play(FadeOut(sorted_bracket), FadeOut(sorted_label), run_time=0.4)
-        
-        final_status = Text(
-            "Array is now SORTED!", 
-            font_size=DESC_SIZE+4, 
-            color=GREEN,
-            weight=BOLD
-        ).to_edge(UP, buff=0.3)
-        self.play(Transform(status, final_status), FadeOut(pass_text), FadeOut(comparison_text), run_time=0.5)
-        
-        # Victory animation
-        self.play(
-            *[box.animate.scale(1.15).set_fill(GOLD, opacity=0.7).set_stroke(GOLD, width=5) for box in boxes],
-            run_time=0.6
-        )
-        self.play(
-            *[box.animate.scale(1/1.15) for box in boxes],
-            run_time=0.6
-        )
-        self.wait(2)
+        # Pass counter
+        pass_text = Text("Pass: 0", font="Montserrat", font_size=TEXT_SIZE, color="#90EE90", weight=BOLD)
+        pass_text.move_to([0, top_y - 1.2, 0])
 
-        # ===== STEP 5: Clean Up =====
+        self.play(Write(desc_text), run_time=1)
+        self.play(Write(pass_text), run_time=0.5)
+        self.wait(0.5)
+
+        # ===== STEP 3: Create the array =====
+        array_values = [64, 34, 25, 12, 22, 11, 90]
+        array_elements = []
+        
+        def create_array_element(value, position):
+            # Create a box with number insid
+            box = Rectangle(width=1.0, height=1.0, stroke_color="#4682B4", fill_color="#1e3a5f", fill_opacity=0.8)
+            number = Text(str(value), font="Montserrat", font_size=30, color=WHITE, weight=BOLD)
+            element = VGroup(box, number)
+            element.move_to(position)
+            return element, value
+
+        # Position array in center
+        array_start_x = -3.5
+        array_y = 0
+        spacing = 1.2
+
+        for i, val in enumerate(array_values):
+            pos = [array_start_x + i * spacing, array_y, 0]
+            element, value = create_array_element(val, pos)
+            array_elements.append(element)
+
+        # Show array
         self.play(
-            FadeOut(boxes),
-            FadeOut(numbers),
-            FadeOut(indices),
-            FadeOut(status),
+            LaggedStart(*[FadeIn(elem) for elem in array_elements], lag_ratio=0.1),
             run_time=1.5
         )
         self.wait(1)
+
+        # ===== STEP 4: Bubble Sort Algorithm =====
+        n = len(array_values)
         
+        for pass_num in range(n - 1):
+            # Update pass counter
+            self.play(
+                pass_text.animate.become(
+                    Text(f"Pass: {pass_num + 1}", font="Montserrat", font_size=TEXT_SIZE, color="#90EE90", weight=BOLD).move_to(pass_text.get_center())
+                ),
+                run_time=0.3
+            )
+            self.wait(0.3)
+
+            for i in range(n - pass_num - 1):
+                # Highlight elements being compared
+                self.play(
+                    array_elements[i][0].animate.set_stroke(color=YELLOW, width=4),
+                    array_elements[i + 1][0].animate.set_stroke(color=YELLOW, width=4),
+                    run_time=0.3
+                )
+                
+                # Show comparison with symbols
+                val1 = array_values[i]
+                val2 = array_values[i + 1]
+                
+                # Position for comparison text (above the elements)
+                comp_y = array_elements[i].get_center()[1] + 1.5
+                comp_x = (array_elements[i].get_center()[0] + array_elements[i + 1].get_center()[0]) / 2
+                
+                if val1 > val2:
+                    comparison = MathTex(f"{val1}", ">", f"{val2}", font_size=32, color=WHITE)
+                    comparison.move_to([comp_x, comp_y, 0])
+                    comparison[1].set_color("#FF6347")  # Red for greater than
+                else:
+                    comparison = MathTex(f"{val1}", r"\leq", f"{val2}", font_size=32, color=WHITE)
+                    comparison.move_to([comp_x, comp_y, 0])
+                    comparison[1].set_color("#90EE90")  # Green for less than or equal
+                
+                self.play(Write(comparison), run_time=0.3)
+                self.wait(0.3)
+
+                # Compare values
+                if array_values[i] > array_values[i + 1]:
+                    # Flash red for swap
+                    self.play(
+                        array_elements[i][0].animate.set_fill(color="#8B0000", opacity=0.9),
+                        array_elements[i + 1][0].animate.set_fill(color="#8B0000", opacity=0.9),
+                        run_time=0.2
+                    )
+                    
+                    # Add "SWAP" label
+                    swap_label = Text("SWAP", font="Montserrat", font_size=24, color="#FF6347", weight=BOLD)
+                    swap_label.move_to([comp_x, comp_y - 0.6, 0])
+                    self.play(FadeIn(swap_label), run_time=0.2)
+                    
+                    # Swap animation
+                    elem1_pos = array_elements[i].get_center()
+                    elem2_pos = array_elements[i + 1].get_center()
+                    
+                    # Move elements
+                    self.play(
+                        array_elements[i].animate.move_to(elem2_pos + UP * 0.5),
+                        array_elements[i + 1].animate.move_to(elem1_pos + DOWN * 0.5),
+                        run_time=0.4
+                    )
+                    self.play(
+                        array_elements[i].animate.move_to(elem2_pos),
+                        array_elements[i + 1].animate.move_to(elem1_pos),
+                        run_time=0.4
+                    )
+                    
+                    # Swap in list
+                    array_elements[i], array_elements[i + 1] = array_elements[i + 1], array_elements[i]
+                    array_values[i], array_values[i + 1] = array_values[i + 1], array_values[i]
+                    
+                    # Reset colors and remove labels
+                    self.play(
+                        array_elements[i][0].animate.set_fill(color="#1e3a5f", opacity=0.8).set_stroke(color="#4682B4", width=2),
+                        array_elements[i + 1][0].animate.set_fill(color="#1e3a5f", opacity=0.8).set_stroke(color="#4682B4", width=2),
+                        FadeOut(comparison),
+                        FadeOut(swap_label),
+                        run_time=0.2
+                    )
+                else:
+                    # Flash green for no swap
+                    self.play(
+                        array_elements[i][0].animate.set_fill(color="#006400", opacity=0.9),
+                        array_elements[i + 1][0].animate.set_fill(color="#006400", opacity=0.9),
+                        run_time=0.2
+                    )
+                    
+                    # Add "NO SWAP" label
+                    no_swap_label = Text("NO SWAP", font="Montserrat", font_size=24, color="#90EE90", weight=BOLD)
+                    no_swap_label.move_to([comp_x, comp_y - 0.6, 0])
+                    self.play(FadeIn(no_swap_label), run_time=0.2)
+                    self.wait(0.2)
+                    
+                    # Reset colors and remove labels
+                    self.play(
+                        array_elements[i][0].animate.set_fill(color="#1e3a5f", opacity=0.8).set_stroke(color="#4682B4", width=2),
+                        array_elements[i + 1][0].animate.set_fill(color="#1e3a5f", opacity=0.8).set_stroke(color="#4682B4", width=2),
+                        FadeOut(comparison),
+                        FadeOut(no_swap_label),
+                        run_time=0.2
+                    )
+                
+                self.wait(0.1)
+
+            # Mark sorted element (last element in this pass)
+            sorted_index = n - pass_num - 1
+            self.play(
+                array_elements[sorted_index][0].animate.set_fill(color="#228B22", opacity=0.9).set_stroke(color="#32CD32", width=3),
+                run_time=0.3
+            )
+            self.wait(0.3)
+
+        # Mark first element as sorted (it's sorted by default after all passes)
+        self.play(
+            array_elements[0][0].animate.set_fill(color="#228B22", opacity=0.9).set_stroke(color="#32CD32", width=3),
+            run_time=0.3
+        )
+        self.wait(0.5)
+
+        # ===== STEP 5: Final message =====
+        sorted_text = Text("Array Sorted!", font="Montserrat", font_size=TEXT_SIZE, color="#FFD700", weight=BOLD)
+        sorted_text.move_to([0, array_y - 2, 0])
+        
+        self.play(Write(sorted_text), run_time=1)
+        self.wait(1)
+
+        # Complexity info
+        complexity_text = Text(
+            "Time Complexity: O(n²)  |  Space Complexity: O(1)",
+            font="Montserrat",
+            font_size=DESC_SIZE,
+            color="#87CEFA"
+        )
+        complexity_text.move_to([0, array_y - 2.8, 0])
+        
+        self.play(Write(complexity_text), run_time=1)
+        self.wait(2)
+
+        # ===== STEP 6: Cleanup =====
+        self.play(
+            FadeOut(VGroup(*array_elements)),
+            FadeOut(desc_text),
+            FadeOut(pass_text),
+            FadeOut(sorted_text),
+            FadeOut(complexity_text),
+            run_time=1.5
+        )
+        self.wait(1)
 ```
 <Computer Data Structure Rule Only/>
 """
@@ -1739,14 +2038,21 @@ PHYSICS = """
 <Physics Visualization Rule Only>
 ## Mandatory way to design
 
-1. Title: Always at the center (never top). Must appear first and then fade out with a smooth animation (e.g., FadeOut, LaggedStart, star-burst effect). Do not include the equation in the title.
-2. Axes: Create axes immediately after title fades.
-3. Numbers: Use integers mostly; if needed, then 2 decimal precision. Do not include "π" value in the axes.
-4. Axes style: Show only central axes (no grid).
-5. Equation: Place in corners (left, right, bottom-left, bottom-right). If no space → fade it out before graph. and do not include Equation in the center
-6. Margins: Leave a 5% gap at the top, bottom, left, and right edges.
-7. Sequence: Title (center + fade out) → Axes → Equation (adaptive placement or fade) → Graph.
+1. Title: Always at the center (never top). Must appear first and then fade out with a smooth animation (e.g., FadeOut, LaggedStart, star-burst effect).
+2. Axes: Create axes immediately after title fades. Show only relevant axes (x, y) with margins.
+3. Numbers: Use integers mostly; if needed, 2 decimal precision.
+4. Axes style: No grid unless needed. Include only numbers required for visualization.
+5. Legend / Equation: Place formula, mean, variance, or legend in corners. If no space → fade out temporarily.
+6. Margins: Leave a 5% gap at edges.
+7. Sequence: Title → Axes → Legend/Formula → Graph → Dynamic Highlight.
 
+## Graph Types Supported
+- BarChart
+- Scatter Plot
+- Line Plot (from dataset)
+- Histogram
+- Boxplot (manual construction)
+- etc
 
 ### Deprecated → New (Manim v0.19+)
 
@@ -1863,16 +2169,22 @@ PHYSICS = """
 * `TypeError: ... got an unexpected keyword argument 'gamma'` → camera no longer supports gamma.
 * `NameError: name 'UP_LEFT' is not defined` → Use `UL` (UP + LEFT), `UR`, `DL`, `DR` instead.
 
-### Font Size Rules (adjustable based on content length)
+
+## Font Size Rules (adjustable based on content length)
 TITLE_SIZE = 46       # not fixed, can change based on title length
 EQUATION_SIZE = 36    # not fixed, can change based on formula/legend length
 LABEL_SIZE = 28       # not fixed, can change based on axis label length
 DESC_SIZE = 24        # not fixed, can change based on description length
 
-Text(...) →  font_size works.
-MathTex(...) →  font_size works.
-Axes(..., axis_config={"font_size": ...}) →  font_size works.
-axes.get_graph_label(...) →  font_size not allowed. Use: axes.get_graph_label(graph, label=MathTex(r"x^2", font_size=24))
+```
+
+## Mandatory Spacing Rules
+```python
+TOP_BUFFER = config.frame_height * 0.05
+BOTTOM_BUFFER = config.frame_height * 0.05
+LEFT_BUFFER = config.frame_width * 0.05
+RIGHT_BUFFER = config.frame_width * 0.05
+AFTER_TITLE_GAP = config.frame_height * 0.05
 ```
 
 ### Mandatory Spacing Rules
@@ -1882,7 +2194,7 @@ BOTTOM_BUFFER = config.frame_height * 0.05   # 5% space from bottom
 LEFT_BUFFER = config.frame_width * 0.05      # 5% space from left
 RIGHT_BUFFER = config.frame_width * 0.05     # 5% space from right
 ```
-## Mandatory avoid these errors 
+## Mandatory avoid these errors when create a manim code
 
 1. NameError: name 'LIGHT_BLUE' is not defined
     Use valid built-ins (from manim):
@@ -1974,7 +2286,6 @@ RIGHT_BUFFER = config.frame_width * 0.05     # 5% space from right
         y_axis_config={"font_size": 30},
     )
 
-
 13. AxisError: axis 1 is out of bounds for array of dimension 1
     fix:
     curve1 = axes.plot_parametric_curve(
@@ -2063,169 +2374,149 @@ RIGHT_BUFFER = config.frame_width * 0.05     # 5% space from right
     envelope_pos = DashedVMobject(envelope_pos_graph, num_dashes=50, dashed_ratio=0.5)
     envelope_neg = DashedVMobject(envelope_neg_graph, num_dashes=50, dashed_ratio=0.5)
 
-27. TypeError: CoordinateSystem._get_axis_label() got an unexpected keyword argument 'font_size'
-    Fix (two options):
-    Option 1 — Set font size after creation
-    x_label = axes.get_x_axis_label("x (m)")
-    y_label = axes.get_y_axis_label("y (m)")
-    x_label.set_font_size(LABEL_SIZE)
-    y_label.set_font_size(LABEL_SIZE)
-
-    Option 2 — Wrap in MathTex
-    x_label = axes.get_x_axis_label(MathTex("x (m)", font_size=LABEL_SIZE))
-    y_label = axes.get_y_axis_label(MathTex("y (m)", font_size=LABEL_SIZE))
-
-28. ValueError: latex error converting to dvi.
+27. AttributeError: 'ManimConfig' object has no attribute 'camera'
     Fix:
-    equation2 = MathTex(r"x = x_0 + v_0 t + \frac{1}{2} a t^2")
+        self.camera.frame_width
+        self.camera.frame_height
+    Or better, just use
+    legend.to_edge(UR, buff=TOP_BUFFER)
 
-29. AttributeError: NumberLine object has no attribute 'c2p'
-    fix:
-    Use number_line.n2p() instead of c2p()
-
-
-## ANIMATION SEQUENCE (MANDATORY ORDER)
-
-### STEP 1: Title in center only
-title = Text("Your Title Here", font_size=TITLE_SIZE)
-title.move_to(ORIGIN)   # center of screen
-
-self.play(Write(title, run_time=1.5))
-self.wait(3)
-
-
-```
-### **STEP 2: Axes (No Grid, With Margins)**
-```python
-# Calculate usable space
-usable_width = config.frame_width - (LEFT_BUFFER + RIGHT_BUFFER)
-usable_height = config.frame_height * 0.65
-
-# Create axes
-axes = Axes(
-    x_range=[-1, 10, 1],
-    y_range=[-1, 3, 1],
-    x_length=usable_width,
-    y_length=usable_height,
+28. TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'num_decimal_places'
+    Fix:
+    axes = Axes(
+    x_range=[0, 10, 1],
+    y_range=[0, 5, 1],
+    x_length=7,
+    y_length=4,
     axis_config={
         "include_numbers": True,
-        "font_size": 24,
-        "decimal_number_config": {"num_decimal_places": 0}
+        "font_size": LABEL_SIZE,
+        "decimal_number_config": {"num_decimal_places": 0}  # <-- set here
     }
 )
 
-
-# Apply margins
-axes.next_to(title, DOWN, buff=AFTER_TITLE_GAP)
-
-# Decimal place override (for fractional steps)
-if x_step < 1:
-    axes.x_axis.decimal_number_config["num_decimal_places"] = 2
-if y_step < 1:
-    axes.y_axis.decimal_number_config["num_decimal_places"] = 2
-
-# Animate axes
-self.play(Create(axes))
-
-### **STEP 3: Equation (Adaptive Placement with Fallback)**
-- Place equation below top with a 5% gap.
-- If no space available → show equation temporarily then fade it out.
-- Try to place **left, right, bottom-left, or bottom-right or bottom of the edges if eqation is bigger depending on space.
-- equation = MathTex(r"y = f(x)", font_size=EQUATION_SIZE)
-
-# Try placements in order:
-# 1. Left
-# 2. Right 
-# 3. Bottom-left
-# 4. Bottom-right
-# If nothing fits → fade out
-
-eq_width = eq.width
-eq_height = eq.height
-
-positions = [
-    lambda: eq.next_to(axes, LEFT, buff=0.3).align_to(axes, UP),
-    lambda: eq.next_to(axes, RIGHT, buff=0.3).align_to(axes, UP),
-    lambda: eq.to_edge(DOWN, buff=BOTTOM_BUFFER).to_edge(LEFT, buff=LEFT_BUFFER),
-    lambda: eq.to_edge(DOWN, buff=BOTTOM_BUFFER).to_edge(RIGHT, buff=RIGHT_BUFFER),
-]
-
-
-for pos in positions:
-    pos()
-    left_ok = eq.get_left()[0] >= -config.frame_width/2 + LEFT_BUFFER
-    right_ok = eq.get_right()[0] <= config.frame_width/2 - RIGHT_BUFFER
-    bottom_ok = eq.get_bottom()[1] >= -config.frame_height/2 + BOTTOM_BUFFER
-    top_ok = eq.get_top()[1] <= config.frame_height/2 - TOP_BUFFER
-
-    if left_ok and right_ok and bottom_ok and top_ok:
-        self.play(Write(eq))
-        equation_placed = True
-        break
-
-if not equation_placed:
-    self.play(Write(eq))
-    self.wait(1)
-    self.play(FadeOut(eq))
-
-
-
-```
-
-### **STEP 4: Plot Graph**
-```python
-graph = axes.plot(
-    lambda x: your_function(x),
-    x_range=[min, max],
-    color=BLUE
+29. TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'font_size'
+    Fix: Set the tick label styles when constructing the axes, using axis_config and decimal_number_config:
+    axes = Axes(
+    x_range=[0, 10, 1],
+    y_range=[0, 5, 1],
+    x_length=7,
+    y_length=4,
+    axis_config={
+        "include_numbers": True,
+        "font_size": LABEL_SIZE,                 # font size for all tick labels
+        "decimal_number_config": {"num_decimal_places": 0},  # decimal precision
+        "color": WHITE                           # color of numbers
+    }
 )
-self.play(Create(graph))
-```
----
 
-## QUICK TEMPLATE
-```python
+30. TypeError: Mobject.__init__() got an unexpected keyword argument 'vertex_dots'
+    Fix:
+    line_graph = axes.plot_line_graph(
+        x_values=x_values,
+        y_values=y_values,
+        line_color=BLUE,
+    )
+
+    If you want dots at each vertex, you need to add them manually using Dot objects. For example:
+    dots = VGroup(*[
+    Dot(axes.coords_to_point(x, y))
+    for x, y in zip(x_values, y_values)
+])
+self.play(FadeIn(dots))
+
+31. ValueError: not enough values to unpack (expected 3, got 2)
+    Fix:
+    Change this line:
+        x_axis_coord, _, _ = axes.p2c(dot.get_center())
+
+    to
+        x_axis_coord, _ = axes.p2c(dot.get_center())
+
+32. TypeError: Mobject.__init__() got an unexpected keyword argument 'bar_spacing'
+    Fix:
+    chart = BarChart(
+        values=sales_values,
+        y_range=[0, 300, 50],
+        y_length=config.frame_height * 0.6,
+        x_length=config.frame_width * 0.8,
+        # bar_spacing removed
+    )
+
+33. NameError: name 'WiggleOutThenIn' is not defined
+    Fix:
+    Replace with a built-in animation, e.g.:
+
+    self.play(sectors[0].animate.shift(UP*0.2).scale(1.1), run_time=1.5)
+    self.play(sectors[0].animate.shift(DOWN*0.2).scale(0.91), run_time=1.5)
+
+34. NameError: name 'GrowFromBottom' is not defined
+    Fix:
+    self.play(GrowFromEdge(all_bars, edge=DOWN, lag_ratio=0.1), run_time=2)
+
+35. TypeError: Mobject.__init__() got an unexpected keyword argument 'axis_config'
+    Fix: pass style arguments directly.
+    number_line = NumberLine(x_range=[0,10,1], length=12, color=WHITE, stroke_width=2)
+
+36. ValueError: latex error converting to dvi
+    Fixes:
+    Use double braces {{ and }} for LaTeX inside f-strings.
+    Replace ° with ^\circ.
+    Example:
+
+    param_L = MathTex(f"$L = {L:.1f} \\text{{ m}}$", font_size=LABEL_SIZE)
+    param_g = MathTex(f"$g = {g:.1f} \\text{{ m/s}}^2$", font_size=LABEL_SIZE)
+    param_theta0 = MathTex(f"$\\theta_0 = {theta0_deg}^\\circ$", font_size=LABEL_SIZE)
+
+## QUICK STATISTICS TEMPLATE
+```
+python
 from manim import *
 import numpy as np
-import random
 
-class Animation_64cd9ba5(Scene):
+class ProjectileMotion(Scene):
     def construct(self):
-        # ===== CONSTANTS =====
+        # Font sizes (adjustable based on content)
         TITLE_SIZE = 46
         EQUATION_SIZE = 30
-        LABEL_SIZE = 24
-
-        TOP_BUFFER = config.frame_height * 0.08
-        BOTTOM_BUFFER = config.frame_height * 0.08
-        LEFT_BUFFER = config.frame_width * 0.08
-        RIGHT_BUFFER = config.frame_width * 0.08
+        LABEL_SIZE = 26
+        DESC_SIZE = 22
         
-        # Physics constants
-        g = 9.8  # acceleration due to gravity, m/s²
-        v0 = 15  # initial velocity magnitude, m/s
-        angle_deg = 60  # launch angle, degrees
-        angle_rad = np.deg2rad(angle_deg)
-        vx0 = v0 * np.cos(angle_rad)  # initial x-velocity
-        vy0 = v0 * np.sin(angle_rad)  # initial y-velocity
-        t_max = (2 * vy0) / g  # total time of flight
-        max_x_val = vx0 * t_max  # maximum horizontal distance
-        max_y_val = (vy0**2) / (2 * g)  # maximum vertical height
-
-        self.camera.background_color = BLACK
-
-        # ===== STEP 1: Title Display and Fade Out =====
+        # Spacing rules
+        TOP_BUFFER = config.frame_height * 0.05
+        BOTTOM_BUFFER = config.frame_height * 0.05
+        LEFT_BUFFER = config.frame_width * 0.05
+        RIGHT_BUFFER = config.frame_width * 0.05
+        
+        # Physics parameters
+        v0 = 20  # initial velocity (m/s)
+        angle = 60  # launch angle (degrees)
+        g = 9.8  # gravity (m/s^2)
+        
+        # Convert to radians
+        theta = angle * DEGREES
+        
+        # Calculate trajectory parameters
+        v0x = v0 * np.cos(theta)
+        v0y = v0 * np.sin(theta)
+        t_max = 2 * v0y / g  # time of flight
+        range_x = v0x * t_max  # horizontal range
+        max_height = (v0y ** 2) / (2 * g)  # maximum height
+        
+        # Step 1: Title at center with star explosion fade out
         title = Text("Projectile Motion", font_size=TITLE_SIZE, color=WHITE)
         title.move_to(ORIGIN)
-
+        
+        # Title appear
         self.play(Write(title, run_time=1.5))
-        self.wait(3)
-
+        self.wait(1.5)
+        
+        # Custom "star explosion" fade out
         self.play(
             LaggedStart(
                 *[
                     letter.animate.shift(
-                        np.array([random.uniform(-2, 2), random.uniform(-2, 2), 0])
+                        np.array([np.random.uniform(-2, 2), np.random.uniform(-2, 2), 0])
                     ).scale(0.5).set_opacity(0)
                     for letter in title
                 ],
@@ -2233,175 +2524,121 @@ class Animation_64cd9ba5(Scene):
                 run_time=2
             )
         )
-
-        # ===== STEP 2: Axes Creation and Positioning =====
-        x_range_val_calc = max_x_val * 1.2
-        y_range_val_calc = max_y_val * 1.5
-
-        x_range = [0, max(5, round(x_range_val_calc)), 5]
-        y_range = [0, max(5, round(y_range_val_calc)), 5]
-
-        # Make graph smaller - 70% of available space
+        
+        # Step 2: Create axes
         axes = Axes(
-            x_range=x_range,
-            y_range=y_range,
-            x_length=(config.frame_width - LEFT_BUFFER - RIGHT_BUFFER) * 0.7,
-            y_length=(config.frame_height - BOTTOM_BUFFER - TOP_BUFFER) * 0.7,
+            x_range=[0, 40, 5],
+            y_range=[0, 20, 5],
+            x_length=config.frame_width * 0.65,
+            y_length=config.frame_height * 0.55,
             axis_config={
                 "include_numbers": True,
-                "font_size": LABEL_SIZE,
-                "decimal_number_config": {"num_decimal_places": 0},
-                "color": WHITE
-            },
-            x_axis_config={"label_direction": DOWN},
-            y_axis_config={"label_direction": LEFT},
+                "font_size": LABEL_SIZE - 6,
+                "decimal_number_config": {"num_decimal_places": 0}
+            }
         )
         
-        # Position axes with more buffer
-        target_origin_point = np.array([
-            -config.frame_width/2 + LEFT_BUFFER * 1.5,
-            -config.frame_height/2 + BOTTOM_BUFFER * 1.5,
-            0
-        ])
-        axes.shift(target_origin_point - axes.c2p(0,0))
-
-        x_label = axes.get_x_axis_label("x (m)", edge=DOWN, direction=DOWN)
-        y_label = axes.get_y_axis_label("y (m)", edge=LEFT, direction=LEFT)
-        axes_labels = VGroup(x_label, y_label)
-
-        self.play(Create(axes), Create(axes_labels), run_time=2)
-
-        # ===== STEP 3: Equation Display in Top-Right =====
-        equation_text = MathTex(
-            r"x(t) = (v_0 \cos \theta) t",
-            r"y(t) = (v_0 \sin \theta) t - \frac{1}{2} g t^2",
-            font_size=EQUATION_SIZE,
-            color=WHITE
-        ).arrange(DOWN, aligned_edge=LEFT, buff=0.3)
-
-        # Position in top-right corner with proper buffer
-        equation_text.to_corner(UR, buff=0.5)
-
-        self.play(Write(equation_text, run_time=1))
-
-        # ===== STEP 4: Initial Velocity Vector and Angle =====
-        initial_velocity_vec = Arrow(
-            start=axes.c2p(0,0),
-            end=axes.c2p(vx0 * 0.7, vy0 * 0.7),
-            color=ORANGE,
-            max_stroke_width_to_length_ratio=0.1,
-            buff=0
+        # Position axes with margins - shift right and down to avoid overlaps
+        axes.move_to(ORIGIN).shift(RIGHT * 0.8 + DOWN * 0.5)
+        
+        # Axis labels - position carefully
+        x_label = MathTex(r"Distance(m)", font_size=LABEL_SIZE)
+        x_label.next_to(axes.x_axis, DOWN, buff=0.5).shift(RIGHT * 1.5)
+        
+        y_label = MathTex(r"Height(m)", font_size=LABEL_SIZE)
+        y_label.next_to(axes.y_axis, LEFT, buff=0.4).shift(UP * 1)
+        
+        self.play(Create(axes), Write(x_label), Write(y_label), run_time=1.5)
+        self.wait(0.5)
+        
+        # Step 3: Display equations in top-left corner
+        equation1 = MathTex(
+            r"x(t) = v_0 \cos(\theta) \cdot t",
+            font_size=EQUATION_SIZE
         )
-
-        v0_label = MathTex(r"v_0", font_size=LABEL_SIZE, color=ORANGE)
-        v0_label.next_to(initial_velocity_vec, UP+RIGHT, buff=0.1)
-
-        angle_arc = Arc(
-            radius=0.8,
-            start_angle=0,
-            angle=angle_rad,
-            arc_center=axes.c2p(0,0),
-            color=ORANGE
+        equation2 = MathTex(
+            r"y(t) = v_0 \sin(\theta) \cdot t - \frac{1}{2}gt^2",
+            font_size=EQUATION_SIZE
         )
-
-        angle_label = MathTex(r"\theta", font_size=LABEL_SIZE, color=ORANGE)
-        angle_label.next_to(angle_arc, RIGHT * 0.5 + UP * 0.5, buff=0.1) 
-
-        initial_launch_elements = VGroup(initial_velocity_vec, v0_label, angle_arc, angle_label)
-
-        self.play(GrowFromPoint(initial_launch_elements, axes.c2p(0,0)), run_time=1.5)
-
-        # ===== STEP 5: Projectile Path and Moving Projectile =====
-        def path_function(t):
-            x = vx0 * t
-            y = vy0 * t - 0.5 * g * t**2
-            return axes.c2p(x, y)
-
-        projectile_path = ParametricFunction(
-            path_function,
+        
+        equations = VGroup(equation1, equation2).arrange(DOWN, buff=0.3, aligned_edge=LEFT)
+        equations.to_corner(UL, buff=TOP_BUFFER)
+        
+        self.play(Write(equations), run_time=1.5)
+        self.wait(0.5)
+        
+        # Step 4: Draw trajectory
+        # Create parametric curve for trajectory
+        path = axes.plot_parametric_curve(
+            lambda t: np.array([v0x * t, v0y * t - 0.5 * g * t * t, 0]),
             t_range=[0, t_max, 0.01],
-            color=BLUE,
-            stroke_width=4
+            color=YELLOW
         )
-
-        t_tracker = ValueTracker(0)
-
-        projectile_dot = always_redraw(
-            lambda: Dot(point=path_function(t_tracker.get_value()), color=RED, radius=0.15)
-        )
-
-        self.play(Create(projectile_path, run_time=2))
-        self.play(FadeIn(projectile_dot, run_time=0.5))
-
-        # ===== STEP 6: Instantaneous Velocity and Gravity Vectors, and Time Label =====
-        inst_velocity_vec = always_redraw(
-            lambda: Arrow(
-                start=projectile_dot.get_center(),
-                end=projectile_dot.get_center() + (
-                    lambda: (
-                        velocity_vector_at_t := axes.c2p(vx0, vy0 - g * t_tracker.get_value()) - axes.c2p(0,0),
-                        normalized_velocity_vector := velocity_vector_at_t / np.linalg.norm(velocity_vector_at_t) if np.linalg.norm(velocity_vector_at_t) != 0 else np.array([0., 0., 0.]),
-                        scaled_velocity_vector := normalized_velocity_vector * 2
-                    )[2]
-                )(),
-                color=YELLOW,
-                max_stroke_width_to_length_ratio=0.1,
-                buff=0
-            )
-        )
-
-        inst_velocity_label = always_redraw(
-            lambda: MathTex(r"\vec{v}", font_size=LABEL_SIZE, color=YELLOW).next_to(inst_velocity_vec, UP, buff=0.1)
-        )
-
-        gravity_vec = always_redraw(
-            lambda: Arrow(
-                start=projectile_dot.get_center(),
-                end=projectile_dot.get_center() + DOWN * 0.7,
-                color=GREEN,
-                max_stroke_width_to_length_ratio=0.1,
-                buff=0
-            )
-        )
-
-        gravity_label = always_redraw(
-            lambda: MathTex(r"\vec{g}", font_size=LABEL_SIZE, color=GREEN).next_to(gravity_vec, DOWN, buff=0.1)
-        )
-
-        time_label_group = always_redraw(
-            lambda: VGroup(
-                MathTex(r"t = ", font_size=LABEL_SIZE, color=WHITE),
-                DecimalNumber(t_tracker.get_value(), num_decimal_places=2, font_size=LABEL_SIZE, color=WHITE)
-            ).arrange(RIGHT, buff=0.1).to_corner(DL, buff=0.5)
-        )
-
+        
+        self.play(Create(path), run_time=3, rate_func=linear)
+        self.wait(0.5)
+        
+        # Step 5: Add projectile and animate motion
+        projectile = Dot(axes.c2p(0, 0), radius=0.12, color=RED)
+        self.play(FadeIn(projectile))
+        
+        # Animate projectile along path
         self.play(
-            FadeIn(inst_velocity_vec),
-            FadeIn(inst_velocity_label),
-            FadeIn(gravity_vec),
-            FadeIn(gravity_label),
-            FadeIn(time_label_group),
-            run_time=1
+            MoveAlongPath(projectile, path),
+            run_time=4,
+            rate_func=linear
         )
-
-        # ===== STEP 7: Animate Projectile Motion =====
-        self.play(t_tracker.animate.set_value(t_max), run_time=t_max, rate_func=linear)
-
-        # ===== STEP 8: Clean Up =====
+        self.wait(0.5)
+        
+        # Step 6: Highlight key points with careful positioning
+        # Launch point
+        launch_dot = Dot(axes.c2p(0, 0), color=GREEN, radius=0.1)
+        launch_label = Text("Launch", font_size=DESC_SIZE, color=GREEN)
+        launch_label.next_to(launch_dot, DOWN + LEFT, buff=0.3)
+        
+        # Maximum height point
+        t_peak = v0y / g
+        peak_x = v0x * t_peak
+        peak_dot = Dot(axes.c2p(peak_x, max_height), color=ORANGE, radius=0.1)
+        peak_label = Text(f"Max Height: {max_height:.1f}m", font_size=DESC_SIZE, color=ORANGE)
+        peak_label.next_to(peak_dot, UP, buff=0.4)
+        
+        # Landing point
+        landing_dot = Dot(axes.c2p(range_x, 0), color=PURPLE, radius=0.1)
+        landing_label = Text(f"Range: {range_x:.1f}m", font_size=DESC_SIZE, color=PURPLE)
+        landing_label.next_to(landing_dot, DOWN + RIGHT, buff=0.3)
+        
         self.play(
-            FadeOut(axes),
-            FadeOut(axes_labels),
-            FadeOut(equation_text),
-            FadeOut(initial_launch_elements),
-            FadeOut(projectile_path),
-            FadeOut(projectile_dot),
-            FadeOut(inst_velocity_vec),
-            FadeOut(inst_velocity_label),
-            FadeOut(gravity_vec),
-            FadeOut(gravity_label),
-            FadeOut(time_label_group),
-            run_time=1.5
+            FadeIn(launch_dot), Write(launch_label),
+            run_time=0.8
         )
+        self.wait(0.3)
+        
+        self.play(
+            FadeIn(peak_dot), Write(peak_label),
+            run_time=0.8
+        )
+        self.wait(0.3)
+        
+        self.play(
+            FadeIn(landing_dot), Write(landing_label),
+            run_time=0.8
+        )
+        self.wait(0.5)
+        
+        # Step 7: Display parameters in top-right corner
+        params = VGroup(
+            MathTex(rf"v_0 = {v0} \text{{ m/s}}", font_size=EQUATION_SIZE - 2),
+            MathTex(rf"\theta = {angle}°", font_size=EQUATION_SIZE - 2),
+            MathTex(rf"g = {g} \text{{ m/s}}^2", font_size=EQUATION_SIZE - 2)
+        ).arrange(DOWN, buff=0.25, aligned_edge=LEFT)
+        
+        params.to_corner(UR, buff=TOP_BUFFER)
+        
+        self.play(FadeIn(params, shift=LEFT), run_time=1)
+        self.wait(2)
+        
+        # Final pause
         self.wait(1)
 ```
 <Physics Visualization Rule Only/>

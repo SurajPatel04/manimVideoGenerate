@@ -1885,3 +1885,118 @@ Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will 
 2025-10-06 16:46:12,420 - celery.backends.redis - WARNING - 
 Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
 
+2025-10-07 07:32:14,838 - app.utils.auth - WARNING - accessToken cookie not found on request
+2025-10-07 07:32:14,858 - app.utils.auth - WARNING - accessToken cookie not found on request
+2025-10-07 07:33:42,938 - app.utils.auth - WARNING - accessToken cookie not found on request
+2025-10-07 07:33:42,959 - app.utils.auth - WARNING - accessToken cookie not found on request
+2025-10-07 07:34:04,998 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 07:46:11,669 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 07:49:01,331 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 08:06:10,885 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 11:01:56,540 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 11:43:34,653 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 11:45:14,011 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 12:02:51,742 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 12:06:32,458 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 12:07:35,801 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 12:07:55,760 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 12:23:21,522 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 12:26:53,596 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 12:39:20,230 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 12:41:27,230 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 13:25:38,112 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 13:46:15,762 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 13:48:07,767 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 14:10:43,694 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 14:12:50,694 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 14:15:13,763 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 14:16:01,277 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 14:16:14,398 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 14:32:05,703 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 15:42:43,622 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 15:49:11,016 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 15:51:20,756 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 15:52:03,876 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 15:55:25,675 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 15:56:21,078 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 15:57:29,255 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 15:57:40,960 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 15:57:57,119 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 16:08:13,415 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 16:08:28,714 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 16:10:46,924 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
+2025-10-07 16:27:55,454 - celery.backends.redis - WARNING - 
+Setting ssl_cert_reqs=CERT_NONE when connecting to redis means that celery will not validate the identity of the redis broker when connecting. This leaves you vulnerable to man in the middle attacks.
+
