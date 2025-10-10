@@ -705,371 +705,89 @@ class Animation_84c7b8ca(Scene):
 GRAPH3D="""
 <3D Scenes and Graph Rule Only>
 
-## Animation Sequence (Mandatory Order)
+## Mandatory Design Sequence
 
-1. Title: Always at the top. Do not include the equation in the title.
-2. Axes: Create axes immediately after the title.
-3. Use integers mostly if needed then use 2 decimal precision.
-4. Only show central axes (no grid).
-5. Equation: Placed below title or in corners (left, right, bottom-left, bottom-right). If no space → fade it out before graph.
-7. Margins: Leave a 5% gap at the bottom, left, and right edges.
-8. Sequence: Title → Axes → Equation (adaptive) → Graph.
-
-
-### Font Size Rules (Hierarchy — Never Violate)
-```python
-TITLE_SIZE = 46          # Largest - for main titles
-EQUATION_SIZE = 36       # Smaller than title - for math equations
-LABEL_SIZE = 28          # Smaller than equation - for axis labels
-DESC_SIZE = 24           # Smallest - for descriptions
-
-Text(...) →  font_size works.
-MathTex(...) →  font_size works.
-Axes(..., axis_config={"font_size": ...}) →  font_size works.
-axes.get_graph_label(...) →  font_size not allowed. Use: axes.get_graph_label(graph, label=MathTex(r"x^2", font_size=24))
-```
-
-### Mandatory Spacing Rules
-```python
-TOP_BUFFER = config.frame_height * 0.01      # 1% space from top
-BOTTOM_BUFFER = config.frame_height * 0.05   # 5% space from bottom
-LEFT_BUFFER = config.frame_width * 0.05      # 5% space from left
-RIGHT_BUFFER = config.frame_width * 0.05     # 5% space from right
-AFTER_TITLE_GAP = config.frame_height * 0.05 # 5% gap after title
-
-## Critical Fixes for Text Placement, Safe Zone, and Overlap
-
-1. **Fixed-Frame Text**
-   * All text (titles, equations, annotations) **must** use `add_fixed_in_frame_mobjects()` **before** any camera orientation or movement.
-   * This locks text to the 2D screen and keeps it facing the viewer regardless of 3D camera rotation.
-   ```python
-   self.add_fixed_in_frame_mobjects(title, equation)
-   ```
-
-2. **Horizontal Safe Zone**
-   * Reserve the top 30% of the frame for all fixed-frame text. No 3D object should enter this zone.
-   ```python
-   SAFE_Y = config.frame_height * 0.3   # top 30% reserved for text
-   ```
-   * Push surfaces downward if necessary:
-   ```python
-   surface.move_to([0, -SAFE_Y/2, 0])
-   ```
-
-3. **Locked Screen Placement**
-   * Set both x and y screen coordinates to ensure equations remain only in the horizontal safe band.
-   ```python
-   equation.move_to([
-       -config.frame_width/2 + 0.5,
-        config.frame_height/2 - 0.5,
-        0
-   ])
-   ```
-
-4. **Adaptive Overlap Checks**
-   * After each 3D element creation, check for collisions and automatically move or hide equations:
-   ```python
-   def avoid_overlap(eq, obj, pad=0.3):
-       if eq.get_left()[0] < obj.get_right()[0] + pad:
-           eq.to_edge(LEFT).shift(UP*2)
-       if eq.get_top()[1] < obj.get_top()[1] + pad:
-           self.play(FadeOut(eq))
-   ```
-
-5. **Pre-Rotation Fade**
-   * Fade out equations before any camera rotations or complex slice additions, then fade back in when motion stops.
-   ```python
-   self.play(FadeOut(equation)) # rotate camera or add big elements
-   self.play(FadeIn(equation))
-   ```
-
-
+**Follow this exact order:**
+1. **Title** → Center of screen → Animate appearance → Fade out with animation and do not inlude equation
+2. **Axes** → Create after title fades
+3. **Equation** → Position in corner (stays visible throughout)
+4. **Graph/Surface** → Main 3D object
 
 ---
 
-## Some error you need to avoid
-1 nNameError: name Cuboid is not defined: Fix
-    Shape you need  Manim class  Example
-    Standard cube   Cube        Cube(side_length=2)
-    Rectangular box Prism       Prism(dimensions=[2,1,3])
+## Critical Layout Rules
 
-2. Mobject.__getattr__.<locals>.getter() takes 1 positional argument but 2 were given
-    Fix: call it with no args, e.g. 
-    mobj.get_center()
+### 1. Title (Step 1)
+- **Position:** Always center (`ORIGIN`)
+- **Animation:** Write/FadeIn, then fade out with effect (LaggedStart, scatter, etc.)
+- **Content:** No equations in title text
+- **Font Size:** 48-60pt (adjustable based on length)
 
-3. latex error converting to dvi
-    Fix:
-    Use pure math mode or split into two Tex parts. For example:
-    Option 1 (all math mode, no \textbf):
-    title = Tex(r"3D Surface: $z = \sin(x)\cos(y)$", font_size=48, color=WHITE)
-    
-    Option 2 (use Tex with two parts, bold handled separately):
-    title = Tex(r"\textbf{3D Surface: }", r"$z = \sin(x)\cos(y)$", font_size=48, color=WHITE)
+### 2. Axes (Step 2)
+- **Create:** After title completely fades out
+- **Style:** Show only central axes (no grid)
+- **Ranges:** Use integers mostly; 2 decimal precision if needed
+- **Labels:** Add x, y, z labels with `MathTex`
 
-4. 'ThreeDCamera' object has no attribute 'animate'
-    Fix:
-    ThreeDCamera has no .animate. Use move_camera(...) or set_camera_orientation(...) in a ThreeDScene.
+### 3. Equation (Step 3)
+- **Position:** Top corner (LEFT or RIGHT edge)
+- **Visibility:** Always visible (never fade out unless explicitly needed)
+- **Font Size:** 36pt (adjustable)
+- **Fixed Frame:** Must use `add_fixed_in_frame_mobjects()`
 
-5. Unexpected argument None passed to Scene.play().
-    Check every object inside self.play(...) → make sure they are real Animations/Mobjects, not None.
-    For example:
-    x_label = axes.get_x_axis_label(MathTex("x")) 
-    y_label = axes.get_y_axis_label(MathTex("f(x)"))
-    self.play(Write(x_label), Write(y_label))  
-
-6. TypeError: manim.mobject.text.numbers.DecimalNumber() got multiple values for keyword argument 'font_size'
-    Fix:
-
-    Use it only once:
-    DecimalNumber(3.14, num_decimal_places=2, font_size=48)
-    Or set later:
-
-    num = DecimalNumber(3.14)
-    num.set(font_size=48)
-
-7. TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_range'
-    Axes, NumberPlane accept x_range, y_range.
-    axes = Axes(x_range=[-5, 5], y_range=[-3, 3])  
-
-
-
-## Multi-Element 3D Visualizations
-
-**For complex scenes with multiple 3D components (surfaces + slices + volumes + annotations):**
-
-* Use progressive transparency hierarchy:
-  - Base surface: `opacity=0.6`
-  - Cross-sections/slices: `opacity=0.4`
-  - Volume elements/Riemann boxes: `opacity=0.3`
-
-* Layer elements with visual priority:
-  - Main surface → Cross-sections → Volume elements → Annotations
-
-* Fade out equations temporarily during complex element additions:
-```python
-self.play(FadeOut(equations))
-# Add complex 3D elements
-self.play(FadeIn(equations))
-```
-
-* Position dynamic text to avoid 3D element bounding boxes
-* Check for overlaps after each new 3D element addition
+### 4. Surface/Graph (Step 4)
+- **Position:** Centered at `ORIGIN`
+- **Opacity:** Set AFTER creation using `.set_fill_opacity()` and `.set_stroke_opacity()`
+- **Animation:** Create with 3-5 second runtime
 
 ---
 
-## Dynamic Equation Management
+## Font Size Guidelines
 
-**For equations that change during animation:**
-
-* Start equations at safe elevated position to avoid overlap:
 ```python
-equations.to_edge(LEFT).shift(UP*2)  # Higher placement
-```
-
-* Monitor 3D element growth and adjust equation position:
-```python
-if surface.height > 4 or len(3d_elements) > 3:
-    equations.shift(UP*0.5)
-```
-
-* Use `Transform` for equation updates, not new objects:
-```python
-new_equation = MathTex(r"new_formula", font_size=36)
-new_equation.move_to(equations.get_center())
-self.play(Transform(equations, new_equation))
-```
-
-* Implement bounds checking after updates:
-```python
-if equations.get_top()[1] < 3.5 and overlaps_with_3d(equations, surface):
-    equations.to_edge(LEFT).shift(UP*3)
+TITLE_SIZE = 48-60        # Adjust based on title length
+EQUATION_SIZE = 36        # Adjust based on formula length
+LABEL_SIZE = 28           # Axis labels
+DESC_SIZE = 24            # Bottom descriptions
 ```
 
 ---
 
-## Cross-Section and Slice Management
+## Spacing Rules
 
-**For visualizations showing slices or cross-sections:**
-
-* Calculate slice spacing to prevent overlap:
 ```python
-num_slices = 10
-slice_spacing = surface_width / (num_slices + 1)
-```
-
-* Use distinct colors for different slice types:
-  - XY-plane slices: `BLUE`
-  - XZ-plane slices: `GREEN`
-  - Integration bound slices: `ORANGE`
-
-* Animate slice appearance progressively:
-```python
-for slice in slices:
-    self.play(Create(slice), run_time=0.3)
-    self.wait(0.1)
-```
-
-* Group slices for collective operations:
-```python
-slice_group = VGroup(*slices)
-self.play(slice_group.animate.set_opacity(0.3))
+TOP_BUFFER = config.frame_height * 0.05      # 5% from top
+BOTTOM_BUFFER = config.frame_height * 0.05   # 5% from bottom
+LEFT_BUFFER = config.frame_width * 0.05      # 5% from left
+RIGHT_BUFFER = config.frame_width * 0.05     # 5% from right
 ```
 
 ---
 
-## Riemann Sum and Volume Visualization
+## Text Positioning
 
-**For double/triple integrals with volume elements:**
-
-* Volume boxes must use high transparency:
+### Equation Placement
 ```python
-box = Cube()
-box.set_fill_opacity(0.3)
-box.set_stroke_opacity(0.6)
+# After title fades, position equation at top corner
+equation.to_edge(UP, buff=0.6).to_edge(LEFT, buff=LEFT_BUFFER)
 ```
 
-* Position boxes within calculated integration bounds
-* Stagger appearance to maintain clarity:
+### Fixed Frame Setup
 ```python
-self.play(
-    AnimationGroup(*[Create(box) for box in volume_boxes], lag_ratio=0.05),
-    run_time=3
-)
-```
-
-* Use wireframe mode for interior visibility:
-```python
-box.set_stroke(WHITE, width=1)
-box.set_fill(BLUE, opacity=0.2)
+# ALL text must be fixed to camera frame
+self.add_fixed_in_frame_mobjects(equation)
 ```
 
 ---
 
-## Adaptive Content Management
+## 3D Object Styling
 
-* Check 3D scene complexity before displaying all elements:
+### ❌ WRONG - Never set opacity in constructor:
 ```python
-total_elements = len([surface, *slices, *volumes, axes])
-if total_elements > 5:
-    # Fade out equations during main visualization
-    self.play(FadeOut(equations), run_time=0.5)
+surface = Surface(..., fill_opacity=0.8, stroke_opacity=0.5)
 ```
 
-* If 3D object exceeds 60% of frame space, fade out supplementary text:
-```python
-frame_w, frame_h = config.frame_width, config.frame_height
-if surface.width > frame_w * 0.6 or surface.height > frame_h * 0.6:
-    self.play(FadeOut(equations), run_time=1)
-    self.wait(0.5)
-```
-
-* Keep title visible at all times - only fade equations and bottom text
-
----
-
-## Title First Appearance
-
-* Always animate the **main title first** before any other elements
-* Use `Write(title)` or `FadeIn(title)` animation
-* Adjust font sizes proportionally - reduce if many elements needed
-* Keep descriptive text fixed using `add_fixed_in_frame_mobjects(...)`
-* Group related text in `VGroup` with clear vertical spacing
-
----
-
-## Main Title
-
-* Center horizontally at top: `title.to_edge(UP, buff=0.3)`
-* No equations in title text
-* Bold style: `Tex(r"\\textbf{Title Text}", font_size=48)`
-* Leave 0.3-0.5 units space beneath title for other elements
-
----
-
-## Equations / Descriptive Text
-
-**Without title:**
-* Position at top corner: `to_edge(LEFT)` or `to_edge(RIGHT)`
-* Shift down slightly: `.shift(DOWN*0.2)`
-
-**With title:**
-* Position below title: `next_to(title, DOWN, buff=0.3).to_edge(LEFT)`
-* Maintain horizontal distance from center to avoid 3D object overlap
-* **For multi-element scenes:** Position higher: `to_edge(LEFT).shift(UP*2)`
-
-**Equations may be faded out if:**
-* 3D object requires full frame visibility
-* Multiple 3D elements create visual clutter
-* Dynamic updates cause temporary overlap
-
----
-
-## Space Management Rules
-
-**Priority order:**
-1. Title (always visible)
-2. Main 3D object
-3. Secondary 3D elements (slices, volumes)
-4. Equations
-5. Bottom text
-
-**If space limited:**
-* Fade elements in reverse priority order
-* Maintain clean visual hierarchy
-* Large/complex objects take precedence
-
----
-
-## Frame Boundaries and Safety
-
-* Leave comfortable margins between text and frame edges
-* Keep x, y, z axis lengths proportional for balanced objects
-* All fixed text must stay within visible boundaries
-* Use `add_fixed_in_frame_mobjects()` for ALL text elements
-
----
-
-## Axes & Camera Rotation
-
-* Use `ThreeDAxes` with 3D objects
-* Group axes with objects: `VGroup(object, axes)` for synchronized rotation
-* Draw and label x, y, z axes for clarity
-* Center 3D surfaces at `ORIGIN`
-* Choose camera orientation keeping entire object visible
-
----
-
-## Camera Configuration
-
-* Standard orientation: `self.set_camera_orientation(phi=75*DEGREES, theta=-45*DEGREES, distance=8)`
-* Adjust distance for object size:
-  - Small objects: `distance=6-8`
-  - Large objects: `distance=10-12`
-  - Multi-element scenes: `distance=12-15`
-* Ensure no clipping throughout animations
-
----
-
-## Extra Text / Graph Descriptions
-
-* Position at bottom: `to_edge(DOWN, buff=0.4)`
-* Use smaller font: 28-32pt
-* Apply `add_fixed_in_frame_mobjects(bottom_text)`
-* Leave adequate spacing from 3D objects
-* Fade out if 3D object becomes too large
-
----
-
-## Object Creation and Styling
-
-**Never set opacity in constructors:**
-
-**WRONG:**
-```python
-Surface(..., fill_opacity=0.8, stroke_opacity=0.5)
-```
-
-**CORRECT:**
+### ✅ CORRECT - Set opacity after creation:
 ```python
 surface = Surface(...)
 surface.set_fill_opacity(0.8)
@@ -1078,144 +796,257 @@ surface.set_stroke_opacity(0.5)
 
 ---
 
-## 3D Object Positioning
+## Camera Configuration
 
-* Always center at `ORIGIN`
-* Scale to fit bounds: typically -5 to 5 in each dimension
-* Ensure visibility from camera angle
-* Group related elements for synchronized transformations
+```python
+self.set_camera_orientation(
+    phi=75*DEGREES, 
+    theta=-45*DEGREES, 
+    distance=8-10
+)
+```
 
----
-
-## Text Management in 3D
-
-* ALL text uses `add_fixed_in_frame_mobjects()`
-* Position before adding to fixed frame
-* Verify readability from camera angle
-* Font size hierarchy: Title(48) > Equations(36) > Descriptions(30)
+**Distance Guidelines:**
+- Small objects: 6-8
+- Medium objects: 8-10
+- Large/complex scenes: 10-15
 
 ---
 
 ## Animation Timing
 
-* Title: 1-2 seconds
-* Equations: 2-3 seconds
-* Axes: 1-2 seconds
-* 3D object: 3-5 seconds
-* Additional elements (slices/volumes): 0.3 seconds each without lag
-* Rotations: 4-6 seconds with `rate_func=linear`
-* Fade operations: 1 second
+- **Title:** 1-2 seconds (appearance + wait)
+- **Title Fade:** 1.5-2 seconds
+- **Axes:** 2 seconds
+- **Equation:** 1-2 seconds (fade in)
+- **Surface:** 3-5 seconds
+- **Rotation:** 4-6 seconds with `rate_func=linear`
 
 ---
 
-## LaTeX and Mathematical Expressions
+## Common Errors and Fixes
 
-* Use raw strings: `MathTex(r"x^2")`
-* Escape curly braces in prompts: `\\textbf{title}`
-* Group equations: `VGroup().arrange(DOWN, buff=0.2)`
-* Ensure proper rendering
+### 1. NameError: Cuboid not defined
+```python
+# Use Cube for standard cube
+cube = Cube(side_length=2)
+
+# Use Prism for rectangular box
+box = Prism(dimensions=[2, 1, 3])
+```
+
+### 2. get_center() argument error
+```python
+# ❌ WRONG
+center = obj.get_center(something)
+
+# ✅ CORRECT
+center = obj.get_center()
+```
+
+### 3. LaTeX conversion error
+```python
+# ❌ WRONG - mixing text and math
+title = Tex(r"\textbf{Title: $x^2$}")
+
+# ✅ CORRECT - Option 1: Pure math
+title = Tex(r"Title: $x^2$", font_size=48)
+
+# ✅ CORRECT - Option 2: Separate parts
+title = Tex(r"\textbf{Title: }", r"$x^2$", font_size=48)
+```
+
+### 4. ThreeDCamera has no animate
+```python
+# ❌ WRONG
+self.camera.animate.move_to(...)
+
+# ✅ CORRECT
+self.move_camera(phi=60*DEGREES, theta=30*DEGREES)
+```
+
+### 5. Unexpected argument None
+```python
+# Always ensure objects exist before animating
+x_label = axes.get_x_axis_label(MathTex("x"))
+y_label = axes.get_y_axis_label(MathTex("y"))
+self.play(Write(x_label), Write(y_label))
+```
 
 ---
 
-## Validation Checklist
+## Multi-Element Scenes
 
-All text uses `add_fixed_in_frame_mobjects()`  
-3D objects centered at `ORIGIN`  
-Camera distance appropriate for scene complexity  
-Title animated first, then equations, axes, object  
-No opacity in constructors  
-Complex scenes trigger equation fade-out  
-All elements within frame boundaries  
-Text readable throughout animations  
-Multi-element transparency hierarchy applied  
-Dynamic equations positioned to avoid overlaps  
+### Transparency Hierarchy
+- **Base surface:** 0.6-0.8
+- **Cross-sections:** 0.4-0.5
+- **Volume elements:** 0.3
 
----
-
-## Common 3D Layout Issues Prevention
-
-* **Text rotation:** Use fixed frame positioning
-* **Object clipping:** Adjust camera distance and scaling
-* **Equation overlap:** Implement adaptive fade-out and repositioning
-* **Axis misalignment:** Group axes with objects
-* **Title overcrowding:** Fade non-essential text
-* **Multi-element confusion:** Use transparency hierarchy
-* **Dynamic text overlap:** Reposition equations as scene evolves
+### Progressive Animation
+```python
+for element in elements:
+    self.play(Create(element), run_time=0.3)
+    self.wait(0.1)
+```
 
 ---
 
-## Complete Example
+## Complete Template
 
 ```python
 from manim import *
 import numpy as np
 
-
-class Animation_ea6da621(ThreeDScene):
+class Animation_xxxxx(ThreeDScene):
     def construct(self):
-        # Step 1: Set up the 3D scene.
+        # ========================================
+        # CONSTANTS
+        # ========================================
+        TITLE_SIZE = 60
+        EQUATION_SIZE = 36
+        LABEL_SIZE = 28
+        LEFT_BUFFER = config.frame_width * 0.05
+        
+        # Background
         self.camera.background_color = BLACK
-        self.set_camera_orientation(phi=75 * DEGREES, theta=-45 * DEGREES, distance=10)
-
-        # Axes
+        
+        # ========================================
+        # STEP 1: TITLE (Center → Fade Out)
+        # ========================================
+        title = Text("3D Surface Plot", font_size=TITLE_SIZE, color=WHITE)
+        title.move_to(ORIGIN)
+        
+        self.play(Write(title), run_time=1.5)
+        self.wait(1)
+        
+        # Star explosion fade out
+        self.play(
+            LaggedStart(
+                *[
+                    letter.animate.shift(
+                        np.array([
+                            np.random.uniform(-2, 2),
+                            np.random.uniform(-2, 2),
+                            0
+                        ])
+                    ).scale(0.5).set_opacity(0)
+                    for letter in title
+                ],
+                lag_ratio=0.1,
+                run_time=2
+            )
+        )
+        self.wait(0.5)
+        
+        # ========================================
+        # STEP 2: CAMERA SETUP
+        # ========================================
+        self.set_camera_orientation(
+            phi=75 * DEGREES, 
+            theta=-45 * DEGREES, 
+            distance=10
+        )
+        
+        # ========================================
+        # STEP 3: AXES
+        # ========================================
         axes = ThreeDAxes(
-            x_range=[-3.14, 3.14, 1.57],
-            y_range=[-3.14, 3.14, 1.57],
+            x_range=[-3, 3, 1],
+            y_range=[-3, 3, 1],
             z_range=[-2, 2, 1],
             x_length=7,
             y_length=7,
             z_length=4,
         )
-        x_label = axes.get_x_axis_label("x")
-        y_label = axes.get_y_axis_label("y")
-        z_label = axes.get_z_axis_label("z")
         
-        # Title (fixed to camera) - Start invisible
-        title = Tex(r"\textbf{3D Surface Plot}", font_size=48)
-        title.set_opacity(0)  # Make invisible initially
-        self.add_fixed_in_frame_mobjects(title)
-        title.to_edge(UP)
-
-        # Equation (fixed to camera) - Start invisible
-        equation = MathTex(r"f(x, y) = \sin(x) + \cos(y)", font_size=36)
-        equation.set_opacity(0)  # Make invisible initially
-        self.add_fixed_in_frame_mobjects(equation)
-        equation.next_to(title, DOWN, buff=0.4).to_edge(LEFT)
-
-        # Bottom description (fixed to camera) - Start invisible
-        bottom_description = Tex(r"Function: $f(x, y) = \sin(x) + \cos(y)$", font_size=30)
-        bottom_description.set_opacity(0)  # Make invisible initially
-        self.add_fixed_in_frame_mobjects(bottom_description)
-        bottom_description.to_edge(DOWN, buff=0.3)
-
-        # --- Animate text appearance with fade-in effect ---
-        self.play(title.animate.set_opacity(1), run_time=1)
-        self.play(equation.animate.set_opacity(1), run_time=2)
-        self.play(bottom_description.animate.set_opacity(1), run_time=1)
-        self.wait(1)
-
-        # --- Show axes & labels ---
         self.play(Create(axes), run_time=2)
-        self.play(Write(x_label), Write(y_label), Write(z_label))
-        self.wait(1)
-
-        # --- Now animate the surface ---
-        surface = Surface(
-            lambda u, v: np.array([u, v, np.sin(u) + np.cos(v)]),
-            u_range=[-3.14, 3.14],
-            v_range=[-3.14, 3.14],
-            resolution=(40, 40)
+        self.wait(0.5)
+        
+        # Axis labels
+        x_label = axes.get_x_axis_label(MathTex("x", font_size=LABEL_SIZE))
+        y_label = axes.get_y_axis_label(MathTex("y", font_size=LABEL_SIZE))
+        z_label = axes.get_z_axis_label(MathTex("z", font_size=LABEL_SIZE))
+        
+        self.play(
+            Write(x_label), 
+            Write(y_label), 
+            Write(z_label), 
+            run_time=1
         )
-        surface.set_style(fill_color=BLUE_D, fill_opacity=0.8, stroke_color=BLUE_E)
+        self.wait(0.5)
+        
+        # ========================================
+        # STEP 4: EQUATION (Fixed, Always Visible)
+        # ========================================
+        equation = MathTex(
+            r"f(x, y) = \sin(x) \cos(y)", 
+            font_size=EQUATION_SIZE, 
+            color=WHITE
+        )
+        equation.to_edge(UP, buff=0.6).to_edge(LEFT, buff=LEFT_BUFFER)
+        equation.set_opacity(0)
+        
+        # Fix to camera frame
+        self.add_fixed_in_frame_mobjects(equation)
+        
+        self.play(equation.animate.set_opacity(1), run_time=1.5)
+        self.wait(0.5)
+        
+        # ========================================
+        # STEP 5: SURFACE
+        # ========================================
+        surface = Surface(
+            lambda u, v: np.array([u, v, np.sin(u) * np.cos(v)]),
+            u_range=[-3, 3],
+            v_range=[-3, 3],
+            resolution=(40, 40),
+            fill_color=BLUE_D,
+            stroke_color=BLUE_E,
+        )
         surface.move_to(ORIGIN)
-
+        
+        # Set opacity AFTER creation
+        surface.set_fill_opacity(0.8)
+        surface.set_stroke_opacity(0.5)
+        
         self.play(Create(surface), run_time=3)
         self.wait(1)
-
-        # --- Rotate whole group (surface + axes + labels) ---
+        
+        # ========================================
+        # STEP 6: ROTATION (Equation stays fixed)
+        # ========================================
         group = VGroup(surface, axes, x_label, y_label, z_label)
-        self.play(Rotate(group, angle=TAU, axis=Z_AXIS, run_time=6, rate_func=linear))
+        
+        self.play(
+            Rotate(group, angle=TAU, axis=Z_AXIS, run_time=6, rate_func=linear)
+        )
         self.wait(2)
+```
+
+---
+
+## Validation Checklist
+
+- ✅ Title appears at center first
+- ✅ Title fades out with animation effect
+- ✅ Axes created after title fades
+- ✅ Equation positioned at top corner
+- ✅ Equation uses `add_fixed_in_frame_mobjects()`
+- ✅ Equation stays visible (unless scene is too crowded)
+- ✅ Surface centered at ORIGIN
+- ✅ Opacity set AFTER surface creation
+- ✅ Camera distance appropriate for scene
+- ✅ All text readable throughout
+
+---
+
+## Key Principles
+
+1. **Sequence is sacred:** Title → Axes → Equation → Surface
+2. **Equation visibility:** Keep visible unless space is critically limited
+3. **Fixed frame text:** All text must be fixed to camera
+4. **Opacity timing:** Always set after object creation
+5. **Center everything:** Use ORIGIN for 3D objects
 
 ```
 <3D Scenes and Graph Rule Only/>
@@ -1583,7 +1414,7 @@ self.play(Create(new_graph), FadeIn(new_labels))
 
 ### Font Size Rules (adjustable based on content length)
 TITLE_SIZE = 46       # not fixed, can change based on title length
-TEXT_SIZE = 36    # not fixed, can change based on TEXT_SIZE length
+TEXT_SIZE = 36          # not fixed, can change based on TEXT_SIZE length
 LABEL_SIZE = 28       # not fixed, can change based on axis label length
 DESC_SIZE = 24        # not fixed, can change based on description length
 
