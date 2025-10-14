@@ -115,7 +115,59 @@ Follow these instructions to run the project locally using Docker.
     
     Edit the `.env` file and replace all `<YOUR_VALUE>` placeholders with your actual credentials.
 
-3.  **Run with Docker Compose**
+3.  **Configure TexLive (Optional - Reduce Docker Image Size)**
+
+    > ⚠️ **Important Note on TexLive:**  
+    > The backend Docker image installs TeX Live packages for rendering animations. By default, it uses **TexLive Full**, which supports **multi-language scripts** (e.g., Hindi, Devanagari, Arabic) but is **very large (~5–7 GB download during build)**.  
+    >
+    > If you want to **reduce image size**, you can switch to **TexLive Small** by modifying the backend Dockerfile:
+
+    **Option A: Keep TexLive Full (Default - Multi-language Support)**
+    
+    No changes needed. The default `backend/Dockerfile` already uses `texlive-full`.
+
+    **Option B: Use TexLive Small (Smaller Image Size)**
+    
+    Edit `backend/Dockerfile` and replace the line:
+    ```dockerfile
+    texlive-full \
+    ```
+    
+    With the smaller package list:
+    ```dockerfile
+    texlive-latex-base \
+    texlive-latex-recommended \
+    texlive-latex-extra \
+    texlive-fonts-recommended \
+    texlive-fonts-extra \
+    texlive-xetex \
+    ```
+    
+    Your `backend/Dockerfile` RUN command should look like this:
+    ```dockerfile
+    RUN apt-get update && \
+        apt-get install -y --no-install-recommends \
+            texlive-latex-base \
+            texlive-latex-recommended \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
+            texlive-fonts-extra \
+            texlive-xetex \
+            dvisvgm \
+            dvipng \
+            ffmpeg \
+            libcairo2 \
+            libpango-1.0-0 \
+            libpangocairo-1.0-0 \
+            pkg-config \
+            python3-dev \
+            build-essential \
+        && rm -rf /var/lib/apt/lists/*
+    ```
+    
+    > ⚠️ **Limitation:** TexLive Small **does not support multi-language scripts**. Only English/Latin scripts will render correctly.
+
+4.  **Run with Docker Compose**
     
     Build and start all services (backend, frontend, and Celery worker):
     ```sh
@@ -127,12 +179,12 @@ Follow these instructions to run the project locally using Docker.
     sudo docker compose -f docker-compose.yml up -d
     ```
 
-4.  **Access the application**
+5.  **Access the application**
     - **Frontend**: Open [http://localhost:3000](http://localhost:3000) in your browser
     - **Backend API**: [http://localhost:8000](http://localhost:8000)
     - **API Documentation**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-5.  **Stop the application**
+6.  **Stop the application**
     ```sh
     sudo docker compose down
     ```
