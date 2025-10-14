@@ -709,7 +709,7 @@ GRAPH3D="""
 
 **Follow this exact order:**
 1. **Title** → Center of screen → Animate appearance → Fade out with animation and do not inlude equation
-2. **Axes** → Create after title fades
+2. **Axes** → Create after title fades and it should not go out of the screen 
 3. **Equation** → Position in corner (stays visible throughout)
 4. **Graph/Surface** → Main 3D object
 
@@ -893,6 +893,137 @@ for element in elements:
 
 ## Complete Template
 
+# 3d Saddle Surface 
+
+from manim import *
+import numpy as np
+
+class Animation_7fc9211b(ThreeDScene):
+    def construct(self):
+        # ========================================
+        # CONSTANTS
+        # ========================================
+        TITLE_SIZE = 60
+        EQUATION_SIZE = 36
+        LABEL_SIZE = 28
+        LEFT_BUFFER = config.frame_width * 0.05
+        
+        # Background
+        self.camera.background_color = BLACK
+        
+        # ========================================
+        # STEP 1: TITLE (Center → Fade Out)
+        # ========================================
+        title = Text("Saddle Surface", font_size=TITLE_SIZE, color=WHITE)
+        title.move_to(ORIGIN)
+        
+        self.play(Write(title), run_time=1.5)
+        self.wait(1)
+        
+        # Star explosion fade out
+        self.play(
+            LaggedStart(
+                *[
+                    letter.animate.shift(
+                        np.array([
+                            np.random.uniform(-2, 2),
+                            np.random.uniform(-2, 2),
+                            0
+                        ])
+                    ).scale(0.5).set_opacity(0)
+                    for letter in title
+                ],
+                lag_ratio=0.1,
+                run_time=2
+            )
+        )
+        self.wait(0.5)
+        
+        # ========================================
+        # STEP 2: CAMERA SETUP
+        # ========================================
+        self.set_camera_orientation(
+            phi=75 * DEGREES, 
+            theta=-45 * DEGREES, 
+            distance=10
+        )
+        
+        # ========================================
+        # STEP 3: AXES
+        # ========================================
+        axes = ThreeDAxes(
+            x_range=[-3, 3, 1],
+            y_range=[-3, 3, 1],
+            z_range=[-2, 2, 1],
+            x_length=7,
+            y_length=7,
+            z_length=4,
+        )
+        
+        self.play(Create(axes), run_time=2)
+        self.wait(0.5)
+        
+        # Axis labels
+        x_label = axes.get_x_axis_label(MathTex("x", font_size=LABEL_SIZE))
+        y_label = axes.get_y_axis_label(MathTex("y", font_size=LABEL_SIZE))
+        z_label = axes.get_z_axis_label(MathTex("z", font_size=LABEL_SIZE))
+        
+        self.play(
+            Write(x_label), 
+            Write(y_label), 
+            Write(z_label), 
+            run_time=1
+        )
+        self.wait(0.5)
+        
+        # ========================================
+        # STEP 4: EQUATION
+        # ========================================
+        equation = MathTex(
+            r"z = x^2 - y^2", 
+            font_size=EQUATION_SIZE, 
+            color=WHITE
+        )
+        equation.to_edge(UP, buff=0.6).to_edge(LEFT, buff=LEFT_BUFFER)
+        equation.set_opacity(0)
+        
+        # Fix to camera frame
+        self.add_fixed_in_frame_mobjects(equation)
+        
+        self.play(equation.animate.set_opacity(1), run_time=1.5)
+        self.wait(0.5)
+        
+        # ========================================
+        # STEP 5: SURFACE
+        # ========================================
+        surface = Surface(
+            lambda u, v: np.array([u, v, u**2 - v**2]),
+            u_range=[-1.5, 1.5], 
+            v_range=[-1.5, 1.5],
+            resolution=(40, 40),
+            fill_color=BLUE_D,
+            stroke_color=BLUE_E,
+        )
+        surface.move_to(ORIGIN)
+        
+        # Set opacity AFTER creation
+        surface.set_fill_opacity(0.8)
+        surface.set_stroke_opacity(0.5)
+        
+        self.play(Create(surface), run_time=3)
+        self.wait(1)
+        
+        # ========================================
+        # STEP 6: ROTATION
+        # ========================================
+        group = VGroup(surface, axes, x_label, y_label, z_label)
+        
+        self.play(
+            Rotate(group, angle=TAU, axis=Z_AXIS, run_time=6, rate_func=linear)
+        )
+        self.wait(2)
+
+# 3d Surface Plot
 ```python
 from manim import *
 import numpy as np
@@ -1414,9 +1545,9 @@ self.play(Create(new_graph), FadeIn(new_labels))
 
 ### Font Size Rules (adjustable based on content length)
 TITLE_SIZE = 46       # not fixed, can change based on title length
-TEXT_SIZE = 36          # not fixed, can change based on TEXT_SIZE length
-LABEL_SIZE = 28       # not fixed, can change based on axis label length
-DESC_SIZE = 24        # not fixed, can change based on description length
+TEXT_SIZE = 28          # not fixed, can change based on TEXT_SIZE length
+LABEL_SIZE = 24       # not fixed, can change based on axis label length
+DESC_SIZE = 20       # not fixed, can change based on description length
 
 Text(...) →  font_size works.
 MathTex(...) →  font_size works.
@@ -1619,6 +1750,11 @@ RIGHT_BUFFER = config.frame_width * 0.05     # 5% space from right
     Fix:
     Use this output_num_mobj.next_to(output_numbers_group[-1], RIGHT, buff=0.5)
 
+29. NameError: name 'FONT_SIZE_TEXT' is not defined
+    Fix: either define it at the top:
+    FONT_SIZE_TEXT = 24 (can be less based on the length of the text)
+    or replace it directly in your Text call:
+    new_action_rule_text = Text("Parent is Black. No violation.", font="Montserrat", font_size=24 (can be less based on the length of the text))
     
 ## ANIMATION SEQUENCE (MANDATORY ORDER)
 
