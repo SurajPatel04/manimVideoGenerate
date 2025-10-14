@@ -83,27 +83,53 @@ This stage takes the approved description and handles all technical aspects of c
 
 ## 🚀 Getting Started
 
-Instructions on how to set up and run this project locally will be added here.
+Follow these instructions to run the project locally using Docker.
 
 ### Prerequisites
 
-- Python 3.9+
-- FastApi
-- LLM Api Key
+- [Docker](https://www.docker.com/get-started) and Docker Compose installed on your machine
+- API keys for:
+  - Google Generative AI (Gemini)
+  - LangSmith (optional, for debugging)
+  - Supabase (for video storage)
+  - MongoDB (for database)
+  - Redis (for Celery task queue)
 
-### Installation
+### Installation & Setup
 
-1.  Clone the repo
+1.  **Clone the repository**
     ```sh
-    git clone https://github.com/SurajPatel04/mainVideoGenerate.git     
+    git clone https://github.com/SurajPatel04/manimVideoGenerate.git
+    cd manimVideoGenerate
     ```
-2.  Install backend dependencies
+
+2.  **Configure environment variables**
+    
+    Copy the `.env.template` file to `.env` and fill in your actual values:
     ```sh
-    cd backend
-    pip install -r requirements.txt
+    cp .env.template .env
     ```
-3.  Install frontend dependencies
+    
+    Edit the `.env` file and replace all `<YOUR_VALUE>` placeholders with your actual credentials.
+
+3.  **Run with Docker Compose**
+    
+    Build and start all services (backend, frontend, and Celery worker):
     ```sh
-    cd ../frontend
-    npm install
+    sudo docker compose -f docker-compose.yml up
+    ```
+    
+    Or to run in detached mode (background):
+    ```sh
+    sudo docker compose -f docker-compose.yml up -d
+    ```
+
+4.  **Access the application**
+    - **Frontend**: Open [http://localhost:3000](http://localhost:3000) in your browser
+    - **Backend API**: [http://localhost:8000](http://localhost:8000)
+    - **API Documentation**: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+5.  **Stop the application**
+    ```sh
+    sudo docker compose down
     ```
