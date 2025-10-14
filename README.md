@@ -41,21 +41,24 @@ The project is built around a two-stage pipeline: **Description Generation** and
 The goal of this stage is to convert a vague user idea into a precise, machine-readable description suitable for code generation.
 
 1.  **User Input**: The process starts with a simple text description from the user.
-2.  **AI Expansion**: The AI generates three distinct, detailed versions of the description based on the user's input.
-3.  **AI Validation & Refinement Loop**:
-    - An AI agent checks the three descriptions and picks the one that best matches the original intent.
-    - The chosen description enters a refinement loop (up to 3 times) where it's automatically improved and re-checked for quality.
-    - If the AI cannot produce a satisfactory result, the user is prompted to provide more information or clarify their request.
-    - A user can also manually inspect, edit, and approve a description at this stage.
-4.  **Output**: Once a description is marked as "Accepted," it is passed to the next stage.
+2.  **Query Validation**: An AI agent checks whether the user's query is possible and feasible to create as a Manim animation.
+3.  **AI Expansion**: If the query is valid, the AI generates a detailed description based on the user's vague input.
+4.  **Description Validation & Refinement Loop**:
+    - An AI agent checks if the detailed query is correct, complete, and matches the user's query.
+    - If the description needs improvement, it enters a refinement loop (maximum 3 times) where the AI rewrites and improves the detailed description.
+    - After each refinement, the description is checked again for quality and accuracy.
+5.  **Acceptance or Failure**:
+    - If the description passes validation, it is marked as "Accepted" and proceeds to the Manim generation part.
+    - If the check fails three times, the system asks the user for a clearer description or more information (Fail Case).
+6.  **Output**: The accepted detailed description is passed to the next stage for code generation.
 
 ### Part 2: Manim Code & Video Generation
 
 This stage takes the approved description and handles all technical aspects of creating the video.
 
-1.  **AI Code Generation**: The refined description is passed to a generative AI model that writes the Python code required to create the animation using the Manim library.
+1.  **AI Code Generation**: The passed detailed description is used to a generative AI model that writes the Python code required to create the animation using the Manim library.
 2.  **Code Validation**: The generated code is checked to ensure it accurately implements the description. If it doesn't match, it is sent back for refinement.
-3.  **Execution & Rendering**: The final, validated code is executed. Manim renders the animation into a 1080p MP4 video file.
+3.  **Execution & Rendering**: The final, validated code is executed. Manim renders the animation into a 720p MP4 video file, but you can change the format and video or GIF quality using the Quality button.
 4.  **Storage & Delivery**: The video is automatically uploaded to a Supabase storage bucket, and a public link to the video is sent back to the user through the frontend.
 
 ## 🛠️ Technology Stack
