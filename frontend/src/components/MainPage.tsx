@@ -27,8 +27,9 @@ interface MessageType {
 
 const SUGGESTION_PROMPTS = [
   "Create a 3D surface plot of the function z = sin(x) * cos(y) using a grid",
-  "Show a 3D surface plot for sin(x) + cos(y)",
-  "Visualize a 3D surface plot of z = x^2 + y^2 (a paraboloid)",
+  "Animate how the normal distribution curve changes with different standard deviations.",
+  "Plot y = e^(-x²) as a smooth bell-shaped curve",
+  "Draw a projectile motion trajectory in, marking max height and range."
 
 ];
 
@@ -319,7 +320,8 @@ export default function MainPage() {
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false); 
   const [codeModalMessage, setCodeModalMessage] = useState<MessageType | null>(null);
-  const [cancelledTasks, setCancelledTasks] = useState<Set<string>>(new Set()); 
+  const [cancelledTasks, setCancelledTasks] = useState<Set<string>>(new Set());
+  const [activePollingTimeouts, setActivePollingTimeouts] = useState<Set<NodeJS.Timeout>>(new Set()); 
   const { user, logout, tokens } = useAuth();
   const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -336,7 +338,10 @@ export default function MainPage() {
     const maxRetries = 3;
     const baseInterval = 10000;
     const maxInterval = 30000; 
-    const maxPollCount = 300; 
+    const maxPollCount = 300;
+    let isCancelled = false;
+    const timeouts: NodeJS.Timeout[] = [];
+    
     const calculateInterval = () => {
 
       const backoff = Math.min(baseInterval * Math.pow(1.5, consecutiveErrors), maxInterval);
@@ -348,7 +353,7 @@ export default function MainPage() {
       try {
         pollCount++;
         
-        if (cancelledTasks.has(taskId)) {
+        if (cancelledTasks.has(taskId) || isCancelled) {
           console.log('Task was cancelled locally, stopping polling');
           return true;
         }
@@ -498,9 +503,19 @@ export default function MainPage() {
     }
     
     const scheduleNextPoll = () => {
+      if (isCancelled || cancelledTasks.has(taskId)) {
+        return;
+      }
+      
       const interval = calculateInterval();
       
-      setTimeout(async () => {
+      const timeoutId = setTimeout(async () => {
+        setActivePollingTimeouts(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(timeoutId);
+          return newSet;
+        });
+        
         const shouldStop = await pollTask();
         if (!shouldStop) {
           scheduleNextPoll();
@@ -508,10 +523,19 @@ export default function MainPage() {
           setPollingInterval(null);
         }
       }, interval);
+      
+      timeouts.push(timeoutId);
+      setActivePollingTimeouts(prev => new Set([...prev, timeoutId]));
     };
 
     scheduleNextPoll();
-  }, [tokens?.accessToken]);
+    
+    // Return cleanup function
+    return () => {
+      isCancelled = true;
+      timeouts.forEach(timeout => clearTimeout(timeout));
+    };
+  }, [tokens?.accessToken, cancelledTasks]);
 
   useEffect(() => {
     return () => {
@@ -604,13 +628,17 @@ export default function MainPage() {
   }, []);
 
   const stopPollingAndReset = useCallback(() => {
+    // Clear all active polling timeouts
+    activePollingTimeouts.forEach(timeout => clearTimeout(timeout));
+    setActivePollingTimeouts(new Set());
+    
     if (pollingInterval) {
       clearInterval(pollingInterval);
       setPollingInterval(null);
     }
     setIsGenerating(false);
     setCurrentTaskId("");
-  }, [pollingInterval]);
+  }, [pollingInterval, activePollingTimeouts]);
 
   const handleCancelTask = useCallback(async () => {
     if (!currentTaskId || !tokens?.accessToken) return;
@@ -665,13 +693,17 @@ export default function MainPage() {
     setIsGenerating(false);
     setCancelledTasks(new Set());
     
+    // Clear all active polling timeouts
+    activePollingTimeouts.forEach(timeout => clearTimeout(timeout));
+    setActivePollingTimeouts(new Set());
+    
     if (pollingInterval) {
       clearInterval(pollingInterval);
       setPollingInterval(null);
     }
     
     setShowUserMenu(false);
-  }, [pollingInterval]);
+  }, [pollingInterval, activePollingTimeouts]);
 
   const handleLogout = useCallback((e?: React.MouseEvent) => {
     e?.preventDefault();

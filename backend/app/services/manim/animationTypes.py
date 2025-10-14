@@ -1187,6 +1187,7 @@ class Animation_xxxxx(ThreeDScene):
 COMPUTER_DATASTRUCTURE="""
 <Computer Data Structure Rule Only>
 ### Mandatory Structure
+0. **Gap** A 5% gap from all edges.
 1. **Title Placement**: Always centered (not top). Must appear first, then fade out completely before any new object or text appears. Avoid including equations or expressions in the title.
 2. **Numeric Formatting**: Prefer integers; if decimals are needed, use two-decimal precision. Avoid π or symbolic constants in numeric labels.
 3. **Text Placement**: Place texts near screen corners (UL, UR, DL, DR) or top edge, maintaining a 5% screen margin. Ensure texts do not overlap any existing objects; if overlap occurs, fade the text out instead of repositioning unsafely.
@@ -2434,6 +2435,14 @@ self.play(FadeIn(dots))
     param_L = MathTex(f"$L = {L:.1f} \\text{{ m}}$", font_size=LABEL_SIZE)
     param_g = MathTex(f"$g = {g:.1f} \\text{{ m/s}}^2$", font_size=LABEL_SIZE)
     param_theta0 = MathTex(f"$\\theta_0 = {theta0_deg}^\\circ$", font_size=LABEL_SIZE)
+
+37. TypeError: Mobject.__init__() got an unexpected keyword argument 'position'
+    Fix:Remove position=... — use .shift(DOWN * 2) instead.
+    number_line = NumberLine(x_range=[0, 30, 5], length=config.frame_width * 0.8).shift(DOWN * 2)
+
+38. TypeError: manim.mobject.text.numbers.DecimalNumber() got multiple values for keyword argument 'font_size' 
+    Fix:
+    NumberLine(x_range=[0, 30, 5], font_size=24)
 
 ## QUICK STATISTICS TEMPLATE
 ```
