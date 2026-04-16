@@ -28,6 +28,8 @@ Check out these examples of AI-generated Manim animations:
 - **Text-to-Code**: Converts the final, approved description into an executable Manim Python script.
 - **End-to-End Automation**: Handles video rendering, uploading to cloud storage (Supabase), and delivering a shareable link to the user.
 - **User-in-the-Loop**: While highly automated, the pipeline allows for optional user intervention to review and edit descriptions, ensuring the final output perfectly matches their vision.
+- **User Management & Authentication**: Secure Google OAuth and JWT-based authentication system, complete with email verification and password reset workflows.
+- **Generation History**: Automatically saves user prompts and generated video links to a personal dashboard using MongoDB.
 
 ## ⚙️ Architecture and Workflow
 
@@ -54,12 +56,13 @@ The goal of this stage is to convert a vague user idea into a precise, machine-r
 
 ### Part 2: Manim Code & Video Generation
 
-This stage takes the approved description and handles all technical aspects of creating the video.
+This stage takes the approved description and handles all technical aspects of creating the video asynchronously.
 
-1.  **AI Code Generation**: The passed detailed description is used to a generative AI model that writes the Python code required to create the animation using the Manim library.
-2.  **Code Validation**: The generated code is checked to ensure it accurately implements the description. If it doesn't match, it is sent back for refinement.
-3.  **Execution & Rendering**: The final, validated code is executed. Manim renders the animation into a 720p MP4 video file, but you can change the format and video or GIF quality using the Quality button.
-4.  **Storage & Delivery**: The video is automatically uploaded to a Supabase storage bucket, and a public link to the video is sent back to the user through the frontend.
+1.  **Task Queuing**: The video generation request is enqueued as a background task via **Celery** and **Redis**, providing the user with a task ID to avoid blocking the API server and allowing real-time status polling.
+2.  **AI Code Generation**: The passed detailed description is used to a generative AI model that writes the Python code required to create the animation using the Manim library.
+3.  **Code Validation**: The generated code is checked to ensure it accurately implements the description. If it doesn't match, it is sent back for refinement.
+4.  **Execution & Rendering**: The final, validated code is executed. Manim renders the animation into a 720p MP4 video file, but you can change the format and video or GIF quality using the Quality button. Users also have the ability to cancel in-flight generation tasks.
+5.  **Storage & Delivery**: The video is automatically uploaded to a Supabase storage bucket, and a public link to the video is sent back to the user through the frontend.
 
 ## 🛠️ Technology Stack
 
@@ -77,11 +80,14 @@ This stage takes the approved description and handles all technical aspects of c
     -   Generative AI Models (e.g., GPT, Gemini)
 
 -   **Frontend**:
-    -   [React](https://react.dev/)
+    -   [React](https://react.dev/) powered by [Vite](https://vitejs.dev/)
+    -   [Tailwind CSS](https://tailwindcss.com/) for core styling
     -   [Material-UI (MUI)](https://mui.com/) for UI components
+    -   [Framer Motion](https://www.framer.com/motion/) for fluid animations
 
 -   **Database & Storage**:
-    -   [PostgreSQL](https://www.postgresql.org/)
+    -   [MongoDB](https://www.mongodb.com/) for primary database (users, history)
+    -   [Redis](https://redis.io/) for caching and Celery task queuing
     -   [Supabase](https://supabase.io/) for video storage and delivery
 
 ## 🚀 Getting Started
