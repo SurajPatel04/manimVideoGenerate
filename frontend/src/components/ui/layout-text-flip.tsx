@@ -27,7 +27,7 @@ export const LayoutTextFlip = ({
       <motion.span
         layoutId="subtext"
         // Make the main static text noticeably larger than the flipping words
-        className="text-5xl font-bold tracking-tight drop-shadow-lg md:text-7xl"
+        className="text-4xl font-bold tracking-tight drop-shadow-lg md:text-7xl block md:inline-block mb-2 md:mb-0 md:mr-4"
       >
         {text}
       </motion.span>
@@ -35,7 +35,7 @@ export const LayoutTextFlip = ({
       <motion.span
         layout
         // Keep the flipping words a bit smaller so the main title stands out
-        className="relative w-fit overflow-hidden rounded-md bg-[#171717] px-4 py-2 font-sans text-3xl font-bold tracking-tight text-white shadow-sm drop-shadow-lg md:text-5xl"
+        className="relative w-fit overflow-hidden rounded-md bg-[#171717] px-3 py-1.5 md:px-4 md:py-2 font-sans text-xl sm:text-2xl font-bold tracking-tight text-white shadow-sm drop-shadow-lg md:text-5xl inline-block"
       >
         <AnimatePresence mode="popLayout">
           <motion.span
