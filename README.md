@@ -26,6 +26,7 @@ Check out these examples of AI-generated Manim animations:
 - **AI Script Generation**: Automatically expands a user's idea into multiple detailed scene descriptions.
 - **Iterative Refinement**: A multi-step validation system ensures the script is high-quality and accurate before generating code.
 - **Text-to-Code**: Converts the final, approved description into an executable Manim Python script.
+- **Vision-Based Quality Assurance**: Extracts final frames from rendered videos and uses vision-language models (e.g., GPT-4o-mini, Gemini 1.5 Flash) to visually guarantee the animation correctly matches the user's intent.
 - **End-to-End Automation**: Handles video rendering, uploading to cloud storage (Supabase), and delivering a shareable link to the user.
 - **User-in-the-Loop**: While highly automated, the pipeline allows for optional user intervention to review and edit descriptions, ensuring the final output perfectly matches their vision.
 - **User Management & Authentication**: Secure Google OAuth and JWT-based authentication system, complete with email verification and password reset workflows.
@@ -60,8 +61,8 @@ This stage takes the approved description and handles all technical aspects of c
 
 1.  **Task Queuing**: The video generation request is enqueued as a background task via **Celery** and **Redis**, providing the user with a task ID to avoid blocking the API server and allowing real-time status polling.
 2.  **AI Code Generation**: The passed detailed description is used to a generative AI model that writes the Python code required to create the animation using the Manim library.
-3.  **Code Validation**: The generated code is checked to ensure it accurately implements the description. If it doesn't match, it is sent back for refinement.
-4.  **Execution & Rendering**: The final, validated code is executed. Manim renders the animation into a 720p MP4 video file, but you can change the format and video or GIF quality using the Quality button. Users also have the ability to cancel in-flight generation tasks.
+3.  **Code Validation & Vision QA**: The generated code is checked to ensure it accurately implements the description without syntax errors. After a dry-run render, a Vision LLM (like GPT-4o-mini) inspects the final frames of the video to guarantee it visually matches the core request. If it fails visually or syntactically, the code is sent back for AI refinement.
+4.  **Execution & Rendering**: The final, validated code is executed. Manim renders the animation into a high-quality MP4 video file. Users can customize the format and quality via the UI. Users also have the ability to cancel in-flight generation tasks.
 5.  **Storage & Delivery**: The video is automatically uploaded to a Supabase storage bucket, and a public link to the video is sent back to the user through the frontend.
 
 ## 🛠️ Technology Stack
@@ -77,7 +78,7 @@ This stage takes the approved description and handles all technical aspects of c
 -   **AI & Orchestration**:
     -   [LangChain](https://www.langchain.com/) & [LangGraph](https://langchain-ai.github.io/langgraph/) for building the agentic pipeline
     -   [LangSmith](https://www.langchain.com/langsmith) for debugging and observability
-    -   Generative AI Models (e.g., GPT, Gemini)
+    -   Generative AI Models (Google Gemini 1.5 Pro/Flash, OpenAI GPT-4o-mini)
 
 -   **Frontend**:
     -   [React](https://react.dev/) powered by [Vite](https://vitejs.dev/)
@@ -99,6 +100,7 @@ Follow these instructions to run the project locally using Docker.
 - [Docker](https://www.docker.com/get-started) and Docker Compose installed on your machine
 - API keys for:
   - Google Generative AI (Gemini)
+  - OpenAI (for Vision QA)
   - LangSmith (optional, for debugging)
   - Supabase (for video storage)
   - MongoDB (for database)
