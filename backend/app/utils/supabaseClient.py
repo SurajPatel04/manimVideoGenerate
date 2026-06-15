@@ -1,13 +1,13 @@
 from supabase import create_client
-from app.config import Config
+from app.config.config import Config
 import os
 
 
 SUPABASE_URL = Config.SUPABASE_URL
 SUPABASE_BUCKET = Config.SUPABASE_BUCKET
-SUPABASE_SERVICE_ROLE_KEY = Config.SUPABASE_SERVICE_ROLE_KEY
+SUPABASE_SECRET_KEY = Config.SUPABASE_SECRET_KEY
 
-supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+supabase = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
 
 def uploadFile(filename, format, expires_in=31536000):
 
@@ -37,15 +37,18 @@ def uploadFile(filename, format, expires_in=31536000):
     if not os.path.exists(videos_dir):
         raise FileNotFoundError(f"Videos directory not found at: {videos_dir}")
     
-    with open(local_file_path, "rb") as f:
-        response = supabase.storage.from_(SUPABASE_BUCKET).upload(
-            path=bucket_path,
-            file=f,
-            file_options={
-                "cache-control": "3600",
-                "upsert": "false"
-            }
-        )
+    try:
+        with open(local_file_path, "rb") as f:
+            response = supabase.storage.from_(SUPABASE_BUCKET).upload(
+                path=bucket_path,
+                file=f,
+                file_options={
+                    "cache-control": "3600",
+                    "upsert": "false"
+                }
+            )
+    except Exception as e:
+        raise Exception(f"Supabase upload failed! Check if bucket '{SUPABASE_BUCKET}' exists and URL is correct. Original error: {str(e)}")
 
     signed_url_response = supabase.storage.from_(SUPABASE_BUCKET).create_signed_url(
         path=bucket_path,
@@ -55,7 +58,6 @@ def uploadFile(filename, format, expires_in=31536000):
     
     # Handle different response structures
     if isinstance(signed_url_response, dict):
-        # Try different possible keys
         signed_url = (signed_url_response.get("signed_url") or 
                      signed_url_response.get("signedURL") or 
                      signed_url_response.get("url") or
