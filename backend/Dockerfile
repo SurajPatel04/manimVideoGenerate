@@ -4,7 +4,11 @@ WORKDIR /app
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        texlive-full \
+        texlive \
+        texlive-latex-extra \
+        texlive-latex-recommended \
+        texlive-fonts-recommended \
+        texlive-science \
         dvisvgm \
         dvipng \
         ffmpeg \

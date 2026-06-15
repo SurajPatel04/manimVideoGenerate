@@ -34,9 +34,81 @@ Check out these examples of AI-generated Manim animations:
 
 ## ⚙️ Architecture and Workflow
 
-The project is built around a two-stage pipeline: **Description Generation** and **Manim Code Generation**.
+The project is built around a three-stage pipeline: **Feasibility Check**, **Description Generation**, and **Manim Code Generation** with self-healing loops.
 
-![Workflow Diagram](manim_video_generation_pipeline.png)
+```mermaid
+flowchart TD
+    %% Styling Definitions
+    classDef startEnd fill:#1e1e2e,stroke:#cba6f7,stroke-width:2px,color:#cdd6f4;
+    classDef process fill:#181825,stroke:#89b4fa,stroke-width:1.5px,color:#cdd6f4;
+    classDef router fill:#313244,stroke:#f9e2af,stroke-width:1.5px,color:#cdd6f4;
+    classDef action fill:#11111b,stroke:#a6e3a1,stroke-width:2px,color:#cdd6f4;
+    classDef failNode fill:#1e1e2e,stroke:#f38ba8,stroke-width:1.5px,color:#cdd6f4;
+
+    %% Global Entry
+    START([User Input Query]) --> Stage0[Feasibility Check]
+
+    %% 0. FEASIBILITY CHECK
+    subgraph "0. Feasibility Check Stage"
+        Stage0 --> RouteFeas{isFeasible?}
+        RouteFeas -- False --> TerminateFail([Terminate: Query Not Feasible])
+    end
+
+    %% Connection to Description Gen
+    RouteFeas -- True --> Stage1_Init[Generate Detailed Description]
+
+    %% 1. DESCRIPTION GENERATION PIPELINE
+    subgraph "1. Description Generation Part"
+        Stage1_Init --> Stage1_Val[Validate Description]
+        Stage1_Val --> RouteDesc{Validate Router}
+        RouteDesc -- Invalid --> Stage1_Ref[Refine Description]
+        Stage1_Ref --> Stage1_Val
+    end
+
+    %% Connection to Code Gen
+    RouteDesc -- Valid --> Stage2_Init[Generate Initial Code]
+
+    %% 2. MANIM CODE GENERATION PIPELINE (Self-Healing)
+    subgraph "2. Manim Code Generation Part"
+        Stage2_Init --> Stage2_Static[Syntax & Deprecation Check]
+        
+        Stage2_Static --> RouterManim{manimRouter}
+        
+        %% Static Routing
+        RouterManim -- fixCodeErrorsWithLLM --> Stage2_Fix[Fix Code Errors with LLM]
+        RouterManim -- testRenderCode --> Stage2_Test[Test Render Code <br/><i>Low Quality</i>]
+        RouterManim -- limit_reached --> Stage2_Reset[Handle Failure & Reset]
+
+        %% Test Render Routing
+        Stage2_Test --> RouterExec{executionRouter}
+        RouterExec -- fix --> Stage2_Fix
+        RouterExec -- done --> Stage2_Vision[Vision QA Output <br/><i>Gemini Vision Frame Check</i>]
+        RouterExec -- limit --> Stage2_Reset
+
+        %% Vision Routing
+        Stage2_Vision --> RouterMatch{matchRouter}
+        RouterMatch -- fix --> Stage2_Fix
+        RouterMatch -- render --> Stage2_Prod[Final High Quality Render]
+
+        %% Debug Loop back to checks
+        Stage2_Fix --> Stage2_Static
+
+        %% Start Over Logic
+        Stage2_Reset --> RouterReset{shouldStartOverRouter}
+        RouterReset -- generateInitialCode --> Stage2_Init
+        RouterReset -- stop --> TerminateLimit([Terminate: Out of Retries])
+    end
+
+    %% Final Upload
+    Stage2_Prod --> Upload[Upload to Supabase & Deliver Video] --> END([End Pipeline])
+
+    %% Apply Styles
+    class START,END,TerminateFail,TerminateLimit startEnd;
+    class Stage0,Stage1_Init,Stage1_Val,Stage1_Ref,Stage2_Init,Stage2_Static,Stage2_Test,Stage2_Vision,Stage2_Fix process;
+    class RouteFeas,RouteDesc,RouterManim,RouterExec,RouterMatch,RouterReset router;
+    class Stage2_Prod,Upload action;
+    class Stage2_Reset failNode;
+```
 
 
 ### Part 1: Description Generation
@@ -123,57 +195,25 @@ Follow these instructions to run the project locally using Docker.
     
     Edit the `.env` file and replace all `<YOUR_VALUE>` placeholders with your actual credentials.
 
-3.  **Configure TexLive (Optional - Reduce Docker Image Size)**
+3.  **Configure TexLive (Optional - Size Optimization)**
 
     > ⚠️ **Important Note on TexLive:**  
-    > The backend Docker image installs TeX Live packages for rendering animations. By default, it uses **TexLive Full**, which supports **multi-language scripts** (e.g., Hindi, Devanagari, Arabic) but is **very large (~5–7 GB download during build)**.  
+    > The backend Docker image installs TeX Live packages for rendering math text. By default, it uses a **curated list of lighter packages** (`texlive`, `texlive-latex-extra`, `texlive-latex-recommended`, `texlive-fonts-recommended`, `texlive-science`) which keeps the image size optimized at **~2 GB** instead of the bloated 7+ GB.
     >
-    > If you want to **reduce image size**, you can switch to **TexLive Small** by modifying the backend Dockerfile:
-
-    **Option A: Keep TexLive Full (Default - Multi-language Support)**
-    
-    No changes needed. The default `backend/Dockerfile` already uses `texlive-full`.
-
-    **Option B: Use TexLive Small (Smaller Image Size)**
-    
-    Edit `backend/Dockerfile` and replace the line:
-    ```dockerfile
-    texlive-full \
-    ```
-    
-    With the smaller package list:
-    ```dockerfile
-    texlive-latex-base \
-    texlive-latex-recommended \
-    texlive-latex-extra \
-    texlive-fonts-recommended \
-    texlive-fonts-extra \
-    texlive-xetex \
-    ```
-    
-    Your `backend/Dockerfile` RUN command should look like this:
-    ```dockerfile
-    RUN apt-get update && \
-        apt-get install -y --no-install-recommends \
-            texlive-latex-base \
-            texlive-latex-recommended \
-            texlive-latex-extra \
-            texlive-fonts-recommended \
-            texlive-fonts-extra \
-            texlive-xetex \
-            dvisvgm \
-            dvipng \
-            ffmpeg \
-            libcairo2 \
-            libpango-1.0-0 \
-            libpangocairo-1.0-0 \
-            pkg-config \
-            python3-dev \
-            build-essential \
-        && rm -rf /var/lib/apt/lists/*
-    ```
-    
-    > ⚠️ **Limitation:** TexLive Small **does not support multi-language scripts**. Only English/Latin scripts will render correctly.
+    > **Option A: Optimized Setup (Default)**
+    > No changes needed. The default `backend/Dockerfile` already uses this optimized setup.
+    >
+    > **Option B: Multi-Language support (requires TexLive Full)**
+    > If you need support for multi-language scripts (e.g., Hindi, Devanagari, Arabic, Chinese), edit `backend/Dockerfile` and replace the light packages with `texlive-full`:
+    > ```dockerfile
+    > RUN apt-get update && \
+    >     apt-get install -y --no-install-recommends \
+    >         texlive-full \
+    >         dvisvgm \
+    >         dvipng \
+    >         ...
+    > ```
+    > *Note: This will download an additional 4.5+ GB during the Docker build process.*
 
 4.  **Run with Docker Compose**
     
