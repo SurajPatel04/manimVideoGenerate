@@ -12,7 +12,7 @@ from app.exceptions import UserAlreadyVerifiedException, UserNotFoundException
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from starlette.middleware.sessions import SessionMiddleware
-from app.config import Config
+from app.config.config import Config
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -26,7 +26,7 @@ app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     SessionMiddleware,
-    secret_key=Config.SECRET_KEY  # use a strong random value in prod
+    secret_key=Config.SECRET_KEY
 )
 
 @app.exception_handler(UserNotFoundException)
@@ -44,7 +44,7 @@ async def user_already_verified_exception_handler(request: Request, exc: UserAlr
     )
 
 origins = [
-    "http://localhost:5173",  # frontend local dev
+    "http://localhost:5173",
     "https://video.surajpatel.dev",
     "www.video.surajpatel.dev"
 ]
@@ -54,10 +54,10 @@ app.mount("/assets", StaticFiles(directory=str(assets_path)), name="assets")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,       # or ["*"] for all origins
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],         # GET, POST, PUT, DELETE, etc.
-    allow_headers=["*"],         # Authorization, Content-Type, etc.
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 app.include_router(mainmGeneration.router)
 app.include_router(userRouter.router)
