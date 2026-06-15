@@ -22,6 +22,17 @@ Generate a cinematic Manim v0.20+ equation scene using MovingCameraScene.
 - `.next_to()` on un-arranged groups; content drifting off-frame.
 - Linear motion on camera (use rate_func=smooth/ease_in_out_sine).
 
+## Example 1 For simple word:
+from manim import *
+import numpy as np
+
+class Animation_984e6dc2(Scene):
+    def construct(self):
+        self.camera.background_color = WHITE
+        hello_world = Text("Hello world", font="Sans", font_size=48, color=BLACK)
+        self.play(Write(hello_world), run_time=1)
+
+
 ## REFERENCE (study the techniques, don't copy verbatim)
 ```python
 from manim import *
@@ -84,9 +95,11 @@ TITLE 46 > EQUATION 36 > LABEL 28 > DESC 24.
 
 ## CONSTRUCTOR RULES (cause most crashes)
 - stroke opacity NOT in constructor → `.set_stroke(opacity=...)` after. (fill_opacity in constructor is fine.)
+- `get_riemann_rectangles` takes NO `fill_color` kwarg. Call `get_riemann_rectangles(graph, x_range=[a,b], dx=...)` then `rects.set_fill(color, opacity)` afterwards.
 - `background_line_style={...}`, `axis_config={...}`, per-axis `x_axis_config={...}` only inside Axes/NumberPlane.
 - `resolution=(20,20)` for Surface (NOT res_u/res_v).
-- Always `from manim import *` and `import numpy as np`. Use UL/UR/DL/DR (not UP_LEFT). Custom colors as hex (LIGHT_BLUE="#87CEFA").
+- NEVER use `m.set_color(color_gradient([C1, C2]))`. It throws an error. Use `m.set_color_by_gradient(C1, C2)` instead.
+- Always `from manim import *` and `import numpy as np`. Use UL/UR/DL/DR (not UP_LEFT). Custom colors as hex (MY_COLOR="#87CEFA").
 
 ## STYLE
 ≤4 colors; match equation color to its graph. Drive motion with `ValueTracker` + `always_redraw`. Sweeps `rate_func=smooth`. Emphasize with `Flash`/`Indicate`. Holds ≥1.5s.
@@ -145,10 +158,6 @@ class GraphScene(MovingCameraScene):
         # 6. Sweep
         self.play(xt.animate.set_value(7), run_time=6, rate_func=smooth)
         self.wait(2)
-
-        # 7. Clean up
-        self.play(*[FadeOut(m) for m in self.mobjects], run_time=1)
-        self.wait(1)
 ```
 </2D_GRAPH_SCENE_RULES>
 """
@@ -157,8 +166,8 @@ GRAPH3D = r"""
 <3D_SCENE_RULES>
 Generate a Manim v0.20+ 3D scene. Extend ThreeDScene.
 
-## DESIGN SEQUENCE (mandatory order)
-1. Title at ORIGIN center, Write it, wait, then fade out (LaggedStart letter-scatter encouraged). No equation in title.
+## DESIGN GUIDELINES (default sequence unless user overrides)
+1. Title: Unless the user explicitly asks to pin the title to a corner, place the title at ORIGIN center, write it, wait, then fade out COMPLETELY before drawing the 3D scene. If pinned to a corner, and you suspect it will overlap with a large 3D object, FadeOut the title before the object grows. NEVER allow text to overlap with the 3D objects.
 2. Set camera orientation, then create ThreeDAxes (keep lengths ≤7 so it stays on screen).
 3. Axis labels: place at arrow tips with get_x/y/z_axis_label, then pass them to
    `add_fixed_orientation_mobjects(...)` — this keeps them attached to the arrows
@@ -170,8 +179,8 @@ Generate a Manim v0.20+ 3D scene. Extend ThreeDScene.
 5. Background BLACK unless asked.
 
 ## CAMERA (v0.20 — old API removed)
-- `self.set_camera_orientation(phi=70*DEGREES, theta=-45*DEGREES, zoom=0.9)`
-- NEVER use `distance=` (removed in v0.20). Control apparent size with `zoom=` (smaller = see more) or `focal_distance=`.
+- `self.set_camera_orientation(phi=70*DEGREES, theta=-45*DEGREES, zoom=1.5)`
+- NEVER use `distance=` (removed in v0.20). Control apparent size with `zoom=`. IMPORTANT: `zoom > 1` zooms IN (makes things bigger), `zoom < 1` zooms OUT. Always use `zoom=1.2` to `1.5` so the 3D diagram fills the screen and isn't tiny!
 - Animate camera: `self.move_camera(phi=..., theta=..., zoom=..., run_time=...)`. Do NOT pass move_camera into self.play.
 - Spin to showcase: `self.begin_ambient_camera_rotation(rate=0.2)` ... `self.wait(n)` ... `self.stop_ambient_camera_rotation()`. Smoother than Rotate().
 
@@ -181,10 +190,11 @@ Generate a Manim v0.20+ 3D scene. Extend ThreeDScene.
 - Fixed-in-frame text stays put during ambient rotation (it does NOT track the spinning axes) — that's why a corner legend is correct, not labels glued to axis tips.
 
 ## SURFACE / OBJECTS
-- `Surface(lambda u,v: np.array([u, v, f(u,v)]), u_range=[...], v_range=[...], resolution=(40,40))` (NOT res_u/res_v).
-- Opacity NOT in constructor → `.set_fill_opacity(0.85)` / `.set_stroke_opacity(0.3)` after creation.
-- Cool height gradient: `surface.set_fill_by_value(axes=axes, colorscale=[(BLUE_E,-1),(TEAL,0),(YELLOW,1)])`. If colorscale errors, try `colors=[...]` or fall back to a solid `fill_color`.
-- Box = `Prism(dimensions=[x,y,z])`; cube = `Cube(side_length=...)` (no `Cuboid`).
+- `Surface(...)`, `Prism(...)`, `Cylinder(...)`.
+- AXIS VISIBILITY: If drawing a large surface, the surface will physically cover and hide the `ThreeDAxes`! To prevent this, make the axes significantly larger than the surface range (e.g. axes length 10, surface range [-3, 3]), and lower the surface opacity (`surface.set_fill_opacity(0.5)`).
+- BIG OBJECTS: Scale your primary 3D objects up! Default sizes (like radius=1) often look tiny in 3D. Make them larger (e.g., radius=2, height=4) or use `zoom=1.5` so the object is highly visible and takes up a good portion of the screen.
+- Opacity NOT in constructor → `.set_fill_opacity(...)` / `.set_stroke_opacity(...)` after creation.
+- Cool height gradient: `surface.set_fill_by_value(axes=axes, colorscale=[(BLUE_E,-1),(TEAL,0),(YELLOW,1)])`.
 
 ## FONT HIERARCHY
 TITLE 48-60 > EQUATION 36 > LABEL 28-30.
@@ -192,6 +202,7 @@ TITLE 48-60 > EQUATION 36 > LABEL 28-30.
 ## COMMON FIXES
 - `from manim import *` + `import numpy as np` always. UL/UR/DL/DR (not UP_LEFT).
 - No 3D `.animate` on camera — use move_camera / set_camera_orientation.
+- NEVER use `m.set_color(color_gradient([C1, C2]))` in updaters or anywhere else! It crashes. Use `m.set_color_by_gradient(C1, C2)` instead.
 - ≤4 colors. Holds ≥1s.
 
 ## REFERENCE TEMPLATE (study; adapt, don't copy verbatim)
@@ -209,8 +220,8 @@ class Surface3D(ThreeDScene):
         self.play(Write(title, run_time=1.5)); self.wait(1)
         self.play(LaggedStart(*[l.animate.shift(np.array([np.random.uniform(-2,2), np.random.uniform(-2,2),0])).scale(0.5).set_opacity(0) for l in title], lag_ratio=0.1, run_time=2))
 
-        # 2. Camera + axes (zoom, NOT distance)
-        self.set_camera_orientation(phi=70*DEGREES, theta=-45*DEGREES, zoom=0.9)
+        # 2. Camera + axes (zoom IN so it's not tiny)
+        self.set_camera_orientation(phi=70*DEGREES, theta=-45*DEGREES, zoom=1.2)
         axes = ThreeDAxes(x_range=[-3,3,1], y_range=[-3,3,1], z_range=[-2,2,1], x_length=7, y_length=7, z_length=4)
         self.play(Create(axes, run_time=2))
 
@@ -231,11 +242,14 @@ class Surface3D(ThreeDScene):
         self.play(FadeIn(legend), run_time=1)
 
         # 4. Surface with height-based gradient (cool look)
-        surface = Surface(
-            lambda u, v: np.array([u, v, np.sin(u)*np.cos(v)]),
-            u_range=[-3,3], v_range=[-3,3], resolution=(40,40),
+        # 4. Surface with height-based gradient (cool look)
+        surface = axes.plot_surface(
+            lambda u, v: np.sin(u) * np.cos(v),
+            u_range=[-3, 3], 
+            v_range=[-3, 3], 
+            resolution=(40, 40),
+            colorscale=[BLUE_E, TEAL, YELLOW]
         )
-        surface.set_fill_by_value(axes=axes, colorscale=[(BLUE_E,-1),(TEAL,0),(YELLOW,1)])
         surface.set_fill_opacity(0.85); surface.set_stroke_opacity(0.3)
         self.play(Create(surface, run_time=3)); self.wait(1)
 
@@ -277,7 +291,7 @@ TITLE 64-46 > TEXT 40-36 > LABEL 32-28 > DESC 24.
 - Position: `.move_to(ORIGIN)` / `.center()` (no `.to_center()`); `.next_to()`, `.arrange()`, `.to_corner()`, `.to_edge()` all valid.
 - Dashed: `DashedVMobject(m, num_dashes=50)` or `DashedLine(a, b)` (no dash_length kwarg in constructor).
 - Per-axis config inside Axes: `x_axis_config={...}`, `y_axis_config={...}`. `background_line_style`/`axis_config` only inside Axes/NumberPlane.
-- Custom colors as hex: `LIGHT_BLUE = "#87CEFA"`. Use UL/UR/DL/DR (not UP_LEFT); UP/DOWN/LEFT/RIGHT/ORIGIN valid.
+- Custom colors as hex: `MY_COLOR = "#87CEFA"`. Use UL/UR/DL/DR (not UP_LEFT); UP/DOWN/LEFT/RIGHT/ORIGIN valid.
 - Updaters take dt: `def upd(mob, dt): ...`.
 - Reference last item in a VGroup: `group[-1]` (no `last_mobject`).
 - Define every font-size constant before use (e.g. TEXT_SIZE = 28).
@@ -457,9 +471,6 @@ class UltimateBubbleSort(MovingCameraScene):
         self.play(Write(done))
         self.play(FadeIn(cx, shift=UP*0.2))
         self.wait(3)
-
-        # Clean up
-        self.play(*[FadeOut(m) for m in self.mobjects], run_time=1.5)
 </COMPUTER_DATASTRUCTURE_RULES>
 """
 
@@ -472,7 +483,8 @@ Generate a Manim v0.20+ physics visualization.
 2. Axes after title fades. Relevant axes only, no grid unless needed. Integers; 2 decimals if needed.
 3. Equations/parameters in a corner via `.to_corner(UL/UR/DL/DR, buff=...)`. Fade out if no space.
 4. Draw the trajectory/field/object, then animate motion, then highlight key points.
-5. 5% margin all edges. Background BLACK unless asked.
+5. SCALE: If drawing physical objects (e.g., dipole cylinders, magnets, pendulums), explicitly make them large enough to easily see on screen. Do not use tiny default sizes.
+6. 5% margin all edges. Background BLACK unless asked.
 
 ## SUPPORTED
 Projectile/trajectory motion, pendulums, waves, force/vector diagrams, fields, MoveAlongPath animations, parametric paths.
@@ -686,10 +698,6 @@ class StatsBarChart(Scene):
         self.play(Indicate(chart.bars[i], color=YELLOW), run_time=0.8)
         self.play(Flash(chart.bars[i].get_top(), color=YELLOW, num_lines=12), run_time=0.8)
         self.wait(2)
-
-        # 5. Cleanup
-        self.play(*[FadeOut(m) for m in [chart, val_labels, legend, box, tag]], run_time=1.2)
-        self.wait(1)
 ```
 </STATISTICS_SCENE_RULES>
 """

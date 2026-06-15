@@ -1,23 +1,13 @@
 from langchain_core.messages import (
-    AIMessage, 
     SystemMessage, 
     HumanMessage
 )
 from app.schema.ServiceSchema import (
     DescriptionGenerationState, 
-    GenDescriptions, 
     DetailDescription, 
-    CheckDetailedDescription, 
-    CodeGenPossibility
+    CheckDetailedDescription
 )
-from langchain.agents import (
-    create_tool_calling_agent,
-    AgentExecutor
-)
-from langchain_core.prompts import (
-    ChatPromptTemplate,
-    MessagesPlaceholder
-)
+from langchain_core.prompts import ChatPromptTemplate
 from app.core.llm import (
     llmPro, 
     llmFlash
@@ -35,6 +25,7 @@ from app.services.manim.animationTypes import (
     GRAPH3D,
     STATISTICS,
     PHYSICS,
+    TEXT,
 )
 ANIMATION_MAP = {
     AnimationType.GRAPH2D: GRAPH2D,
@@ -42,6 +33,7 @@ ANIMATION_MAP = {
     AnimationType.GRAPH3D: GRAPH3D,
     AnimationType.STATISTICS: STATISTICS,
     AnimationType.PHYSICS: PHYSICS,
+    AnimationType.TEXT: TEXT,
 }
 
 load_dotenv()
@@ -50,93 +42,70 @@ load_dotenv()
 validation = """
 **VALIDATION CRITERIA:**
 
-**1. TECHNICAL COMPLETENESS:**
-- Specific object positions (coordinates given)
-- Exact colors, sizes, and fonts specified
-- Animation timing and durations provided
-- Clear step-by-step sequence
+**1. COMPLETENESS:**
+- Every object has an identity and color. Size/scale and font_size where they're meaningful (text, shapes) — not required for things like computed paths or curves.
+- Positioning is specified either relationally ("top-left", "below title", "point (2,4) on axes") OR with coordinates — both are acceptable.
+- Each step has an animation type and approximate duration.
+- Derived values (angles, intersections) include the computed result.
 
 **2. IMPLEMENTATION FEASIBILITY:**
-- Each step can be directly translated to Manim code
-- Animation sequence is logical and flows well
-- All required parameters are specified
-
+- Each step maps to a clear Manim action.
+- The sequence is logical and ordered.
+- Nothing required by the user's request is missing.
 """
 
 
 
 async def generateDetailedDescription(state: DescriptionGenerationState):
+    logging.info("--- NODE RUNNING: generateDetailedDescription ---")
     print("\n******Generating detailed description ********\n")
     animationTypeRule = ANIMATION_MAP.get(state.animationType)
     userQuery = state.userQuery
-    structuredLlm = llmFlash.with_structured_output(DetailDescription)
     
     systemPrompt = """
-You are a **Manim v0.19+ Animation Planner**.
-Your task: Convert the user’s request into a **complete, step-by-step scene description**.
+You are a Manim v0.20+ Animation Planner. Convert the user's request into a complete, step-by-step scene description. Output a DESCRIPTION ONLY — no Manim code, syntax, or function names.
 
-**Important:** Only provide detailed scene descriptions. **Do not write Manim code, syntax, or functions.**
+## RULES
+1. Target Manim v0.20+.
+2. Integers for axes/positions/labels unless decimals are required; if so, 2 decimal places.
+3. No overlaps — keep ≥1 unit spacing between all objects and text.
+4. Background black unless the user specifies otherwise.
+5. Each step must specify: WHAT the object is, its color, size/scale, font + font_size (for text), and the animation type + approximate duration.
+6. POSITIONING — prefer RELATIONSHIPS over absolute coordinates:
+   - Describe placement relationally: "centered", "top-left corner", "below the title", "to the right of the axes", "along the x-axis from 0 to 5".
+   - Give absolute (x,y)/(x,y,z) coordinates ONLY for points that are mathematically meaningful (a plotted data point, a graph origin, a vector endpoint). Let the coder handle pixel placement.
+   - For anything mapped onto axes, describe it in DATA coordinates ("the point (2, 4) on the axes"), not screen coordinates.
+7. MATH — when a value is derived (an angle, an intersection, a velocity), give BOTH the formula and the computed result (e.g. "refracted angle = arcsin(n1·sin(θi)/n2) ≈ 28.13°") so the coder can verify rather than guess.
+8. Logos: If the user requests a logo without explicitly specifying "3D", assume it is a 2D logo and use standard 2D shapes (Circle, Rectangle, Polygon) instead of 3D objects.
+9. Always explicitly state in Step 1: the background color, and whether axes are shown or hidden — even when using defaults (black background, no axes). This pre-empts validator objections.
+10. COLORS: ONLY use standard Manim color names (e.g., BLUE, RED, YELLOW, TEAL, ORANGE, PURPLE, GREEN, BLUE_E). NEVER use generic or undefined names like LIGHT_BLUE, DARK_BLUE, or LIGHT_RED.
 
----
-
-## Rules (all must be followed)
-
-1. Use **Manim v0.19+ assumptions**.
-2. Always use **integers** for axes, positions, and labels unless decimals are required. If decimals are needed, use **two decimal places**.
-3. Ensure **no overlaps**: All objects and text must have at least **1 unit spacing**.
-4. Background is **black**, unless otherwise specified.
-5. Every step must specify:
-
-   * Exact **position** (x,y) or (x,y,z)
-   * **Color**
-   * **Size or scale**
-   * **Font and font_size** (if text)
-   * **Animation type** and duration
-   * **Camera moves** (if 3D)
-
----
-
-## Animation Type Rules
-
+## ANIMATION TYPE RULES (these tell the downstream coder the correct v0.20 constructs to use; you describe the visual intent, these ensure correct syntax)
 {animationTypeRule}
 
----
-
-## Output Format
-
-* Always use **Step N:** format.
-* Avoid vague descriptions like “place somewhere” or “make visible.”
-* Only provide **detailed scene descriptions**.
-* Include every necessary detail for rendering the scene accurately.
+## OUTPUT FORMAT
+- Use "Step N:" for each step.
+- Be concrete — never "place somewhere" or "make visible."
+- Describe only; no code.
 
 ### Example
-
-Step 1: Place a NumberPlane at coordinates (0,0) with x_range from -5 to 5 and y_range from -3 to 3. Background color: black. 
-Step 2: Show the text 'ax² + bx + c = 0' at position (0,2), font='Arial', font_size=64, color=white, opacity=1. Animate the writing of the text over 2 seconds. 
-Step 3: Move the character 'c' to position (3,2) using a transformation animation over 2 seconds. 
-Step 4: Place a red cube at coordinates (-2,0,1), size 1, opacity 0.8. Rotate the cube around the y-axis for 3 seconds.
+Step 1: Place a NumberPlane at (0,0), x_range -5 to 5, y_range -3 to 3. Background black.
+Step 2: Write 'ax^2 + bx + c = 0' at (0,2), font_size 64, white, over 2 seconds.
+Step 3: Move 'c' to (3,2) via transform over 2 seconds.
 """
 
-    # msg = [
-    #     SystemMessage(content=systemPrompt.format(
-    #         animationTypeRule=animationTypeRule,
-    #         validation=validation,
-    #     )),
-    #     HumanMessage(content=userQuery),
-    # ]
+
     
     prompt = ChatPromptTemplate.from_messages([
         ("system", systemPrompt),
         ("human", "{input}"),
-        MessagesPlaceholder(variable_name="agent_scratchpad")
     ])
 
-    agent = create_tool_calling_agent(llmFlash, tools=[],prompt=prompt)
-    agent_executor = AgentExecutor(agent=agent,tools=[],verbose=True, max_iterations=3)
+    chain = prompt | llmFlash.with_structured_output(DetailDescription)
 
     try:
         result = await retry(
-            agent_executor,
+            chain,
             {
                 "input": userQuery,
                 "animationTypeRule":animationTypeRule,
@@ -145,12 +114,13 @@ Step 4: Place a red cube at coordinates (-2,0,1), size 1, opacity 0.8. Rotate th
             retries=3,
             delay=1
         )
-        # print(result.description)
+        # print(result.content)
+        print(f"\n[DESCRIPTION_GENERATED]:\n{result.description}\n")
         return state.model_copy(update={
-            "detailedDescription": result.get("output", "")
+            "detailedDescription": result.description
         })
     except (ValidationError, RuntimeError) as err:
-        logging.exception("generateDetailedDescription failed", err)
+        logging.exception("generateDetailedDescription failed")
         raise
 
 
@@ -159,6 +129,7 @@ Step 4: Place a red cube at coordinates (-2,0,1), size 1, opacity 0.8. Rotate th
 def validateDescription(state: DescriptionGenerationState):
     """ This function checks the description, 
     if the description is correct then True otherwise False """
+    logging.info("--- NODE RUNNING: validateDescription ---")
     print("\n******Checking is this Correct or not ********\n")
     detailedDescription = state.detailedDescription
     userQuery = state.userQuery
@@ -166,44 +137,30 @@ def validateDescription(state: DescriptionGenerationState):
     structured_llm = llmFlash.with_structured_output(CheckDetailedDescription)
     
     system_prompt = """
-You are a **Manim v0.19+ description validator**.
-Your task: Check if the description matches the **user’s original request** and is **technically implementable** under Manim v0.19+.
+You are a Manim v0.20+ description validator. Check whether the description (a) matches the user's original request and (b) is complete enough to implement. Do NOT check code or syntax.
 
----
-
-## Validation Rules
-
+## COMPLETENESS CRITERIA
 {validation}
 
-## Animation Type Rules
-
+## ANIMATION TYPE RULES
 {animationTypeRule}
 
----
-
-## Description to Validate
-
+## DESCRIPTION
 {detailedDescription}
 
-## User’s Original Request
-
+## USER REQUEST
 {userQuery}
 
----
+## TASK
+Return TRUE if a Manim coder could build a scene that satisfies the user's core request from this description. Be LENIENT — minor unspecified details (exact point counts, a color shade, a duration ±1s) are NOT failures; the coder fills those with sensible defaults.
 
-## Task
+Return FALSE only if:
+- A KEY element the user explicitly asked for is entirely absent (not just unstated-as-a-default), OR
+- The description clearly contradicts the request, OR
+- A step is genuinely impossible to interpret.
 
-* Return `true` if the description matches the **user’s query** and includes all necessary elements for implementation.
-* Return `false` if any required element is missing or does not match the user request.
-* **Do not check Manim syntax or code correctness.**
-* If `false`, list **all discrepancies or missing elements** inside `detailedDescriptionError`, not just one.
-
-  * Example:
-        Step 3: Text object missing font specification.
-        Step 4: Animation duration for movement not provided.
-
-Focus only on **matching the user request and completeness**, ignoring any code or syntax concerns.
-
+Do NOT fail a description for: missing exact coordinates, missing point counts, unstated defaults (e.g. "no axes" is the default — absence of axes instructions is fine), or a missing duration on one step.
+If FALSE, list ALL real blocking issues at once. Default to TRUE when unsure.
 """
 
     messages = [
@@ -216,14 +173,9 @@ Focus only on **matching the user request and completeness**, ignoring any code 
         HumanMessage(content="Validate this description for Manim implementation.")
     ]
     
-    nextStage = ""
     try:
         result = structured_llm.invoke(messages)
-        # print("Description is good or not: ", result.isThisGoodDescrription)
-        if result.isThisGoodDescrription:
-            nextStage = "createFileAndWriteMainmCode"
-        else:
-            nextStage = "refineDescription"
+        logging.info("VALIDATE_DESCRIPTION result=%s refine_count=%s", result.isThisGoodDescrription, state.descriptionRefine)
         print("Description Error: ", result.detailedDescriptionError)
         
         return state.model_copy(update={
@@ -238,95 +190,47 @@ Focus only on **matching the user request and completeness**, ignoring any code 
 
 
 async def refineDescription(state: DescriptionGenerationState):
+    logging.info("--- NODE RUNNING: refineDescription ---")
     print("\n**** refineDescription *****\n")
     animationTypeRule = ANIMATION_MAP.get(state.animationType)
 
     userQuery = state.userQuery
     description = state.detailedDescription
     detailedDescriptionError = state.detailedDescriptionError or "No specific error provided."
-    structured = llmFlash.with_structured_output(DetailDescription)
     descriptionRefine = state.descriptionRefine + 1
     
     systemPrompt = """
-You are a **Manim v0.19+ description refiner**.
-Your task: Revise the given description so it satisfies **all validation rules** in one pass.
+You are a Manim v0.20+ description refiner. Revise the description so it satisfies ALL validation rules in one pass — fix the reported errors AND re-check every step against the full rules, so nothing else is left incomplete.
 
-Do not just fix the listed errors. Instead:
-
-* Apply the reported errors **AND** double-check every step against the full validation rules.
-* Ensure the final output is **implementation-ready** in Manim with no missing details.
-
----
-
-## Validation Rules
-
+## COMPLETENESS CRITERIA
 {validation}
 
-## Animation Type Rules
-
+## ANIMATION TYPE RULES
 {animationTypeRule}
 
----
+## INPUTS
+- Current Description: {description}
+- Reported Errors: {detailedDescriptionError}
+- User Request: {userQuery}
 
-## Inputs
-
-* Current Description: {description}
-* Reported Errors: {detailedDescriptionError}
-* User’s Request: {userQuery}
-
----
-
-## Output Format
-
-* Step-by-step description (Step 1, Step 2, …).
-* Each step must specify: position, color, size, font, font_size, opacity, animation type + duration.
-* Titles must be aligned (to_edge(UP)) and scaled properly.
-* Maintain ≥1 unit spacing.
-* Only output **textual description** (never code or syntax).
-
-### Example (Textual Description Only)
-
-
-Step 1: Place a NumberPlane at coordinates (0,0) with x_range from -5 to 5 and y_range from -3 to 3. Background color: black. 
-Step 2: Show the text 'ax² + bx + c = 0' at position (0,2), font='Arial', font_size=64, color=white, opacity=1. Animate the writing of the text over 2 seconds. 
-Step 3: Move the character 'c' to position (3,2) using a transformation animation over 2 seconds. 
-Step 4: Place a red cube at coordinates (-2,0,1), size 1, opacity 0.8. Rotate the cube around the y-axis for 3 seconds.
-
+## OUTPUT FORMAT
+- "Step N:" format, description only (no code).
+- Each step specifies: identity, color, size, font_size (text), animation type + duration, and placement (relational or, where mathematically meaningful, coordinates).
+- Prefer relational placement; give coordinates only for meaningful points.
+- Titles aligned to top, scaled to fit. Keep ≥1 unit spacing.
 """
 
-    # messages = [
-    #     SystemMessage(content=systemPrompt.format(
-    #         description=description,
-    #         detailedDescriptionError=detailedDescriptionError,
-    #         userQuery=userQuery,
-    #         animationTypeRule=animationTypeRule,
-    #         validation=validation,
-    #     )),
-    #     HumanMessage(content="Refine the description to fix the validation errors. You will be provided with the CURRENT DESCRIPTION and the VALIDATION ERRORS TO FIX")
-    # ]
+
     humanMessage = "Refine the description to fix the validation errors. You will be provided with the CURRENT DESCRIPTION and the VALIDATION ERRORS TO FIX"
     prompt = ChatPromptTemplate.from_messages([
         ("system", systemPrompt),
         ("human", "{input}"),
-        MessagesPlaceholder(variable_name="agent_scratchpad")
     ])
 
-    agent = create_tool_calling_agent(llmFlash,tools=[] ,prompt=prompt)
-    agent_executor = AgentExecutor(agent=agent,tools=[],verbose=True, max_iterations=3)
+    chain = prompt | llmFlash.with_structured_output(DetailDescription)
     try:
-        # result = structured.invoke(messages)
-        # print(f"Refinement attempt #{descriptionRefine}")
-        # print(f"Refined description: {result.description}")
-        # result = agent_executor.invoke({
-        #     "detailedDescriptionError":detailedDescriptionError,
-        #     "description":description,
-        #     "input": humanMessage,
-        #     "animationTypeRule":animationTypeRule,
-        #     "validation":validation,
-        #     "userQuery":userQuery
-        # })
         result = await retry(
-            agent_executor,
+            chain,
             {
                 "detailedDescriptionError":detailedDescriptionError,
                 "description":description,
@@ -338,18 +242,19 @@ Step 4: Place a red cube at coordinates (-2,0,1), size 1, opacity 0.8. Rotate th
             retries=3,
             delay=1
         )
+        print(f"\n[DESCRIPTION_REFINED] (Attempt {descriptionRefine}):\n{result.description}\n")
         return state.model_copy(update={
-            "detailedDescription": result.get("output", ""),
+            "detailedDescription": result.description,
             "descriptionRefine": descriptionRefine,
         })
     except (ValidationError, ValueError) as e:
-        logging.exception("refineDescription failed", e)
+        logging.exception("refineDescription failed")
         raise
 
 def router(state: DescriptionGenerationState) -> str:
     if state.isGood is True:
         return "END"
-    elif state.descriptionRefine >= 10:
+    elif state.descriptionRefine >= 2:
         return "END"
     else: 
         return "refineDescription"

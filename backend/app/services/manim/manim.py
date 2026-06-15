@@ -90,6 +90,7 @@ def call_graph(self, query, userID, quality, format, historyId=None, resolution=
 
                 update_progress("Generating Manim Code", 50, "Creating animation code")
                 manimGenerationState = mainmState(
+                    userQuery=query,
                     description= result.get("detailedDescription"),
                     isCodeGood=None,
                     format=descriptionState.format,
@@ -115,28 +116,37 @@ def call_graph(self, query, userID, quality, format, historyId=None, resolution=
 
                 
                 try:
+                    import glob
                     current_dir = os.path.dirname(os.path.abspath(__file__))
-                    backend_dir = os.path.dirname(os.path.dirname(current_dir))
+                    # current_dir is backend/app/services/manim
+                    backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
+                    videos_dir = os.path.join(backend_dir, "videos")
                     
-                    video_file_path_with_suffix = os.path.join(backend_dir, "videos", f"{filename_without_extension}_ManimCE_v0.19.0.{manimGeneration.get('format')}")
-                    video_file_path_without_suffix = os.path.join(backend_dir, "videos", f"{filename_without_extension}.{manimGeneration.get('format')}")
+                    # Remove ALL files in videos/ that start with the animation name
+                    # This catches: production renders (_ManimCE_vX.X.X.mp4), check renders (.mp4), extracted frames (_frame_N.jpg)
+                    for f in glob.glob(os.path.join(videos_dir, f"{filename_without_extension}*")):
+                        if os.path.isfile(f):
+                            os.remove(f)
+                            print(f"Cleanup: removed {os.path.basename(f)}")
                     
-                    if os.path.exists(video_file_path_with_suffix):
-                        os.remove(video_file_path_with_suffix)
-                        # print(f"Successfully removed video file: {video_file_path_with_suffix}")
-                    elif os.path.exists(video_file_path_without_suffix):
-                        os.remove(video_file_path_without_suffix)
-                        # print(f"Successfully removed video file: {video_file_path_without_suffix}")
-                    else:
-                        print(f"Video file not found for cleanup: {video_file_path_with_suffix} or {video_file_path_without_suffix}")
-                    
-                    # Remove the partial movie files directory
-                    partial_movie_dir = os.path.join(backend_dir, "videos", "partial_movie_files", filename_without_extension)
+                    # Remove the partial_movie_files directory for this animation
+                    partial_movie_dir = os.path.join(videos_dir, "partial_movie_files", filename_without_extension)
                     if os.path.exists(partial_movie_dir):
                         shutil.rmtree(partial_movie_dir)
-                        print(f"Successfully removed partial movie files directory: {partial_movie_dir}")
-                    else:
-                        print(f"Partial movie files directory not found for cleanup: {partial_movie_dir}")
+                        print(f"Cleanup: removed partial_movie_files/{filename_without_extension}")
+                    
+                    # Remove the temp_files directory for this animation (if it exists)
+                    temp_files_dir = os.path.join(videos_dir, "temp_files")
+                    if os.path.exists(temp_files_dir):
+                        for f in glob.glob(os.path.join(temp_files_dir, f"{filename_without_extension}*")):
+                            if os.path.isfile(f):
+                                os.remove(f)
+                    
+                    # Remove the source .py file from temp/
+                    temp_py = os.path.join(backend_dir, "temp", f"{filename_without_extension}.py")
+                    if os.path.exists(temp_py):
+                        os.remove(temp_py)
+                        print(f"Cleanup: removed temp/{filename_without_extension}.py")
                         
                 except Exception as cleanup_error:
                     print(f"Warning: Failed to remove files during cleanup: {cleanup_error}")
@@ -187,7 +197,9 @@ def call_graph(self, query, userID, quality, format, historyId=None, resolution=
                 }
                 
             except Exception as e:
+                import traceback
                 error_msg = str(e)
+                print(f"call_graph failed:\n{traceback.format_exc()}")
                 update_progress("Error", 100, f"An error occurred: {error_msg}")
                 return {
                     "success": False,
