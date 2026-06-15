@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '@/lib/api';
 import type { UserHistoryResponse } from '@/types/api';
 
 export class UserApiService {
@@ -25,7 +25,7 @@ export class UserApiService {
     limit: number = 15
   ): Promise<UserHistoryResponse> {
     try {
-      const response = await axios.get<UserHistoryResponse>('/api/user/userHistory', {
+      const response = await api.get<UserHistoryResponse>('/api/user/userHistory', {
         params: { page, limit },
         withCredentials: true,
         headers: this.getAuthHeaders(accessToken),

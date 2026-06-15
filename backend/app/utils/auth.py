@@ -13,7 +13,7 @@ from fastapi import (
     Request
 )
 from app.schema.UserSchema import TokenData
-from app.config import Config
+from app.config.config import Config
 import logging
 
 ACCESS_TOKEN_SECRET_KEY = Config.ACCESS_TOKEN_SECRET_KEY

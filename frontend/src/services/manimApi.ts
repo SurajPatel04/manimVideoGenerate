@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '@/lib/api';
 import type { ManimGenerationRequest, ManimGenerationResponse, TaskResultResponse, CancelTaskResponse } from '@/types/api';
 
 export class ManimApiService {
@@ -14,7 +14,7 @@ export class ManimApiService {
     accessToken: string
   ): Promise<ManimGenerationResponse> {
     try {
-      const response = await axios.post<ManimGenerationResponse>(
+      const response = await api.post<ManimGenerationResponse>(
         '/api/manimGeneration/',
         request,
         {
@@ -48,7 +48,7 @@ export class ManimApiService {
 
   static async pollTaskStatus(taskId: string, accessToken: string): Promise<TaskResultResponse> {
     try {
-      const response = await axios.get<TaskResultResponse>(`/api/manimGeneration/result/${taskId}`, {
+      const response = await api.get<TaskResultResponse>(`/api/manimGeneration/result/${taskId}`, {
         withCredentials: true,
         headers: this.getAuthHeaders(accessToken),
         timeout: 20000,
@@ -63,7 +63,7 @@ export class ManimApiService {
 
   static async cancelTask(taskId: string, accessToken: string): Promise<CancelTaskResponse> {
     try {
-      const response = await axios.post<CancelTaskResponse>(
+      const response = await api.post<CancelTaskResponse>(
         '/api/manimGeneration/cancel',
         { taskId },
         {

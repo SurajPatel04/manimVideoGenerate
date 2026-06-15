@@ -3,14 +3,16 @@ import { PlaceholdersAndVanishInput } from "@/components/ui/placeholders-and-van
 import { Sidebar, SidebarBody } from "@/components/ui/sidebar";
 import { BackgroundBeams } from "@/components/ui/background-beams";
 import { CodeBlock } from "@/components/ui/code-block";
+import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { IconPlus, IconUser, IconLogout, IconMenu2, IconDownload, IconCode, IconX, IconHistory } from "@tabler/icons-react";
+import { IconPlus, IconUser, IconLogout, IconMenu2, IconDownload, IconCode, IconX, IconHistory, IconCheck } from "@tabler/icons-react";
 import type { ManimGenerationRequest, UserHistoryItem } from '@/types/api';
 import { ManimApiService } from '@/services/manimApi';
-import { Stepper, Step, StepLabel, Box, useTheme, useMediaQuery } from '@mui/material';
+import { Box, useTheme, useMediaQuery } from '@mui/material';
 import HistorySidebar from '@/components/HistorySidebar';
 import '@/styles/scrollbar.css';
+import { motion, AnimatePresence } from "motion/react";
 
 interface MessageType {
   type: 'user' | 'assistant';
@@ -40,12 +42,14 @@ const PLACEHOLDERS = [
 ];
 
 const SuggestionButton = memo(({ suggestion, onClick }: { suggestion: string, onClick: (suggestion: string, options?: { format: string; quality: string; resolution?: string }) => void }) => (
-  <button
+  <motion.button
+    whileHover={{ scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
     onClick={() => onClick(suggestion, { format: "mp4", quality: "ql", resolution: "1920x1080" })}
-    className="p-3 md:p-4 bg-gray-800 hover:bg-gray-700 rounded-xl border border-gray-700 text-white text-left transition-all duration-200 hover:border-gray-600 w-full"
+    className="flex flex-col items-start p-4 md:p-5 rounded-2xl border border-neutral-800 bg-neutral-900/50 backdrop-blur-sm transition-all duration-300 hover:border-neutral-700 text-left group cursor-pointer w-full"
   >
-    <p className="text-xs md:text-sm">{suggestion}</p>
-  </button>
+    <p className="text-sm text-neutral-400 group-hover:text-neutral-200 transition-colors">{suggestion}</p>
+  </motion.button>
 ));
 
 const ProgressStepper = memo(({ progress }: { progress?: number }) => {
@@ -56,7 +60,6 @@ const ProgressStepper = memo(({ progress }: { progress?: number }) => {
     'Creating animation code and rendering video',
     'Video generation completed successfully'
   ];
-
 
   const getActiveStep = () => {
     const currentProgress = progress || 0;
@@ -69,128 +72,87 @@ const ProgressStepper = memo(({ progress }: { progress?: number }) => {
 
   const activeStep = getActiveStep();
 
-  const theme = useTheme();
-  const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
-
-  const stepperSx = isSmall ? {
-    width: '100%',
-    mt: 1,
-    mb: 1,
-    p: 0.5,
-    '& .MuiStep-root': {
-      padding: 0,
-      marginBottom: theme.spacing(1.2),
-      display: 'flex',
-      alignItems: 'flex-start',
-    },
-    '& .MuiStepLabel-root': {
-      alignItems: 'center',
-      gap: theme.spacing(1),
-      width: '100%',
-      paddingLeft: theme.spacing(0.5),
-    },
-    '& .MuiStepLabel-label': {
-      fontSize: '0.75rem',
-      color: '#9CA3AF',
-      whiteSpace: 'normal',
-      overflow: 'visible',
-      lineHeight: 1.2,
-      display: 'block',
-    },
-    '& .MuiStepConnector-root.Mui-vertical': {
-      marginLeft: '12px',
-      top: 10,
-      bottom: 10,
-    },
-    '& .MuiStepConnector-root': {
-      '& .MuiStepConnector-line': {
-        borderColor: '#4B5563',
-      }
-    },
-    '& .MuiStepIcon-root': {
-      color: '#4B5563',
-      width: 28,
-      height: 28,
-      fontSize: '1.05rem',
-      marginRight: theme.spacing(0.25),
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }
-  } : {
-    width: '100%',
-    mt: 2,
-    mb: 2,
-    backgroundColor: 'transparent',
-    '& .MuiStepper-root': {
-      backgroundColor: 'transparent',
-      padding: 0,
-    },
-    '& .MuiStepConnector-root': {
-      top: 22,
-      left: 'calc(-50% + 16px)',
-      right: 'calc(50% + 16px)',
-      '& .MuiStepConnector-line': {
-        borderColor: '#4B5563', 
-        borderTopWidth: 2,
-      }
-    },
-    '& .MuiStepConnector-active .MuiStepConnector-line': {
-      borderColor: '#3B82F6',
-    },
-    '& .MuiStepConnector-completed .MuiStepConnector-line': {
-      borderColor: '#10B981',
-    }
-  };
-
-  const steps = fullSteps;
-
   return (
-    <Box sx={stepperSx}>
-      <Stepper 
-        activeStep={activeStep}
-        orientation={isSmall ? 'vertical' : 'horizontal'}
-        alternativeLabel={!isSmall}
-        sx={{ width: '100%' }}
-      >
-        {steps.map((label, idx) => (
-          <Step key={label} sx={{ padding: 0 }}>
-            <StepLabel 
-              sx={{
-                '& .MuiStepLabel-label': {
-                  color: '#9CA3AF',
-                  fontSize: isSmall ? '0.7rem' : '0.75rem',
-                  marginTop: isSmall ? '4px' : '8px',
-                  whiteSpace: 'normal',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                },
-                '& .MuiStepLabel-label.Mui-active': {
-                  color: '#3B82F6',
-                  fontWeight: 600,
-                },
-                '& .MuiStepLabel-label.Mui-completed': {
-                  color: '#10B981',
-                },
-                '& .MuiStepIcon-root': {
-                  color: '#4B5563', 
-                  fontSize: isSmall ? '1.1rem' : '1.5rem',
-                },
-                '& .MuiStepIcon-root.Mui-active': {
-                  color: '#3B82F6',
-                },
-                '& .MuiStepIcon-root.Mui-completed': {
-                  color: '#10B981',
-                },
-              }}
+    <div className="w-full py-4 md:py-8 px-2 md:px-4 font-sans">
+      <div className="relative flex flex-col md:flex-row justify-between w-full">
+        {fullSteps.map((label, idx) => {
+          const isCompleted = idx < activeStep;
+          const isActive = idx === activeStep;
+          const isLast = idx === fullSteps.length - 1;
+
+          return (
+            <div 
+              key={label} 
+              className={`relative flex flex-row md:flex-col items-start md:items-center ${isLast ? '' : 'md:flex-1'} mb-8 md:mb-0`}
             >
-              {/* Always render the full desktop label for every step */}
-              <span title={fullSteps[idx]}>{fullSteps[idx]}</span>
-            </StepLabel>
-          </Step>
-        ))}
-      </Stepper>
-    </Box>
+              {/* Connecting Lines */}
+              {!isLast && (
+                <>
+                  {/* Desktop horizontal line */}
+                  <div className="hidden md:block absolute top-[14px] left-[50%] w-full h-[2px] bg-neutral-800">
+                    <motion.div 
+                      className="h-full bg-blue-500 origin-left"
+                      initial={false}
+                      animate={{ scaleX: isCompleted ? 1 : 0 }}
+                      transition={{ duration: 0.6, ease: "easeInOut" }}
+                    />
+                  </div>
+                  {/* Mobile vertical line */}
+                  <div className="md:hidden absolute top-[28px] left-[13px] w-[2px] h-[calc(100%+20px)] bg-neutral-800">
+                    <motion.div 
+                      className="w-full bg-blue-500 origin-top"
+                      initial={false}
+                      animate={{ scaleY: isCompleted ? 1 : 0 }}
+                      transition={{ duration: 0.6, ease: "easeInOut" }}
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Step Circle Container */}
+              <div className="relative z-10 flex flex-col items-center shrink-0">
+                <motion.div 
+                  className={`flex items-center justify-center w-7 h-7 rounded-full border-[2px] text-xs font-semibold transition-colors duration-500 ${
+                    isCompleted 
+                      ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]' 
+                      : isActive 
+                        ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_20px_rgba(59,130,246,0.6)]' 
+                        : 'bg-neutral-900 border-neutral-700 text-neutral-500'
+                  }`}
+                  animate={isActive ? { scale: [1, 1.15, 1], borderColor: ['#3b82f6', '#60a5fa', '#3b82f6'] } : { scale: 1 }}
+                  transition={isActive ? { repeat: Infinity, duration: 2 } : { duration: 0.3 }}
+                >
+                  {isCompleted ? (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    >
+                      <IconCheck size={16} stroke={3} />
+                    </motion.div>
+                  ) : (
+                    <span>{idx + 1}</span>
+                  )}
+                </motion.div>
+              </div>
+
+              {/* Label */}
+              <div className={`mt-0 ml-4 md:mt-4 md:ml-0 text-left md:text-center w-full md:w-36 transition-colors duration-500 ${
+                isCompleted 
+                  ? 'text-emerald-400/90' 
+                  : isActive 
+                    ? 'text-blue-300 font-medium' 
+                    : 'text-neutral-500'
+              }`}>
+                <span className="text-[0.85rem] md:text-[0.75rem] leading-snug md:leading-tight block">
+                  {label}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 });
 
@@ -274,21 +236,28 @@ const Message = memo(({ message, onCodeModalToggle, onDownload }: {
 
   return (
     <>
-      <div className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-        <div
-          className={`max-w-[85%] md:max-w-3xl p-3 md:p-4 rounded-lg ${
-            message.type === 'user'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-800 text-white shadow-lg border border-gray-700'
-          }`}
-        >
-          <p className="whitespace-pre-wrap break-words text-sm md:text-base mb-2 leading-relaxed">{message.content}</p>
-          
-          {stepperSection}
+      <motion.div
+        initial={{ opacity: 0, y: message.type === 'user' ? 0 : 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+        className={`group flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+      >
+        <div className={`flex flex-col gap-2 ${message.type === 'user' ? 'max-w-[80%] items-end' : 'w-full'}`}>
+          <div
+            className={
+              message.type === 'user'
+                ? 'user-message-bubble rounded-2xl rounded-tr-sm bg-neutral-800 px-4 py-2.5 text-sm md:text-base text-neutral-100 shadow-sm'
+                : 'flex-1 text-sm md:text-base text-neutral-100'
+            }
+          >
+            <p className="whitespace-pre-wrap break-words leading-relaxed text-neutral-200">{message.content}</p>
+            
+            {stepperSection}
 
-          {videoSection}
+            {videoSection}
+          </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Code Modal is rendered at top-level in MainPage to avoid sidebar overlap */}
     </>
@@ -322,6 +291,7 @@ export default function MainPage() {
   const [codeModalMessage, setCodeModalMessage] = useState<MessageType | null>(null);
   const [cancelledTasks, setCancelledTasks] = useState<Set<string>>(new Set());
   const [activePollingTimeouts, setActivePollingTimeouts] = useState<Set<NodeJS.Timeout>>(new Set()); 
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const { user, logout, tokens } = useAuth();
   const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -336,16 +306,16 @@ export default function MainPage() {
     let pollCount = 0;
     let consecutiveErrors = 0;
     const maxRetries = 3;
-    const baseInterval = 10000;
-    const maxInterval = 30000; 
+    const baseInterval = 2000;
+    const maxInterval = 10000; 
     const maxPollCount = 300;
     let isCancelled = false;
     const timeouts: NodeJS.Timeout[] = [];
     
     const calculateInterval = () => {
-
+      if (consecutiveErrors === 0) return 2000;
       const backoff = Math.min(baseInterval * Math.pow(1.5, consecutiveErrors), maxInterval);
-      const jitter = Math.random() * 1000;
+      const jitter = Math.random() * 500;
       return backoff + jitter;
     };
 
@@ -397,7 +367,7 @@ export default function MainPage() {
                         return queuePos !== null ? `Your Place in Queue: ${queuePos}` : 'In Queue';
                       })()
                   : result.status === 'in_progress'
-                    ? `${result.current_stage || 'In Progress'}`
+                    ? 'Generating animation...'
                   : `${result.current_stage || 'In Queue'}`
               }
             : msg
@@ -625,6 +595,10 @@ export default function MainPage() {
 
     setMessages(newMessages);
     setCurrentHistoryId(historyItem._id);
+
+    if (window.innerWidth < 768) {
+      setSidebarOpen(false);
+    }
   }, []);
 
   const stopPollingAndReset = useCallback(() => {
@@ -703,21 +677,31 @@ export default function MainPage() {
     }
     
     setShowUserMenu(false);
+
+    if (window.innerWidth < 768) {
+      setSidebarOpen(false);
+    }
   }, [pollingInterval, activePollingTimeouts]);
 
-  const handleLogout = useCallback((e?: React.MouseEvent) => {
-    e?.preventDefault();
-    e?.stopPropagation();
+  const confirmLogout = useCallback(() => {
     try {
       logout();
       setShowUserMenu(false);
+      setIsLogoutModalOpen(false);
       navigate('/login', { replace: true });
     } catch (error) {
       console.error('Logout error:', error);
       setShowUserMenu(false);
+      setIsLogoutModalOpen(false);
       navigate('/login', { replace: true });
     }
   }, [logout, navigate]);
+
+  const handleLogoutClick = useCallback((e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    setIsLogoutModalOpen(true);
+  }, []);
 
   const toggleUserMenu = useCallback(() => setShowUserMenu(prev => !prev), []);
 
@@ -734,7 +718,7 @@ export default function MainPage() {
 
     const assistantMessage: MessageType = {
       type: 'assistant',
-      content: `Starting animation generation for "${text.trim()}"...`,
+      content: 'Generating animation...',
       taskId: 'temp-id',
       progress: 0,
       stage: "Setting up description generation state",
@@ -854,225 +838,163 @@ export default function MainPage() {
   );
 
   return (
-    <div className="min-h-screen w-screen flex bg-black">
-      {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#171717] border-b border-gray-700 p-4 flex items-center">
-        <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
-          <button
-            onClick={toggleSidebar}
-            className="p-2 hover:bg-gray-700 rounded-lg transition-colors w-full h-full flex items-center justify-center"
-            aria-label="Open menu"
-          >
-            <IconMenu2 className="text-white h-5 w-5" />
-          </button>
-        </div>
-
-        <h1 className="text-white text-lg font-semibold flex-1 text-center truncate px-2">Manim Generator</h1>
-
-        {/* Right placeholder to keep title centered when + button removed */}
-        <div className="w-10 h-10 flex-shrink-0" aria-hidden="true" />
-      </div>
-
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div 
-          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Desktop Sidebar */}
-      <div className="hidden md:block fixed top-0 left-0 h-screen z-30">
-        <Sidebar open={sidebarOpen} setOpen={setSidebarOpen}>
-          <SidebarBody className="justify-between gap-2 h-full">
-            <div className="flex flex-col h-full min-h-0">
-              <div className="flex-shrink-0 space-y-2 px-2 py-2">
-                <div className={`flex-shrink-0 ${sidebarOpen ? '' : 'flex justify-center'}`}>
-                    <button
-                        onClick={toggleSidebar}
-                        className="p-2 hover:bg-gray-700 rounded-lg cursor-pointer transition-colors"
-                    >
-                        <IconMenu2 className="text-white h-5 w-5" />
-                    </button>
-                </div>
-                <button
-                  onClick={handleNewChat}
-                  className={`flex items-center gap-2 p-2 hover:bg-gray-700 rounded-lg cursor-pointer transition-colors w-full ${sidebarOpen ? 'text-left' : 'justify-center'}`}
-                >
-                  <IconPlus className="text-white h-5 w-5 shrink-0" />
-                  <span className={`text-white text-sm transition-opacity duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0 hidden'}`}>New chat</span>
-                </button>
-              </div>
-              
-              {/* History Section */}
-              {sidebarOpen && (
-                <div className="flex-1 flex flex-col min-h-0 mt-4">
-                  {/* Header (fixed) */}
-                  <div className="mb-3 px-2 flex-shrink-0">
-                    <div className="flex items-center gap-2 px-2 py-1">
-                      <IconHistory className="h-4 w-4 text-gray-400" />
-                      <span className="text-xs text-gray-400 font-medium">Recent</span>
-                    </div>
-                  </div>
-
-                  {/* Scrollable history list (grows to fill space) */}
-                  <div className="flex-1 overflow-y-auto px-2 pr-1 sidebar-scrollbar pb-8">
-                    <HistorySidebar 
-                        isOpen={true}
-                        onToggle={() => {}}
-                        onHistoryItemClick={handleHistoryItemClick}
-                        inMainSidebar={true}
-                        currentHistoryId={currentHistoryId}
-                        refreshKey={historyRefreshKey}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="relative flex-shrink-0 px-2 py-1 mt-auto" ref={userMenuRef}>
-              <button
-                onClick={toggleUserMenu}
-                className={`flex items-center gap-2 py-1 px-2 hover:bg-gray-700 rounded-lg cursor-pointer transition-colors w-full ${sidebarOpen ? 'text-left' : 'justify-center'}`}
-              >
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shrink-0">
-                  <IconUser className="text-white h-4 w-4" />
-                </div>
-                <span className={`text-white text-sm truncate transition-opacity duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0 hidden'}`}>{user?.firstName || 'User'}</span>
-              </button>
-              {showUserMenu && sidebarOpen && (
-                <div className="absolute bottom-full left-0 right-0 mb-2 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50">
-                  <button
-                    onClick={handleLogout}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    className="w-full flex items-center gap-2 p-3 hover:bg-gray-700 rounded-lg transition-colors text-white text-sm cursor-pointer"
-                    type="button"
-                  >
-                    <IconLogout className="h-4 w-4 shrink-0" />
-                    Logout
-                  </button>
-                </div>
-              )}
-              {showUserMenu && !sidebarOpen && (
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 whitespace-nowrap">
-                  <button
-                    onClick={handleLogout}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    className="flex items-center gap-2 p-3 hover:bg-gray-700 rounded-lg transition-colors text-white text-sm cursor-pointer"
-                    type="button"
-                  >
-                    <IconLogout className="h-4 w-4 shrink-0" />
-                    Logout
-                  </button>
-                </div>
-              )}
-            </div>
-          </SidebarBody>
-        </Sidebar>
-      </div>
-
-      {/* Mobile Sidebar */}
-      <div className={`md:hidden fixed top-0 left-0 h-screen bg-[#171717] border-r border-gray-700 z-50 transform transition-transform duration-300 ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } w-64`}>
-        <div className="flex flex-col h-full justify-between p-4">
-          <div className="flex flex-col gap-4 min-h-0">
-            <div className="flex items-center justify-between flex-shrink-0">
-              <h2 className="text-white text-lg font-semibold">Menu</h2>
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-              >
-                <IconMenu2 className="text-white h-5 w-5" />
-              </button>
-            </div>
+    <div className="h-[100dvh] w-full flex flex-col md:flex-row bg-black overflow-hidden">
+      <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} autoOpen={false}>
+        <SidebarBody 
+          className="justify-between gap-2 h-full bg-black z-[100]"
+          centerContent={<span className="font-semibold text-neutral-200 text-lg truncate">Manim Generator</span>}
+          rightContent={
             <button
               onClick={handleNewChat}
-              className="flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg transition-colors w-full text-left flex-shrink-0"
+              className="text-neutral-400 hover:text-white transition-colors p-1"
+              aria-label="New chat"
             >
-              <IconPlus className="text-white h-5 w-5" />
-              <span className="text-white text-sm">New chat</span>
+              <IconPlus className="h-6 w-6" />
             </button>
-            {/* History Section for Mobile */}
-            <div className="flex-1 flex flex-col min-h-0">
-              <div className="mb-3 px-2 flex-shrink-0">
-                <div className="flex items-center gap-2 px-2 py-1">
-                  <IconHistory className="h-4 w-4 text-gray-400" />
-                  <span className="text-xs text-gray-400 font-medium">Recent</span>
-                </div>
+          }
+        >
+          <div className="flex flex-col h-full min-h-0">
+            <div className="flex-shrink-0 space-y-2 px-2 py-2">
+              <div className={`flex items-center flex-shrink-0 ${sidebarOpen ? 'justify-between px-2' : 'justify-center'}`}>
+                  <span className={`font-semibold text-neutral-200 text-lg truncate transition-opacity duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0 hidden'}`}>
+                    Manim Generator
+                  </span>
+                  <button
+                      onClick={toggleSidebar}
+                      className="p-2 hover:bg-neutral-900 rounded-lg cursor-pointer transition-colors flex-shrink-0"
+                      aria-label="Toggle Menu"
+                  >
+                      <IconX className="text-neutral-300 hover:text-white h-5 w-5 md:hidden" />
+                      <IconMenu2 className="text-neutral-300 hover:text-white h-5 w-5 hidden md:block" />
+                  </button>
               </div>
+              <button
+                onClick={handleNewChat}
+                className={`flex items-center gap-2 p-2 hover:bg-neutral-900 rounded-lg cursor-pointer transition-colors w-full ${sidebarOpen ? 'text-left' : 'justify-center'}`}
+              >
+                <IconPlus className="text-neutral-200 h-5 w-5 shrink-0" />
+                <span className={`text-neutral-200 text-sm transition-opacity duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0 hidden'}`}>New chat</span>
+              </button>
+            </div>
+            
+            {/* History Section */}
+            <div className={`flex-1 flex flex-col min-h-0 mt-4 transition-opacity duration-200 ${sidebarOpen ? 'opacity-100 block' : 'opacity-0 hidden'}`}>
+              {/* Header (fixed) */}
+              <div className="mb-2 px-2 flex-shrink-0">
+                <p className="px-1 text-xs font-medium uppercase tracking-wide text-neutral-500">
+                  Recent
+                </p>
+              </div>
+
+              {/* Scrollable history list (grows to fill space) */}
               <div className="flex-1 overflow-y-auto px-2 pr-1 sidebar-scrollbar pb-8">
                 <HistorySidebar 
-                  isOpen={true}
-                  onToggle={() => {}}
-                  onHistoryItemClick={handleHistoryItemClick}
-                  inMainSidebar={true}
-                  currentHistoryId={currentHistoryId}
-                  refreshKey={historyRefreshKey}
+                    isOpen={true}
+                    onToggle={() => {}}
+                    onHistoryItemClick={handleHistoryItemClick}
+                    inMainSidebar={true}
+                    currentHistoryId={currentHistoryId}
+                    refreshKey={historyRefreshKey}
                 />
               </div>
             </div>
           </div>
-          <div className="relative flex-shrink-0 py-1 mt-auto" ref={mobileUserMenuRef}>
+          <div className="relative flex-shrink-0 px-2 py-1 mt-auto" ref={userMenuRef}>
             <button
               onClick={toggleUserMenu}
-              className="flex items-center gap-2 py-1 px-2 hover:bg-gray-700 rounded-lg transition-colors w-full text-left"
+              className={`flex items-center gap-2 py-1 px-2 hover:bg-neutral-900 rounded-lg cursor-pointer transition-colors w-full ${sidebarOpen ? 'text-left' : 'justify-center'}`}
             >
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                <IconUser className="text-white h-4 w-4" />
+              <div className="flex w-8 h-8 bg-neutral-800 rounded-full items-center justify-center shrink-0 border border-neutral-700">
+                <IconUser className="text-neutral-200 h-4 w-4" />
               </div>
-              <span className="text-white text-sm">{user?.firstName || 'User'}</span>
+              <span className={`text-neutral-200 text-sm truncate transition-opacity duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0 hidden'}`}>{user?.firstName || 'User'}</span>
             </button>
-            {showUserMenu && (
-              <div className="absolute bottom-full left-0 right-0 mb-2 bg-gray-800 border border-gray-600 rounded-lg shadow-lg">
+            {showUserMenu && sidebarOpen && (
+              <div className="absolute bottom-full left-0 right-0 mb-2 bg-neutral-900 border border-neutral-800 rounded-xl shadow-2xl z-50 p-2">
+                <div className="mb-2 truncate px-2 py-1.5 text-sm font-medium text-neutral-300">
+                  {user?.email || `${user?.firstName || 'User'}@example.com`}
+                </div>
+                <div className="h-px bg-neutral-800 mb-2"></div>
                 <button
-                  onClick={handleLogout}
+                  onClick={handleLogoutClick}
                   onMouseDown={(e) => e.stopPropagation()}
-                  className="w-full flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg transition-colors text-white text-sm cursor-pointer"
+                  className="w-full flex items-center justify-start gap-2 rounded-lg px-2 py-2 text-sm text-red-400 transition hover:bg-neutral-800 hover:text-red-300 cursor-pointer"
                   type="button"
                 >
-                  <IconLogout className="h-4 w-4" />
+                  <IconLogout className="h-4 w-4 shrink-0" />
+                  Logout
+                </button>
+              </div>
+            )}
+            {showUserMenu && !sidebarOpen && (
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-neutral-900 border border-neutral-800 rounded-xl shadow-2xl z-50 p-2 whitespace-nowrap min-w-[200px]">
+                <div className="mb-2 truncate px-2 py-1.5 text-sm font-medium text-neutral-300">
+                  {user?.email || `${user?.firstName || 'User'}@example.com`}
+                </div>
+                <div className="h-px bg-neutral-800 mb-2"></div>
+                <button
+                  onClick={handleLogoutClick}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  className="flex w-full items-center justify-start gap-2 rounded-lg px-2 py-2 text-sm text-red-400 transition hover:bg-neutral-800 hover:text-red-300 cursor-pointer"
+                  type="button"
+                >
+                  <IconLogout className="h-4 w-4 shrink-0" />
                   Logout
                 </button>
               </div>
             )}
           </div>
-        </div>
-      </div>
+        </SidebarBody>
+      </Sidebar>
 
-      <main className={`flex-1 flex flex-col min-w-0 pt-16 md:pt-0 relative min-h-screen transition-all duration-300 ${
-        sidebarOpen ? 'md:ml-[300px]' : 'md:ml-[60px]'
-      }`}>
-        <BackgroundBeams />
-  <div className="flex-1 p-4 md:p-6 relative z-10 pb-20 md:pb-24 overflow-y-auto">
+      <main className="flex-1 flex flex-col min-w-0 transition-all duration-300 bg-neutral-950 relative">
+        {/* Top fade mask to prevent scrolling messages from clashing with top-right global icons */}
+        <div className="hidden md:block absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-neutral-950 via-neutral-950/80 to-transparent z-40 pointer-events-none" />
+        
+        <div className="relative flex-1 min-h-0">
+          <div className="absolute inset-0 overflow-y-auto overflow-x-hidden custom-scrollbar p-4 md:p-6 md:pt-20 [overflow-anchor:auto]">
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center min-h-[60vh]">
-              <div className="w-full max-w-3xl px-2">
-                <div className="grid grid-cols-1 gap-3 md:gap-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="flex flex-col items-center justify-center min-h-[60vh] py-4 md:py-8 text-center px-4"
+            >
+              <h2 className="bg-gradient-to-br from-white to-neutral-500 bg-clip-text text-2xl md:text-5xl font-bold tracking-tight text-transparent mb-2 md:mb-4">
+                What animation can I create for you?
+              </h2>
+              <p className="max-w-md text-sm md:text-base text-neutral-400 mb-6 md:mb-12">
+                Describe a mathematical concept or an idea, and I'll generate a high-quality video animation using Manim.
+              </p>
+
+              <div className="w-full max-w-4xl px-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                   {suggestionButtons}
                 </div>
               </div>
-            </div>
+            </motion.div>
           ) : (
-            <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto pb-8 md:pb-12">
-              {messages.map((msg) => (
-                <Message 
-                  key={msg.id} 
-                  message={msg} 
-                  onCodeModalToggle={(isOpen: boolean, message?: MessageType | null) => {
-                    setIsCodeModalOpen(isOpen);
-                    setCodeModalMessage(message ?? null);
-                  }}
-                  onDownload={handleDownload}
-                />
-              ))}
-              <div ref={messagesEndRef} />
+            <div className="space-y-6 md:space-y-8 max-w-4xl mx-auto pb-8 md:pb-12">
+              <AnimatePresence initial={false}>
+                {messages.map((msg) => (
+                  <Message 
+                    key={msg.id} 
+                    message={msg} 
+                    onCodeModalToggle={(isOpen: boolean, message?: MessageType | null) => {
+                      setIsCodeModalOpen(isOpen);
+                      setCodeModalMessage(message ?? null);
+                    }}
+                    onDownload={handleDownload}
+                  />
+                ))}
+              </AnimatePresence>
+              <div ref={messagesEndRef} id="chat-bottom" />
             </div>
           )}
+          </div>
         </div>
         {!isCodeModalOpen && (
-          <div className={`fixed bottom-0 right-0 p-4 md:p-6 bg-gradient-to-t from-black via-black/95 to-transparent z-20 transition-all duration-300 ${
-            sidebarOpen ? 'left-0 md:left-[300px]' : 'left-0 md:left-[60px]'
-          }`}>
+          <div className="shrink-0 bg-neutral-950 p-4 pb-6 md:pb-4">
             <div className="max-w-4xl mx-auto">
               {/* Warning message for animation code creation and video rendering */}
               {isGenerating && messages.some(msg => 
@@ -1135,6 +1057,17 @@ export default function MainPage() {
           </div>
         </div>
       )}
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={confirmLogout}
+        title="Logout"
+        message="Are you sure you want to log out? You will need to sign in again to access your projects."
+        confirmText="Logout"
+        isDanger={true}
+      />
     </div>
   );
 }

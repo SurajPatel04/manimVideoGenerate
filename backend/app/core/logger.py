@@ -1,6 +1,5 @@
 import logging
 
-# Configure root logging once
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -10,5 +9,4 @@ logging.basicConfig(
     ]
 )
 
-# Create a named logger for your project
 logger = logging.getLogger("manim_video")

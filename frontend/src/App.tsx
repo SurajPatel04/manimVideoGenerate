@@ -37,7 +37,7 @@ function Layout() {
       )}
 
       {showRight && (
-        <div className="absolute right-0 md:right-4 top-0 md:top-4 z-20 flex items-center gap-4 text-neutral-200 h-16 md:h-auto pr-4 md:pr-0">
+        <div className={`absolute right-0 md:right-4 top-0 md:top-4 z-[60] flex items-center gap-4 text-neutral-200 h-16 md:h-auto pr-4 md:pr-0 ${onMain ? 'hidden md:flex' : ''}`}>
           <a
             href="https://www.linkedin.com/in/suraj-patel-9201b2381/"
             target="_blank"
@@ -84,7 +84,7 @@ const router = createBrowserRouter(
       <Route path="" element={<Homepage />} />
       <Route path="forgetPassword" element={<ForgotPassword />} />
       <Route path='resetPassword/*' element={
-        <div className="flex min-h-screen box-border items-center justify-center p-4">
+        <div className="flex min-h-screen box-border items-center justify-center p-4 pt-20 md:pt-4 bg-black">
           <ResetPassword />
         </div>
       }/>
@@ -93,7 +93,7 @@ const router = createBrowserRouter(
         <Route 
           path="login" 
           element={
-            <div className="flex min-h-screen box-border items-center justify-center p-4">
+            <div className="flex min-h-screen box-border items-center justify-center p-4 pt-20 md:pt-4 bg-black">
               <AuthForm />
             </div>
           } 
@@ -101,7 +101,7 @@ const router = createBrowserRouter(
         <Route 
           path="signup" 
           element={
-            <div className="flex min-h-screen box-border items-center justify-center p-4">
+            <div className="flex min-h-screen box-border items-center justify-center p-4 pt-20 md:pt-4 bg-black">
               <AuthForm />
             </div>
           } 
@@ -110,7 +110,7 @@ const router = createBrowserRouter(
         <Route 
           path="verified"
           element={
-            <div className="flex min-h-screen box-border items-center justify-center p-4">
+            <div className="flex min-h-screen box-border items-center justify-center p-4 pt-20 md:pt-4 bg-black">
               <VerifiedPage />
             </div>
           }

@@ -4,7 +4,8 @@ from fastapi import (
     HTTPException,
     Depends,
     Query,
-    Request
+    Request,
+    BackgroundTasks
 )
 from app.schema.UserSchema import (
     UserInput, 
@@ -35,7 +36,7 @@ from app.models.UserHistory import UsersHistory
 from app.models.RefreshToken import RefreshToken
 from typing import List
 from app.utils.auth import getCurrentUser
-from app.config import Config
+from app.config.config import Config
 from app.core.mail import mail, createMessage
 from app.utils.verification import createUrlSafeToken, decodeUrlSafeToken
 from app.core.templates import render_template
@@ -81,7 +82,7 @@ async def allUser():
 
 
 @router.post("/signUp", status_code=status.HTTP_201_CREATED)
-async def createUser(user: UserInput):
+async def createUser(user: UserInput, background_tasks: BackgroundTasks):
     existsUser = await Users.find_one({"email": user.email})
 
     if existsUser:
@@ -128,7 +129,7 @@ async def createUser(user: UserInput):
         }]
     )
 
-    await mail.send_message(message=message)
+    background_tasks.add_task(mail.send_message, message)
     return {
     "status": True,
     "message": "Account created successfully! Please check your email to verify your account."
@@ -136,7 +137,7 @@ async def createUser(user: UserInput):
 
 
 @router.post("/login", status_code=status.HTTP_200_OK)
-async def userLogin(userCredentials: LoginRequest):
+async def userLogin(userCredentials: LoginRequest, background_tasks: BackgroundTasks):
     user = await Users.find_one({"email":userCredentials.email})
 
     if not user:
@@ -180,7 +181,7 @@ async def userLogin(userCredentials: LoginRequest):
             }]
         )
 
-        await mail.send_message(message=message)
+        background_tasks.add_task(mail.send_message, message)
         return {
             "isVerified":False,
             "error": "Account not verified",
@@ -242,10 +243,13 @@ async def getUserHistory(
     total = await UsersHistory.find(UsersHistory.userId == user_id).count()
 
     if not history:
-        raise HTTPException(
-            status_code=status.HTTP_204_NO_CONTENT,
-            detail="No user history found"
-        )
+        return {
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "pages": 0,
+            "data": []
+        }
 
     return {
         "page": page,
@@ -258,16 +262,67 @@ async def getUserHistory(
 
 @router.post('/logout')
 async def logout(request: Request):
-    """Clear HttpOnly auth cookies on logout."""
     response = JSONResponse({"status": True, "message": "Logged out"})
-    # Clear cookies by setting empty value and max_age=0
     response.delete_cookie("accessToken", path="/")
     response.delete_cookie("refreshToken", path="/")
     return response
 
 
+@router.post("/refresh", status_code=status.HTTP_200_OK)
+async def refresh_access_token(request: Request):
+    token = request.cookies.get("refreshToken")
+    
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token missing from cookies"
+        )
+        
+    try:
+        token_data = verifyRefreshToken(token)
+    except Exception:
+        raise
+        
+    token_doc = await RefreshToken.find_one({"token": token, "revoked": False})
+    if not token_doc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token is invalid or has been revoked"
+        )
+        
+    user = await Users.get(token_data.id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found"
+        )
+
+    new_access_token = createAccessToken({"user_id": str(user.id)})
+    
+    is_secure = os.getenv("ENV", "development") == "production"
+    samesite = "none" if is_secure else "lax"
+    
+    response = JSONResponse({
+        "status": True,
+        "message": "Token refreshed successfully"
+    })
+    
+    response.set_cookie(
+        "accessToken", 
+        new_access_token, 
+        httponly=True, 
+        secure=is_secure, 
+        samesite=samesite, 
+        max_age=86400, 
+        path="/"
+    )
+    
+    return response
+
+
+
 @router.post("/passwordResetRequest")
-async def passwordChangeRequest(user: PasswordResetRequest):
+async def passwordChangeRequest(user: PasswordResetRequest, background_tasks: BackgroundTasks):
     email = await Users.find_one({"email":user.email})
     if not email:
         raise HTTPException(
@@ -298,7 +353,6 @@ async def passwordChangeRequest(user: PasswordResetRequest):
             body=html_message,
             subtype="html",
             attachments=[{
-                # 4. Convert the Path object to a string
                 "file": str(gif_path),
                 "headers": {
                     "Content-ID": "<logogif>" 
@@ -307,14 +361,14 @@ async def passwordChangeRequest(user: PasswordResetRequest):
             }]
         )
 
-        await mail.send_message(message=message)
+        background_tasks.add_task(mail.send_message, message)
         return {
             "isVerified":False,
             "error": "Account not verified",
             "message": "Please verify your email address. Check your inbox.",
         }
     
-    link = f"{Config.DOMAIN}/resetPassword/token={token}"
+    link = f"{Config.FRONTEND_DOMAIN}/resetPassword/token={token}"
 
     html_message = render_template(
         "passwordRequest.html",
@@ -328,7 +382,6 @@ async def passwordChangeRequest(user: PasswordResetRequest):
         body=html_message,
         subtype="html",
         attachments=[{
-            # 4. Convert the Path object to a string
             "file": str(gif_path),
             "headers": {
             "Content-ID": "<logogif>" 
@@ -337,7 +390,7 @@ async def passwordChangeRequest(user: PasswordResetRequest):
         }]
     )
 
-    await mail.send_message(message=message)
+    background_tasks.add_task(mail.send_message, message)
     return {
         "status": True,
         "message": "Please check your email to reset your password."
@@ -375,8 +428,7 @@ async def changePassword(userData: PasswordReset):
 @router.get("/verify/{token}", status_code=status.HTTP_200_OK)
 async def verifyUserAccount(token: str):
     try:
-        # Decode token with expiration handling
-        tokenData = decodeUrlSafeToken(token, max_age=86400)  # 1 hour expiration
+        tokenData = decodeUrlSafeToken(token, max_age=86400)
         userEmail = tokenData.get("email")
         if not userEmail:
             raise HTTPException(
@@ -385,13 +437,11 @@ async def verifyUserAccount(token: str):
             )
 
     except SignatureExpired:
-        # Token has expired
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Token has expired. Please request a new verification email."
         )
     except BadSignature:
-        # Token is invalid or tampered
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid token"
@@ -403,17 +453,11 @@ async def verifyUserAccount(token: str):
         )
 
     await UserService.verifyUserByEmail(userEmail)
-    return RedirectResponse(url=f"{Config.DOMAIN}/login?verified=success")
+    return RedirectResponse(url=f"{Config.FRONTEND_DOMAIN}/login?verified=success")
 
 
 @router.get("/validateResetToken")
 async def validateResetToken(token: str):
-    """Validate a password-reset token without performing any account changes.
-
-    Returns the email contained in the token when valid. Responds with clear
-    HTTP errors when token is invalid or expired so the frontend can show
-    an appropriate UI.
-    """
     try:
         tokenData = decodeUrlSafeToken(token, max_age=600)
         userEmail = tokenData.get("email")
@@ -465,36 +509,27 @@ async def googleCallback(request: Request):
         except Exception as e:
             raise HTTPException(status_code=400, detail="Google login failed: could not fetch userinfo")
 
-    # Extract Google user details
     email = userInfo["email"]
     first_name = userInfo.get("given_name", "")
     last_name = userInfo.get("family_name", "")
-
-    # Check if user already exists in DB
     user = await Users.find_one(Users.email == email)
 
     if not user:
-        # Create new user
         user = Users(
             firstName=first_name,
             lastName=last_name,
             email=email,
-            password="",  # not needed for Google users
+            password="",
             isVerified=True
         )
         await user.insert()
 
-    # Issue your own JWT tokens
     access_token = createAccessToken({"user_id": str(user.id)})
     refresh_token = createRefreshToken({"user_id": str(user.id)})
-
-    # Determine secure and samesite cookie attributes based on runtime.
-    # For local HTTP development we avoid Secure=True (browsers will drop those cookies).
     is_secure = os.getenv("ENV", "development") == "production"
     samesite = "none" if is_secure else "lax"
 
     response = RedirectResponse(url=f"{Config.FRONTEND_DOMAIN}/main", status_code=302)
-    # Set both cookies consistently
     response.set_cookie("accessToken", access_token, httponly=True, secure=is_secure, samesite=samesite, max_age=86400)
     response.set_cookie("refreshToken", refresh_token, httponly=True, secure=is_secure, samesite=samesite, max_age=604800)
 
@@ -503,10 +538,6 @@ async def googleCallback(request: Request):
 
 @router.get("/me")
 async def get_current_user_profile(current_user: TokenData = Depends(getCurrentUser)):
-    """Return basic profile for the currently authenticated user.
-    This endpoint is intended for the SPA to call after OAuth redirect to
-    confirm that the HttpOnly cookie-based session is active.
-    """
     user = await Users.find_one({"_id": ObjectId(current_user.id)})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

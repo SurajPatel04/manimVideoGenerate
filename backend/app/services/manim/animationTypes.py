@@ -1,3316 +1,703 @@
-TEXT="""
-<Text Scenes Rule Only>
+TEXT = r"""
+<TEXT_SCENE_RULES>
+Generate a cinematic Manim v0.20+ equation scene using MovingCameraScene.
 
-## Mandatory
+## HARD RULES
+- Class extends `MovingCameraScene` (needed for camera moves).
+- `MathTex` always raw string: `MathTex(r"...", font_size=50)`. Plain words use `Text()`. Never mix.
+- Arrange any VGroup with `.arrange()` BEFORE `.next_to()`/`.move_to()`.
+- Keep content in frame; reposition the camera frame to follow content down the canvas.
+- Multi-line math: split into separate MathTex objects, not one giant `\\` block.
 
-1. Always follow Code and Design Example
-2. Never use .next_to() before VGroup.arrange() - always arrange groups first
-3. Equation should write like this MathTex(r"2x - 1 = 2 \Rightarrow x = \tfrac{3}{2}", font_size=32)
+## STYLE (apply these for the "cinematic" look)
+- Glow titles: layer a colored stroked copy behind the text:
+  `glow = Text(t, weight=BOLD).set_color(BLUE).set_stroke(width=15, opacity=0.3)` behind a solid `Text(t)`.
+- Camera as director: `self.camera.frame.animate.scale(s).move_to(pos)` with `rate_func=smooth` to pan/zoom between beats.
+- Dynamic reveal: use `ValueTracker` + `always_redraw(lambda: DecimalNumber(tracker.get_value(), ...))` to animate a value counting up; emphasize with `Flash`.
+- Neon finale: layer expanding fading `SurroundingRectangle`s (corner_radius=0.2, widths [10,20,30] / opacities [0.4,0.2,0.05]) around the answer; finish with `ApplyWave`.
+- Colors: ≤4. BOLD titles, accent BLUE/TEAL, results highlighted. Holds ≥1.5s, major moves run_time 1.5–2.
 
-## Code and Design Example
+## AVOID
+- LaTeX inside Text() or prose in MathTex(); missing `r""`.
+- `.next_to()` on un-arranged groups; content drifting off-frame.
+- Linear motion on camera (use rate_func=smooth/ease_in_out_sine).
+
+## Example 1 For simple word:
+from manim import *
+import numpy as np
+
+class Animation_984e6dc2(Scene):
+    def construct(self):
+        self.camera.background_color = WHITE
+        hello_world = Text("Hello world", font="Sans", font_size=48, color=BLACK)
+        self.play(Write(hello_world), run_time=1)
+
+
+## REFERENCE (study the techniques, don't copy verbatim)
 ```python
 from manim import *
-
-class FunctionalEquationSlide(Scene):
+class Demo(MovingCameraScene):
     def construct(self):
-        # === Title Slide ===
-        title = Text("Functional Equation Problem", font_size=50, color=YELLOW)
-        self.play(FadeIn(title, scale=1.2))
-        self.wait(2)
-        self.play(FadeOut(title, shift=UP))
+        t = Text("Title", font_size=60, weight=BOLD)
+        glow = Text("Title", font_size=60, weight=BOLD).set_color(BLUE).set_stroke(width=15, opacity=0.3)
+        self.play(FadeIn(glow, scale=1.5), Write(t), run_time=2)
+        self.play(self.camera.frame.animate.scale(1.2).move_to(DOWN*3), run_time=2, rate_func=smooth)
 
-        # === Slide 1: Given Equation ===
-        slide1_title = Text("Given Equation", font_size=40, color=YELLOW)
-        eq_text = MathTex(r"f(2x - 1) + f(2) = 4x - 1", font_size=44)
-        target = Text("Find the value of  ", font_size=32)
-        f4 = MathTex(r"f(4)", font_size=40, color=BLUE)
-        target_group = VGroup(target, f4).arrange(RIGHT, buff=0.1)
-        group1 = VGroup(slide1_title, eq_text, target_group).arrange(DOWN, buff=0.5)
-        self.play(Write(group1))
+        eq = MathTex(r"f(2x-1)+f(2)=4x-1", font_size=50).move_to(DOWN*3)
+        self.play(Write(eq))
+
+        tr = ValueTracker(0.0)
+        num = always_redraw(lambda: DecimalNumber(tr.get_value(), num_decimal_places=2, color=RED).move_to(DOWN*4.5))
+        self.play(FadeIn(num, shift=UP))
+        self.play(tr.animate.set_value(1.5), run_time=3, rate_func=ease_in_out_sine)
+        self.play(Flash(num, color=RED, num_lines=12))
+
+        self.play(self.camera.frame.animate.scale(0.7).move_to(DOWN*6.5), eq.animate.set_opacity(0.2), run_time=2)
+        ans = MathTex(r"f(4)=6.5", font_size=70).move_to(DOWN*6.5)
+        box = SurroundingRectangle(ans, color=WHITE, buff=0.4, corner_radius=0.2)
+        glow_box = VGroup(*[SurroundingRectangle(ans, color=TEAL, buff=0.4, corner_radius=0.2).set_stroke(width=w, opacity=o)
+                            for w, o in zip([10,20,30],[0.4,0.2,0.05])])
+        self.play(Write(ans))
+        self.play(Create(box), FadeIn(glow_box), run_time=1.5)
+        self.play(ApplyWave(ans, amplitude=0.15), run_time=1.5)
         self.wait(3)
-        self.play(FadeOut(group1))
-
-        # === Slide 2: Step 1 – Find f(2) ===
-        step1_title = Text("Step 1: Find the constant term f(2)", font_size=38, color=YELLOW)
-        eq1 = MathTex(r"f(2x-1) + f(2) = 4x - 1", font_size=34)
-        sub_eq = MathTex(r"2x - 1 = 2 \Rightarrow x = \tfrac{3}{2}", font_size=32)
-        calc = MathTex(
-            r"f(2) + f(2) = 6 - 1 \\[4pt]"
-            r"2f(2) = 5 \\[4pt]"
-            r"f(2) = \tfrac{5}{2}",
-            font_size=32
-        )
-        group2 = VGroup(step1_title, eq1, sub_eq, calc).arrange(DOWN, buff=0.4)
-        self.play(Write(group2))
-        self.wait(3)
-        self.play(FadeOut(group2))
-
-        # === Slide 3: Step 2 – Determine general form f(t) ===
-        step2_title = Text("Step 2: Determine the general form of f(t)", font_size=38, color=YELLOW)
-        eq2 = MathTex(r"f(2x-1) + \tfrac{5}{2} = 4x - 1", font_size=32)
-        isolate = MathTex(r"f(2x-1) = 4x - \tfrac{7}{2}", font_size=32)
-        sub_t = MathTex(
-            r"t = 2x - 1 \Rightarrow x = \tfrac{t+1}{2}", font_size=32
-        )
-        form = MathTex(
-            r"f(t) = 4\left(\tfrac{t+1}{2}\right) - \tfrac{7}{2} = 2t - \tfrac{3}{2}",
-            font_size=34, color=GREEN
-        )
-        group3 = VGroup(step2_title, eq2, isolate, sub_t, form).arrange(DOWN, buff=0.4)
-        self.play(Write(group3))
-        self.wait(3)
-        self.play(FadeOut(group3))
-
-        # === Slide 4: Step 3 – Calculate f(4) ===
-        step3_title = Text("Step 3: Calculate f(4)", font_size=38, color=YELLOW)
-        eq3 = MathTex(
-            r"f(4) = 2(4) - \tfrac{3}{2} = \tfrac{13}{2}",
-            font_size=40, color=GREEN
-        )
-        decimal = Text("Or equivalently, f(4) = 6.5", font_size=32, color=BLUE)
-        group4 = VGroup(step3_title, eq3, decimal).arrange(DOWN, buff=0.5)
-        self.play(Write(group4))
-        self.wait(3)
-        self.play(FadeOut(group4))
-
-        # === Slide 5: Alternative Method ===
-        alt_title = Text("Alternative Method (Direct Substitution)", font_size=36, color=YELLOW)
-        sub_x = MathTex(r"2x - 1 = 4 \Rightarrow x = \tfrac{5}{2}", font_size=32)
-        eq_alt = MathTex(r"f(4) + f(2) = 9", font_size=32)
-        sub_f2 = MathTex(
-            r"f(4) + \tfrac{5}{2} = 9 \\[4pt]"
-            r"f(4) = \tfrac{13}{2}",
-            font_size=32, color=GREEN
-        )
-        group5 = VGroup(alt_title, sub_x, eq_alt, sub_f2).arrange(DOWN, buff=0.4)
-        self.play(Write(group5))
-        self.wait(3)
-        self.play(FadeOut(group5))
-
-        # === Final Slide: Answer ===
-        final_title = Text("Final Answer", font_size=46, color=YELLOW)
-        ans = MathTex(r"f(4) = \tfrac{13}{2} = 6.5", font_size=48, color=BLUE)
-        group_final = VGroup(final_title, ans).arrange(DOWN, buff=0.5)
-        self.play(FadeIn(group_final, shift=UP))
-        self.wait(4)
-        self.play(FadeOut(group_final))
 ```
-<Text Scenes Rule Only/>
+</TEXT_SCENE_RULES>
 """
 
-GRAPH2D = """
-<2D Graph Scenes Rule Only>
-
-## Mandatory way to design
-
-1. Title: Always at the center (never top). Must appear first and then fade out with a smooth animation (e.g., FadeOut, LaggedStart, star-burst effect). Do not include the equation in the title.
-2. Axes: Create axes immediately after title fades.
-3. Numbers: Use integers mostly; if needed, then 2 decimal precision. Do not include "π" value in the axes.
-4. Axes style: Show only the central axes (no grid). Draw only the x-axis if needed, and only the y-axis if needed.
-5. Equation: Place in corners (left, right, bottom-left, bottom-right). If no space → fade it out before graph. and do not include Equation in the center
-6. Margins: Leave a 5% gap at the top, bottom, left, and right edges.
-7. The background color should be black by default unless the user requests a different color. Note: Do not change anything else.
-8. Sequence: Title (center + fade out) → Axes → Equation (adaptive placement or fade) → Graph.
-
-
-### Deprecated → New (Manim v0.19+)
-
----
-
-## Common Deprecated → New
-
-* `to_edge(...)` still works, but prefer `.next_to()` for finer control.
-* `to_corner(...)` → use `.align_on_border(...)`.
-* `axes.to_center()` → use `axes.move_to(ORIGIN)` or `axes.center()`.
-* `shift(x*RIGHT)` still valid.
-* `scale_in_place(factor)` → use `.scale(factor, about_point=...)`.
-* `fade_in` / `fade_out` methods → use animations: `FadeIn(mobj)` / `FadeOut(mobj)`.
-* `ShowCreation(mobj)`  → `Create(mobj)`.
-* `Write(mobj, run_time=...)`  still valid.
-* `Transform(m1, m2)`  still valid.
-* `SurroundingRectangle(..., buff=0.1)`  still valid.
-* `.start_point or .end_point` -> use `.get_start()` or `.get_end()`.
-
----
-
-## Axes / Graphs
-
-* `axes.get_graph(f, ...)` → deprecated. Use `axes.plot(f, x_range=[...], color=...)`.
-
-* `axes.get_area(f, ...)` → still valid for one function. For two functions use `FillBetween(...)`.
-
-* `NumberPlane.get_graph(...)` → does not exist. Use `plane.plot(...)`.
-
-* `add_coordinates()` → still valid.
-
-* `axes.get_tangent_line(graph, x=..., line_length=...)` → does not exist. Use `TangentLine(graph, alpha, length=...)` where `alpha ∈ [0,1]`. To map `x` to `alpha`, use helpers like `axes.i2gp`.
-
-* `axes.get_vertical_line(x_val=...)` wrong → invalid. Correct: `axes.get_vertical_line(point, **kwargs)`.
-  (use `axes.c2p(x_value, y_value)` or `axes.i2gp(x_value, graph)` to get the point).
-
-* `axes.y_axis_labels` wrong → no attribute. Use `axes.get_axis_labels()`.
-
-* `y_axis_config` must be passed explicitly inside `Axes(...)`, not accessed as an attribute afterwards.
-
-* `axes.get_x_axis_label(...)` and `axes.get_y_axis_label(...)` → still valid, but prefer `axes.get_axis_labels(x_label, y_label)` for paired labels.
-
----
-
-## Colors / Styles
-
-- `stroke_width` → still valid.
-- `stroke_opacity=...` in constructor → not allowed. Use `.set_stroke(opacity=...)`.
-- `fill_opacity=...` in constructor → still valid.
-- `line_arg_dict` → deprecated.  Use: 
-  - `axis_config={...}` → for styling axes 
-  - `background_line_style={...}` → **only inside Axes or NumberPlane**.
-- `stroke_dash_length` → not valid. Use `DashedLine(...)` or `DashedVMobject(...)`.
-
----
-
-## Text / Labels
-
-* `TextMobject(...)` → use `Tex(...)`.
-* `TexMobject(...)` → use `Tex(...)`.
-* `edge_buffer` argument (e.g., in `Text`) → not valid. Replace with `.next_to(..., buff=...)` or `.align_on_border(...)`.
-* `Text(..., t2c=...)` → still valid. 
-* `t2s` (text-to-style) → replaced by `.set_color_by_t2s()`.
-
----
-
-## Shapes
-
-* `ArcBetweenPoints(..., radius=...)` → `ArcBetweenPoints(..., angle=...)`.
-* `Sector(inner_radius=...)` → replaced with `AnnularSector(inner_radius=...)`.
-
----
-
-## NumberLine
-
-* `NumberLine(default_numbers_to_display=...)` → removed. Use `include_numbers=True` and control with `numbers_to_include=[...]` or `decimal_number_config={...}`.
-* `exclude_zero_from_default_numbers` → removed. Must explicitly control numbers via `numbers_to_include`.
-
----
-
-## Camera / Scene
-
-* `ThreeDScene.set_camera_orientation(...)` → still valid.
-* `self.camera.animate.set(phi=..., theta=...)` → replaces old `self.move_camera(...)`.
-* `self.set_camera_orientation(...)` → replaces old `set_camera_position(...)`.
-* `self.set_camera_orientation(phi=..., theta=...)` → still valid; `gamma` is no longer supported.
-
-
----
-
-## Geometry / Mobject Methods
-
-* `.start_point` / `.end_point` → replaced with `.get_start()` / `.get_end()`.
-* `.point_from_proportion(alpha)` → still valid.
-* `scale_in_place(factor)` → deprecated. Use `.scale(factor, about_point=...)`.
-* `.fade_in` / `.fade_out` (methods) → removed. Use `FadeIn(mobj)` / `FadeOut(mobj)` animations.
-* `next_to(...)` → still valid and preferred over `to_edge(...)` for finer control.
-* `to_corner(...)` → replaced with `.align_on_border(...)`.
-* `.center()` or `.move_to(ORIGIN)` → replaces older `.to_center()`.
-* `rotate(angle, axis=...)` → still valid.
-* `.get_midpoint()` → preferred over manual midpoint calculations.
-* `.get_vertices()` → still valid for polygons.
-* `.copy()` → still valid.
-
-## Summary of New Errors Fixed
-
-* `TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'length'` → use `line_length`.
-* `TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_val'` → use `x`.
-* `TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'edge_buffer'` → replace with `.next_to(..., buff=...)`.
-* `AttributeError: Axes object has no attribute 'y_axis_labels'` → use `axes.get_axis_labels()`.
-* `AttributeError: NumberLine object has no attribute 'default_numbers_to_display'` → use `include_numbers=True` with `numbers_to_include`.
-* `TypeError: ... got an unexpected keyword argument 'stroke_opacity'` → set via `.set_stroke(opacity=...)`.
-* `AttributeError: NumberLine has no attribute 'exclude_zero_from_default_numbers'` → must use `numbers_to_include`.
-* `TypeError: ... got an unexpected keyword argument 'gamma'` → camera no longer supports gamma.
-* `NameError: name 'UP_LEFT' is not defined` → Use `UL` (UP + LEFT), `UR`, `DL`, `DR` instead.
-
-### Font Size Rules (Hierarchy — Never Violate)
-```python
-TITLE_SIZE = 46          # Largest - for main titles
-EQUATION_SIZE = 36       # Smaller than title - for math equations
-LABEL_SIZE = 28          # Smaller than equation - for axis labels
-DESC_SIZE = 24           # Smallest - for descriptions
-
-Text(...) →  font_size works.
-MathTex(...) →  font_size works.
-Axes(..., axis_config={"font_size": ...}) →  font_size works.
-axes.get_graph_label(...) →  font_size not allowed. Use: axes.get_graph_label(graph, label=MathTex(r"x^2", font_size=24))
-```
-
-### Mandatory Spacing Rules
-```python
-TOP_BUFFER = config.frame_height * 0.05      # 5% space from top
-BOTTOM_BUFFER = config.frame_height * 0.05   # 5% space from bottom
-LEFT_BUFFER = config.frame_width * 0.05      # 5% space from left
-RIGHT_BUFFER = config.frame_width * 0.05     # 5% space from right
-```
-## Mandatory avoid these 
-
-1. NameError: name 'LIGHT_BLUE' is not defined
-    Use valid built-ins (from manim):
-    from manim import BLUE, GREEN, TEAL, YELLOW, RED, ORANGE, PURPLE
-    Or define your own shades:
-    LIGHT_BLUE = "#87CEFA"   # hex for light sky blue
-    LIGHT_GREEN = "#90EE90"  # hex for light green
-
-    Then your code works:
-    self.play(f1.animate.set_color(LIGHT_BLUE).set_opacity(0.4))
-
-    
-2. Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'color'
-    Fix: Import form the manim 
-    from manim import Scene, MathTex, Axes, Write, WHITE
-    or
-    from manim import *
-
-3. NameError: name 'BOTTOM' is not defined
-    Fix: UP, DOWN, LEFT, RIGHT, ORIGIN are valid.
-
-4. NameError: name 'WiggleOutThenIn' is not defined
-    At the top of your script add:
-    from manim import *
-    or,
-    from manim import Scene, Axes, MathTex, FadeIn, WiggleOutThenIn
-
-5.  Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_range'
-    Fix: graph_sin_x = plane.plot(lambda x: np.sin(x), x_range=[-7, 7], color=BLUE)
-
-6. TypeError: Mobject.__init__() got an unexpected keyword argument 'line_arg_dict'
-    Fix: replace it with:
-    background_line_style={...}
-    Use axis_config={...} for Axes.
-
-7. Error Message: Found `stroke_opacity` set in the constructor for `envelope_pos` and `envelope_neg`. According to the validation rules, opacity-related parameters should not be set in the constructor; use `.set_stroke(opacity=...)` or `.set_opacity()` after creation.
-
-8. TypeError: Mobject.__init__() got an unexpected keyword argument 'stroke_dash_length'
-    Fix: 
-    # Option A: directly make dashed
-    line1 = DashedLine(LEFT, RIGHT, dash_length=0.2, num_dashes=20)
-
-
-    # Option B: wrap an existing object
-    base = Line(LEFT, RIGHT)
-    line2 = DashedVMobject(base, dash_length=0.2, num_dashes=20)
-
-
-9. AttributeError: Axes object has no attribute 'to_center'
-    Fix: 
-    axes.move_to(ORIGIN)
-    # or
-    axes.center()
-
-10. TypeError: Mobject.__init__() got an unexpected keyword argument 'background_line_style'
-    Fix:
-    background_line_style is only valid in NumberPlane or Axes, not in general Mobject.
-    So you must pass it when constructing axes/plane, like this:
-
-    axes = Axes(
-        x_range=[-5, 5],
-        y_range=[-3, 3],
-        axis_config={"color": BLUE},              # style for main axes
-        background_line_style={                   # style for grid lines
-            "stroke_color": GREY,
-            "stroke_width": 1,
-            "stroke_opacity": 0.5,
-        }
-    )
-
-11. Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'length'
-    Fix: axes.get_tangent_line(graph_sin, x_tracker.get_value(), line_length=3)
-
-12. TypeError: Mobject.__init__() got an unexpected keyword argument 'x_axis_config'
-    Axes does not accept x_axis_config or y_axis_config as keyword arguments at the top level of Axes(...)
-    Fix:
-    axes = Axes(
-    x_range=[-5, 5, 1],
-    y_range=[-3, 3, 1],
-    axis_config={"font_size": 24},
-    )
-
-    or, if you need separate configs:
-
-    axes = Axes(
-        x_range=[-5, 5, 1],
-        y_range=[-3, 3, 1],
-        x_axis_config={"font_size": 24},
-        y_axis_config={"font_size": 30},
-    )
-
-13. AxisError: axis 1 is out of bounds for array of dimension 1
-    fix:
-    curve1 = axes.plot_parametric_curve(
-        lambda t: (x_func1(t), y_func1(t)),
-        t_range=[0, 2*np.pi, 0.01],
-        color=BLUE
-    )
-
-14. AttributeError: MathTex object has no attribute 'is_about_to_overlap' is_about_to_overlap() doesn’t exist in ManimCE.
-
-15. Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 't_range'
-    Fix:
-    curve = axes.plot_parametric_curve(
-        lambda t: np.array([t, np.sin(t), 0]),
-        t_range=[-PI, PI, 0.05],
-        color=BLUE
-    )
-
-16. AttributeError: ParametricFunction object has no attribute 'x_to_alpha'
-    Fix: x_to_alpha works only on Axes.plot, not on ParametricFunction.
-    tangent_line = always_redraw(
-        lambda: TangentLine(graph_sin, x=x_tracker.get_value(), length=4)
-    )
-
-17. AttributeError: Axes object has no attribute 'x_to_proportion'
-    In new Manim (v0.19+), Axes has no x_to_proportion.
-    Fix: 
-    tangent_line = always_redraw(
-        lambda: TangentLine(graph_sin, x=x_tracker.get_value(), length=4)
-    )
-
-18. TypeError: Mobject.__init__() got an unexpected keyword argument 'dash_length'
-    Fix: 
-    envelope_pos_graph = axes.plot(lambda x: np.sin(x), x_range=[-7,7], color=BLUE)
-    envelope_pos = DashedVMobject(envelope_pos_graph)
-    envelope_pos.set_dash(dash_length=0.1, dashed_ratio=0.5)
-
-19. IndexError: list index out of range
-    use a tiny visible placeholder, e.g.:
-
-    MathTex(r"\;", font_size=LABEL_SIZE)  # thin space
-    # or
-    MathTex(r"0", font_size=LABEL_SIZE)
-
-20. AttributeError: MathTex object has no attribute 'bounding_box'
-    Fix: use properties or new methods:
-
-    mobj.width
-    mobj.height
-    mobj.get_center()
-    mobj.get_bounding_box_vertices()
-
-21. TypeError: Mobject.__init__() got an unexpected keyword argument 'number_constructor_kwargs'
-    Fix: remove it and customize numbers after creation:
-    axes = Axes(x_range=[-2.5*np.pi, 2.5*np.pi, np.pi/2], y_range=[-1.5, 1.5, 0.5])
-    for x_val in axes.x_axis.numbers:
-        x_val.set_color(BLUE)
-
-22. NameError: name 'FillBetween' is not defined
-    FillBetween isn’t auto-imported in v0.19+.
-    Fix: 
-    Add this line:
-    from manim.mobject.graphing.utils import FillBetween
-    Or use axes.get_area() as an alternative.
-
-23. TypeError: Mobject.__init__() got an unexpected keyword argument 'color_map'
-    Fix:
-
-    surface = Surface(..., resolution=(30,30))
-    surface.set_style(fill_color=BLUE, fill_opacity=0.7)
-
-    For gradient:
-    surface.set_fill_by_value(axes=axes, colors=[(BLUE,-1),(GREEN,0),(RED,1)])
-
-24. NameError: name 'ParametricSurface' is not defined
-    Fix:
-    NameError: name 'ParametricSurface' is not defined
-    
-25. TypeError: Mobject.__init__() got an unexpected keyword argument 'res_u'
-    Error comes from res_u / res_v → not valid in v0.19.
-    Fix:
-    resolution=(20, 20)
-
-26. TypeError: Mobject.__init__() got an unexpected keyword argument 'dash_length'
-    Fix for current version: use num_dashes instead:
-    envelope_pos = DashedVMobject(envelope_pos_graph, num_dashes=50, dashed_ratio=0.5)
-    envelope_neg = DashedVMobject(envelope_neg_graph, num_dashes=50, dashed_ratio=0.5)
-
-27. AttributeError: 'Camera' object has no attribute 'frame'
-    Fix:
-    step2_title.to_edge(UP, buff=TOP_BUFFER)
-    
-## ANIMATION SEQUENCE (MANDATORY ORDER)
-
-### STEP 1: Title in center only
-title = Text("Your Title Here", font_size=TITLE_SIZE)
-title.move_to(ORIGIN)   # center of screen
-
-self.play(Write(title, run_time=1.5))
-self.wait(3)
-
-
-```
-### **STEP 2: Axes (No Grid, With Margins)**
-```python
-# Calculate usable space
-usable_width = config.frame_width - (LEFT_BUFFER + RIGHT_BUFFER)
-usable_height = config.frame_height * 0.65
-
-# Create axes
-axes = Axes(
-    x_range=[-1, 10, 1],
-    y_range=[-1, 3, 1],
-    x_length=usable_width,
-    y_length=usable_height,
-    axis_config={
-        "include_numbers": True,
-        "font_size": 24,
-        "decimal_number_config": {"num_decimal_places": 0}
-    }
-)
-
-
-# Apply margins
-axes.next_to(title, DOWN, buff=AFTER_TITLE_GAP)
-
-# Decimal place override (for fractional steps)
-if x_step < 1:
-    axes.x_axis.decimal_number_config["num_decimal_places"] = 2
-if y_step < 1:
-    axes.y_axis.decimal_number_config["num_decimal_places"] = 2
-
-# Animate axes
-self.play(Create(axes))
-
-### **STEP 3: Equation (Adaptive Placement with Fallback)**
-- Place equation below top with a 5% gap.
-- If no space available → show equation temporarily then fade it out.
-- Try to place **left, right, bottom-left, or bottom-right or bottom of the edges if eqation is bigger depending on space.
-- equation = MathTex(r"y = f(x)", font_size=EQUATION_SIZE)
-
-# Try placements in order:
-# 1. Left
-# 2. Right 
-# 3. Bottom-left
-# 4. Bottom-right
-# If nothing fits → fade out
-
-eq_width = eq.width
-eq_height = eq.height
-
-positions = [
-    lambda: eq.next_to(axes, LEFT, buff=0.3).align_to(axes, UP),
-    lambda: eq.next_to(axes, RIGHT, buff=0.3).align_to(axes, UP),
-    lambda: eq.to_edge(DOWN, buff=BOTTOM_BUFFER).to_edge(LEFT, buff=LEFT_BUFFER),
-    lambda: eq.to_edge(DOWN, buff=BOTTOM_BUFFER).to_edge(RIGHT, buff=RIGHT_BUFFER),
-]
-
-
-for pos in positions:
-    pos()
-    left_ok = eq.get_left()[0] >= -config.frame_width/2 + LEFT_BUFFER
-    right_ok = eq.get_right()[0] <= config.frame_width/2 - RIGHT_BUFFER
-    bottom_ok = eq.get_bottom()[1] >= -config.frame_height/2 + BOTTOM_BUFFER
-    top_ok = eq.get_top()[1] <= config.frame_height/2 - TOP_BUFFER
-
-    if left_ok and right_ok and bottom_ok and top_ok:
-        self.play(Write(eq))
-        equation_placed = True
-        break
-
-if not equation_placed:
-    self.play(Write(eq))
-    self.wait(1)
-    self.play(FadeOut(eq))
-
-
-
-```
-
-### **STEP 4: Plot Graph**
-```python
-graph = axes.plot(
-    lambda x: your_function(x),
-    x_range=[min, max],
-    color=BLUE
-)
-self.play(Create(graph))
-```
----
-
-## QUICK TEMPLATE
+GRAPH2D = r"""
+<2D_GRAPH_SCENE_RULES>
+Generate a Manim v0.20+ 2D graph scene. Extend MovingCameraScene (enables camera moves).
+
+## DESIGN SEQUENCE (mandatory order)
+1. Title at ORIGIN center, Write it, wait, then SHRINK + move to top edge (keeps it as context). No equation in the title.
+2. Axes after title moves. Central axes only, no grid. Integers on axes; 2 decimals only if needed. No "π" literal. Keep axes ≤78% frame width / ~55% height so labels never clip.
+3. Equation(s) in a frame CORNER via `.to_corner(UL/UR/DL/DR, buff=LB)` — NEVER `next_to(axes, LEFT/RIGHT)` (wide axes push it off-frame). Color-code: function and its derivative in matching graph colors.
+4. Plot the base graph, then add dynamic tracker-driven elements last.
+5. ~5% margin on all edges. Background BLACK unless asked.
+
+## FONT HIERARCHY (never invert)
+TITLE 46 > EQUATION 36 > LABEL 28 > DESC 24.
+`get_graph_label` takes a mobject: `axes.get_graph_label(graph, label=MathTex(r"x^2", font_size=24))`.
+
+## CLIPPING RULES (most common visual bug — obey strictly)
+- Labels/readouts must be anchored to a FIXED corner with `.to_corner(corner, buff=LB)`, NOT `.next_to(moving_dot, ...)` — a label following a dot to the frame edge WILL clip.
+- Keep axes narrower than the frame (≤78% width) so corner labels have room.
+
+## CORE API (v0.20 — use these, not old names)
+- Plot: `axes.plot(f, x_range=[...], color=...)` (NOT get_graph)
+- Parametric: `axes.plot_parametric_curve(lambda t: (x(t), y(t)), t_range=[a,b,step])`
+- Point on graph from x: `axes.i2gp(x, graph)`; coords→point: `axes.c2p(x, y)`
+- Tangent: `TangentLine(graph, alpha, length=...)`, alpha = (x - x0)/(x1 - x0)
+- Trail behind a moving dot: `TracedPath(dot.get_center, stroke_color=..., stroke_width=4)` — `self.add(path)` AFTER creating the dot it tracks.
+- Dashed: `DashedLine(a, b, color=...)` (no dash_length kwarg); for shapes `DashedVMobject(m, num_dashes=50)`
+- Camera: `self.camera.frame.animate.scale(s).move_to(pos)` with `rate_func=smooth`
+
+## CONSTRUCTOR RULES (cause most crashes)
+- stroke opacity NOT in constructor → `.set_stroke(opacity=...)` after. (fill_opacity in constructor is fine.)
+- `get_riemann_rectangles` takes NO `fill_color` kwarg. Call `get_riemann_rectangles(graph, x_range=[a,b], dx=...)` then `rects.set_fill(color, opacity)` afterwards.
+- `background_line_style={...}`, `axis_config={...}`, per-axis `x_axis_config={...}` only inside Axes/NumberPlane.
+- `resolution=(20,20)` for Surface (NOT res_u/res_v).
+- NEVER use `m.set_color(color_gradient([C1, C2]))`. It throws an error. Use `m.set_color_by_gradient(C1, C2)` instead.
+- Always `from manim import *` and `import numpy as np`. Use UL/UR/DL/DR (not UP_LEFT). Custom colors as hex (MY_COLOR="#87CEFA").
+
+## STYLE
+≤4 colors; match equation color to its graph. Drive motion with `ValueTracker` + `always_redraw`. Sweeps `rate_func=smooth`. Emphasize with `Flash`/`Indicate`. Holds ≥1.5s.
+
+## REFERENCE TEMPLATE (study structure; adapt, don't copy verbatim)
 ```python
 from manim import *
 import numpy as np
-import random
 
-class Animation_84c7b8ca(Scene):
+class GraphScene(MovingCameraScene):
     def construct(self):
-        # ===== CONSTANTS =====
-        TITLE_SIZE = 46
-        EQUATION_SIZE = 36
-        LABEL_SIZE = 28
-
-        TOP_BUFFER = config.frame_height * 0.01
-        BOTTOM_BUFFER = config.frame_height * 0.05
-        LEFT_BUFFER = config.frame_width * 0.05
-        RIGHT_BUFFER = config.frame_width * 0.05
-        AFTER_TITLE_GAP = config.frame_height * 0.05
-
         self.camera.background_color = BLACK
+        TITLE, EQ, LBL = 46, 36, 28
+        LB = config.frame_width * 0.05
 
-        # ===== STEP 1: Title in center =====
-        title = Text("Derivative & Tangent Line", font_size=TITLE_SIZE, color=WHITE)
-        title.move_to(ORIGIN)
+        # 1. Title -> shrink to top
+        title = Text("Derivative & Tangent", font_size=TITLE, color=WHITE).move_to(ORIGIN)
+        self.play(Write(title, run_time=1.5)); self.wait(1)
+        self.play(title.animate.scale(0.7).to_edge(UP, buff=0.3))
 
-        # Title appear
-        self.play(Write(title, run_time=1.5))
-        self.wait(3)
-
-        # Custom "star explosion" fade out
-        self.play(
-            LaggedStart(
-                *[
-                    letter.animate.shift(
-                        np.array([random.uniform(-2, 2), random.uniform(-2, 2), 0])
-                    ).scale(0.5).set_opacity(0)
-                    for letter in title
-                ],
-                lag_ratio=0.1,
-                run_time=2
-            )
-        )
-
-        # ===== STEP 2: Axes =====
-        usable_width = config.frame_width - (LEFT_BUFFER + RIGHT_BUFFER)
-        usable_height = config.frame_height * 0.65
-
+        # 2. Axes (narrower than frame so labels fit)
         axes = Axes(
-            x_range=[-7, 7, 1],
-            y_range=[-2, 2, 1],
-            x_length=usable_width,
-            y_length=usable_height,
-            axis_config={
-                "include_numbers": True,
-                "font_size": 24,
-                "decimal_number_config": {"num_decimal_places": 0},
-            },
-            x_axis_config={"numbers_to_include": [-6, -4, -2, 0, 2, 4, 6]},
-            y_axis_config={"numbers_to_include": [-1, 0, 1]},
-        )
+            x_range=[-7,7,1], y_range=[-2,2,1],
+            x_length=config.frame_width*0.78, y_length=config.frame_height*0.55,
+            axis_config={"include_numbers": True, "font_size": 24},
+        ).center().shift(DOWN*0.3)
+        self.play(Create(axes, run_time=1.5))
 
-        axes.center()
+        # 3. Color-coded equations, corner-anchored
+        eqs = VGroup(
+            MathTex(r"f(x)=\sin(x)", color=BLUE, font_size=EQ),
+            MathTex(r"f'(x)=\cos(x)", color=GREEN, font_size=EQ),
+        ).arrange(DOWN, aligned_edge=LEFT).to_corner(UL, buff=LB).shift(DOWN*0.5)
+        self.play(Write(eqs, run_time=1.5))
+
+        # 4. Base graph
+        graph = axes.plot(lambda x: np.sin(x), x_range=[-7,7], color=BLUE)
+        self.play(Create(graph, run_time=1.5))
+
+        # 5. Dynamic elements
+        xt = ValueTracker(-7)
+        dot = always_redraw(lambda: Dot(axes.i2gp(xt.get_value(), graph), color=BLUE, radius=0.08))
+        tan = always_redraw(lambda: TangentLine(graph, alpha=(xt.get_value()-axes.x_range[0])/(axes.x_range[1]-axes.x_range[0]), length=4, color=YELLOW))
+        d_dot = always_redraw(lambda: Dot(axes.c2p(xt.get_value(), np.cos(xt.get_value())), color=GREEN, radius=0.08))
+        d_path = TracedPath(d_dot.get_center, stroke_color=GREEN, stroke_width=4)
+        vline = always_redraw(lambda: DashedLine(dot.get_center(), d_dot.get_center(), color=GREY_A))
+        # slope readout anchored to a FIXED corner (never follows the dot -> never clips)
+        slope = always_redraw(lambda: VGroup(
+            MathTex(r"m=", font_size=LBL, color=YELLOW),
+            DecimalNumber(np.cos(xt.get_value()), num_decimal_places=2, font_size=LBL, color=YELLOW),
+        ).arrange(RIGHT, buff=0.1).to_corner(UR, buff=LB))
+
+        self.play(FadeIn(dot), FadeIn(tan), FadeIn(d_dot), FadeIn(vline), FadeIn(slope), run_time=0.5)
+        self.add(d_path)  # add trail AFTER its dot exists
+
+        # 6. Sweep
+        self.play(xt.animate.set_value(7), run_time=6, rate_func=smooth)
+        self.wait(2)
+```
+</2D_GRAPH_SCENE_RULES>
+"""
+
+GRAPH3D = r"""
+<3D_SCENE_RULES>
+Generate a Manim v0.20+ 3D scene. Extend ThreeDScene.
+
+## DESIGN GUIDELINES (default sequence unless user overrides)
+1. Title: Unless the user explicitly asks to pin the title to a corner, place the title at ORIGIN center, write it, wait, then fade out COMPLETELY before drawing the 3D scene. If pinned to a corner, and you suspect it will overlap with a large 3D object, FadeOut the title before the object grows. NEVER allow text to overlap with the 3D objects.
+2. Set camera orientation, then create ThreeDAxes (keep lengths ≤7 so it stays on screen).
+3. Axis labels: place at arrow tips with get_x/y/z_axis_label, then pass them to
+   `add_fixed_orientation_mobjects(...)` — this keeps them attached to the arrows
+   (moving during rotation) while always facing the camera so text never tilts.
+   The EQUATION, by contrast, uses `add_fixed_in_frame_mobjects(...)` to stay
+   pinned flat in a screen corner. Use orientation-fixed for things that should
+   follow the 3D scene, frame-fixed for things that should stay on screen.
+4. Surface/graph centered at ORIGIN, then showcase with ambient camera rotation.
+5. Background BLACK unless asked.
+
+## CAMERA (v0.20 — old API removed)
+- `self.set_camera_orientation(phi=70*DEGREES, theta=-45*DEGREES, zoom=1.5)`
+- NEVER use `distance=` (removed in v0.20). Control apparent size with `zoom=`. IMPORTANT: `zoom > 1` zooms IN (makes things bigger), `zoom < 1` zooms OUT. Always use `zoom=1.2` to `1.5` so the 3D diagram fills the screen and isn't tiny!
+- Animate camera: `self.move_camera(phi=..., theta=..., zoom=..., run_time=...)`. Do NOT pass move_camera into self.play.
+- Spin to showcase: `self.begin_ambient_camera_rotation(rate=0.2)` ... `self.wait(n)` ... `self.stop_ambient_camera_rotation()`. Smoother than Rotate().
+
+## FIXED TEXT (critical — all flat 2D text in a 3D scene)
+- Any Text/MathTex meant to face the viewer MUST go through `self.add_fixed_in_frame_mobjects(m)` BEFORE positioning with `.to_corner(...)`. Otherwise it rotates with the 3D camera and looks broken/skewed.
+- This applies to the equation AND the axis-label legend.
+- Fixed-in-frame text stays put during ambient rotation (it does NOT track the spinning axes) — that's why a corner legend is correct, not labels glued to axis tips.
+
+## SURFACE / OBJECTS
+- `Surface(...)`, `Prism(...)`, `Cylinder(...)`.
+- AXIS VISIBILITY: If drawing a large surface, the surface will physically cover and hide the `ThreeDAxes`! To prevent this, make the axes significantly larger than the surface range (e.g. axes length 10, surface range [-3, 3]), and lower the surface opacity (`surface.set_fill_opacity(0.5)`).
+- BIG OBJECTS: Scale your primary 3D objects up! Default sizes (like radius=1) often look tiny in 3D. Make them larger (e.g., radius=2, height=4) or use `zoom=1.5` so the object is highly visible and takes up a good portion of the screen.
+- Opacity NOT in constructor → `.set_fill_opacity(...)` / `.set_stroke_opacity(...)` after creation.
+- Cool height gradient: `surface.set_fill_by_value(axes=axes, colorscale=[(BLUE_E,-1),(TEAL,0),(YELLOW,1)])`.
+
+## FONT HIERARCHY
+TITLE 48-60 > EQUATION 36 > LABEL 28-30.
+
+## COMMON FIXES
+- `from manim import *` + `import numpy as np` always. UL/UR/DL/DR (not UP_LEFT).
+- No 3D `.animate` on camera — use move_camera / set_camera_orientation.
+- NEVER use `m.set_color(color_gradient([C1, C2]))` in updaters or anywhere else! It crashes. Use `m.set_color_by_gradient(C1, C2)` instead.
+- ≤4 colors. Holds ≥1s.
+
+## REFERENCE TEMPLATE (study; adapt, don't copy verbatim)
+```python
+from manim import *
+import numpy as np
+
+class Surface3D(ThreeDScene):
+    def construct(self):
+        self.camera.background_color = BLACK
+        TITLE, EQ, LBL = 56, 36, 30
+
+        # 1. Title -> scatter fade
+        title = Text("3D Surface", font_size=TITLE, color=WHITE).move_to(ORIGIN)
+        self.play(Write(title, run_time=1.5)); self.wait(1)
+        self.play(LaggedStart(*[l.animate.shift(np.array([np.random.uniform(-2,2), np.random.uniform(-2,2),0])).scale(0.5).set_opacity(0) for l in title], lag_ratio=0.1, run_time=2))
+
+        # 2. Camera + axes (zoom IN so it's not tiny)
+        self.set_camera_orientation(phi=70*DEGREES, theta=-45*DEGREES, zoom=1.2)
+        axes = ThreeDAxes(x_range=[-3,3,1], y_range=[-3,3,1], z_range=[-2,2,1], x_length=7, y_length=7, z_length=4)
         self.play(Create(axes, run_time=2))
 
-        # ===== STEP 3: Equation =====
-        equation = MathTex(r"y = \sin(x)", font_size=EQUATION_SIZE, color=WHITE)
+        # 3a. Equation — fixed in frame (flat on screen)
+        eq = MathTex(r"f(x,y)=\sin(x)\cos(y)", font_size=EQ, color=WHITE)
+        self.add_fixed_in_frame_mobjects(eq)
+        eq.to_corner(UL, buff=0.5)
+        self.play(FadeIn(eq), run_time=1)
 
-        positions = [
-            lambda: equation.next_to(axes, LEFT, buff=0.3).align_to(axes, UP),
-            lambda: equation.next_to(axes, RIGHT, buff=0.3).align_to(axes, UP),
-            lambda: equation.to_edge(DL, buff=BOTTOM_BUFFER).to_edge(LEFT, buff=LEFT_BUFFER),
-            lambda: equation.to_edge(DR, buff=BOTTOM_BUFFER).to_edge(RIGHT, buff=RIGHT_BUFFER),
-        ]
+        # 3b. Axis-label legend — fixed in frame (stays flat & readable during spin)
+        legend = VGroup(
+            MathTex(r"x \rightarrow", font_size=LBL, color=WHITE),
+            MathTex(r"y \rightarrow", font_size=LBL, color=WHITE),
+            MathTex(r"z \uparrow",   font_size=LBL, color=WHITE),
+        ).arrange(DOWN, aligned_edge=LEFT)
+        self.add_fixed_in_frame_mobjects(legend)
+        legend.to_corner(DR, buff=0.5)
+        self.play(FadeIn(legend), run_time=1)
 
-        equation_placed = False
-        for pos_func in positions:
-            pos_func()
-            if (
-                equation.get_left()[0] >= -config.frame_width/2 + LEFT_BUFFER and
-                equation.get_right()[0] <= config.frame_width/2 - RIGHT_BUFFER and
-                equation.get_bottom()[1] >= -config.frame_height/2 + BOTTOM_BUFFER and
-                equation.get_top()[1] <= config.frame_height/2 - TOP_BUFFER
-            ):
-                self.play(Write(equation, run_time=1))
-                equation_placed = True
-                break
-
-        if not equation_placed:
-            equation.move_to(ORIGIN)
-            self.play(Write(equation, run_time=1))
-            self.wait(1)
-            self.play(FadeOut(equation))
-
-        # ===== STEP 4: Plot Graph =====
-        def f(x):
-            return np.sin(x)
-
-        graph_sin = axes.plot(f, x_range=[-7, 7], color=BLUE)
-        self.play(Create(graph_sin, run_time=2))
-
-        # ===== STEP 5: Dynamic Elements =====
-        x_tracker = ValueTracker(-7)
-
-        moving_dot = always_redraw(
-            lambda: Dot(point=axes.i2gp(x_tracker.get_value(), graph_sin), color=RED, radius=0.08)
+        # 4. Surface with height-based gradient (cool look)
+        # 4. Surface with height-based gradient (cool look)
+        surface = axes.plot_surface(
+            lambda u, v: np.sin(u) * np.cos(v),
+            u_range=[-3, 3], 
+            v_range=[-3, 3], 
+            resolution=(40, 40),
+            colorscale=[BLUE_E, TEAL, YELLOW]
         )
+        surface.set_fill_opacity(0.85); surface.set_stroke_opacity(0.3)
+        self.play(Create(surface, run_time=3)); self.wait(1)
 
-        tangent_line = always_redraw(
-            lambda: TangentLine(
-                graph_sin,
-                alpha=(x_tracker.get_value() - axes.x_range[0]) / (axes.x_range[1] - axes.x_range[0]),
-                length=4,
-                color=YELLOW
-            )
-        )
-
-        vertical_line = always_redraw(
-            lambda: DashedLine(
-                axes.c2p(x_tracker.get_value(), 0),
-                axes.i2gp(x_tracker.get_value(), graph_sin),
-                color=GREY_A,
-                dash_length=0.1
-            )
-        )
-
-        x_label_group = always_redraw(
-            lambda: VGroup(
-                MathTex("x = ", font_size=LABEL_SIZE, color=GREEN),
-                DecimalNumber(x_tracker.get_value(), num_decimal_places=2, font_size=LABEL_SIZE, color=GREEN)
-            ).arrange(RIGHT, buff=0.1).next_to(axes.c2p(x_tracker.get_value(), 0), DOWN, buff=0.2)
-        )
-
-        slope_label_group = always_redraw(
-            lambda: VGroup(
-                MathTex(r"m = \cos(x) = ", font_size=LABEL_SIZE, color=YELLOW),
-                DecimalNumber(np.cos(x_tracker.get_value()), num_decimal_places=2, font_size=LABEL_SIZE, color=YELLOW)
-            ).arrange(RIGHT, buff=0.1).to_edge(UR, buff=RIGHT_BUFFER)
-        )
-
-        self.play(
-            FadeIn(moving_dot),
-            FadeIn(tangent_line),
-            FadeIn(vertical_line),
-            FadeIn(x_label_group),
-            FadeIn(slope_label_group),
-            run_time=0.5
-        )
-
-        # ===== STEP 6: Animate Movement =====
-        self.play(x_tracker.animate.set_value(7), run_time=10, rate_func=linear)
-
-        # ===== STEP 7: Clean Up =====
-        self.play(
-            FadeOut(axes),
-            FadeOut(equation),
-            FadeOut(graph_sin),
-            FadeOut(moving_dot),
-            FadeOut(tangent_line),
-            FadeOut(vertical_line),
-            FadeOut(x_label_group),
-            FadeOut(slope_label_group),
-            run_time=1
-        )
+        # 5. Showcase spin via ambient rotation
+        self.begin_ambient_camera_rotation(rate=0.2)
+        self.wait(6)
+        self.stop_ambient_camera_rotation()
         self.wait(1)
-
-
 ```
-
-<2D Graph Scenes Rule Only/>
+</3D_SCENE_RULES>
 """
 
-GRAPH3D="""
-<3D Scenes and Graph Rule Only>
+COMPUTER_DATASTRUCTURE = r"""
+<COMPUTER_DATASTRUCTURE_RULES>
+Generate a Manim v0.20+ algorithm/data-structure visualization.
 
-## Mandatory Design Sequence
+## DESIGN SEQUENCE (strict order)
+1. Title at ORIGIN center → Write → fade out COMPLETELY before anything else (scatter-fade or standard fade). No equations in title.
+2. Then concept explanation/mini-diagram (if applicable), then camera movement or transition to the main structure/objects. No animation that breaks this logical order.
+3. Integers preferred; 2 decimals if needed. No π/symbolic constants in numeric labels.
+4. 5% margin from all edges. ≥1% gap between objects and any text.
 
-**Follow this exact order:**
-1. **Title** → Center of screen → Animate appearance → Fade out with animation and do not inlude equation
-2. **Axes** → Create after title fades and it should not go out of the screen 
-3. **Equation** → Position in corner (stays visible throughout)
-4. **Graph/Surface** → Main 3D object
+## OVERLAP PREVENTION (the #1 visual failure — obey)
+- Same location, multiple texts → SEQUENTIAL: FadeIn(0.5) → wait(1.5) → FadeOut(0.5) → buffer(0.2) → next. One spot, one text at a time.
+- Simultaneous texts → distribute to corners: `.to_corner(UL/UR/DL/DR, buff=0.5)`.
+- Stacked texts → ≥0.8 unit vertical spacing.
+- Group related labels in a VGroup; FadeOut the whole group before a new scene.
+- Long text → abbreviate, reduce font_size, or split with `\n`.
+- Always fully FadeOut a scene's objects before starting the next scene, or use MovingCameraScene to pan to a fresh canvas.
 
----
+## FONT HIERARCHY (adjust to content length)
+TITLE 64-46 > TEXT 40-36 > LABEL 32-28 > DESC 24.
+`get_graph_label` takes a mobject: `axes.get_graph_label(graph, label=MathTex(r"x^2", font_size=24))`.
 
-## Critical Layout Rules
+## API RULES (v0.20 — these cause most crashes)
+- `from manim import *` and `import numpy as np` always.
+- Create not ShowCreation; axes.plot() not get_graph().
+- Opacity/stroke NOT in constructor → `.set_stroke(opacity=...)` / `.set_fill(...)` after. (fill_opacity in constructor OK.)
+- Position: `.move_to(ORIGIN)` / `.center()` (no `.to_center()`); `.next_to()`, `.arrange()`, `.to_corner()`, `.to_edge()` all valid.
+- Dashed: `DashedVMobject(m, num_dashes=50)` or `DashedLine(a, b)` (no dash_length kwarg in constructor).
+- Per-axis config inside Axes: `x_axis_config={...}`, `y_axis_config={...}`. `background_line_style`/`axis_config` only inside Axes/NumberPlane.
+- Custom colors as hex: `MY_COLOR = "#87CEFA"`. Use UL/UR/DL/DR (not UP_LEFT); UP/DOWN/LEFT/RIGHT/ORIGIN valid.
+- Updaters take dt: `def upd(mob, dt): ...`.
+- Reference last item in a VGroup: `group[-1]` (no `last_mobject`).
+- Define every font-size constant before use (e.g. TEXT_SIZE = 28).
+- MathTex always raw string; Text() for words, MathTex() for math.
 
-### 1. Title (Step 1)
-- **Position:** Always center (`ORIGIN`)
-- **Animation:** Write/FadeIn, then fade out with effect (LaggedStart, scatter, etc.)
-- **Content:** No equations in title text
-- **Font Size:** 48-60pt (adjustable based on length)
+## STYLE
+Box-based elements for arrays/nodes. Highlight comparisons (CYAN/YELLOW stroke), swaps (PINK/RED flash with `path_arc` for cinematic jumps), sorted (GREEN). Use `LaggedStart` for sequential reveals. Deep/dark background colors `#0B0F19` preferred for neon contrast. Show a final result.
 
-### 2. Axes (Step 2)
-- **Create:** After title completely fades out
-- **Style:** Show only central axes (no grid)
-- **Ranges:** Use integers mostly; 2 decimal precision if needed
-- **Labels:** Add x, y, z labels with `MathTex`
-
-### 3. Equation (Step 3)
-- **Position:** Top corner (LEFT or RIGHT edge)
-- **Visibility:** Always visible (never fade out unless explicitly needed)
-- **Font Size:** 36pt (adjustable)
-- **Fixed Frame:** Must use `add_fixed_in_frame_mobjects()`
-
-### 4. Surface/Graph (Step 4)
-- **Position:** Centered at `ORIGIN`
-- **Opacity:** Set AFTER creation using `.set_fill_opacity()` and `.set_stroke_opacity()`
-- **Animation:** Create with 3-5 second runtime
-
----
-
-## Font Size Guidelines
-
+## REFERENCE TEMPLATE (study structure; adapt, don't copy verbatim)
 ```python
-TITLE_SIZE = 48-60        # Adjust based on title length
-EQUATION_SIZE = 36        # Adjust based on formula length
-LABEL_SIZE = 28           # Axis labels
-DESC_SIZE = 24            # Bottom descriptions
-```
-
----
-
-## Spacing Rules
-
-```python
-TOP_BUFFER = config.frame_height * 0.05      # 5% from top
-BOTTOM_BUFFER = config.frame_height * 0.05   # 5% from bottom
-LEFT_BUFFER = config.frame_width * 0.05      # 5% from left
-RIGHT_BUFFER = config.frame_width * 0.05     # 5% from right
-```
-
----
-
-## Text Positioning
-
-### Equation Placement
-```python
-# After title fades, position equation at top corner
-equation.to_edge(UP, buff=0.6).to_edge(LEFT, buff=LEFT_BUFFER)
-```
-
-### Fixed Frame Setup
-```python
-# ALL text must be fixed to camera frame
-self.add_fixed_in_frame_mobjects(equation)
-```
-
----
-
-## 3D Object Styling
-
-### ❌ WRONG - Never set opacity in constructor:
-```python
-surface = Surface(..., fill_opacity=0.8, stroke_opacity=0.5)
-```
-
-### ✅ CORRECT - Set opacity after creation:
-```python
-surface = Surface(...)
-surface.set_fill_opacity(0.8)
-surface.set_stroke_opacity(0.5)
-```
-
----
-
-## Camera Configuration
-
-```python
-self.set_camera_orientation(
-    phi=75*DEGREES, 
-    theta=-45*DEGREES, 
-    distance=8-10
-)
-```
-
-**Distance Guidelines:**
-- Small objects: 6-8
-- Medium objects: 8-10
-- Large/complex scenes: 10-15
-
----
-
-## Animation Timing
-
-- **Title:** 1-2 seconds (appearance + wait)
-- **Title Fade:** 1.5-2 seconds
-- **Axes:** 2 seconds
-- **Equation:** 1-2 seconds (fade in)
-- **Surface:** 3-5 seconds
-- **Rotation:** 4-6 seconds with `rate_func=linear`
-
----
-
-## Common Errors and Fixes
-
-### 1. NameError: Cuboid not defined
-```python
-# Use Cube for standard cube
-cube = Cube(side_length=2)
-
-# Use Prism for rectangular box
-box = Prism(dimensions=[2, 1, 3])
-```
-
-### 2. get_center() argument error
-```python
-# ❌ WRONG
-center = obj.get_center(something)
-
-# ✅ CORRECT
-center = obj.get_center()
-```
-
-### 3. LaTeX conversion error
-```python
-# ❌ WRONG - mixing text and math
-title = Tex(r"\textbf{Title: $x^2$}")
-
-# ✅ CORRECT - Option 1: Pure math
-title = Tex(r"Title: $x^2$", font_size=48)
-
-# ✅ CORRECT - Option 2: Separate parts
-title = Tex(r"\textbf{Title: }", r"$x^2$", font_size=48)
-```
-
-### 4. ThreeDCamera has no animate
-```python
-# ❌ WRONG
-self.camera.animate.move_to(...)
-
-# ✅ CORRECT
-self.move_camera(phi=60*DEGREES, theta=30*DEGREES)
-```
-
-### 5. Unexpected argument None
-```python
-# Always ensure objects exist before animating
-x_label = axes.get_x_axis_label(MathTex("x"))
-y_label = axes.get_y_axis_label(MathTex("y"))
-self.play(Write(x_label), Write(y_label))
-```
-
----
-
-## Multi-Element Scenes
-
-### Transparency Hierarchy
-- **Base surface:** 0.6-0.8
-- **Cross-sections:** 0.4-0.5
-- **Volume elements:** 0.3
-
-### Progressive Animation
-```python
-for element in elements:
-    self.play(Create(element), run_time=0.3)
-    self.wait(0.1)
-```
-
----
-
-## Complete Template
-
-# 3d Saddle Surface 
-
 from manim import *
 import numpy as np
 
-class Animation_7fc9211b(ThreeDScene):
+class UltimateBubbleSort(MovingCameraScene):
     def construct(self):
-        # ========================================
-        # CONSTANTS
-        # ========================================
-        TITLE_SIZE = 60
-        EQUATION_SIZE = 36
-        LABEL_SIZE = 28
-        LEFT_BUFFER = config.frame_width * 0.05
-        
-        # Background
+        # Deep space dark background for glowing colors to pop
         self.camera.background_color = BLACK
         
-        # ========================================
-        # STEP 1: TITLE (Center → Fade Out)
-        # ========================================
-        title = Text("Saddle Surface", font_size=TITLE_SIZE, color=WHITE)
-        title.move_to(ORIGIN)
-        
-        self.play(Write(title), run_time=1.5)
-        self.wait(1)
-        
-        # Star explosion fade out
-        self.play(
-            LaggedStart(
-                *[
-                    letter.animate.shift(
-                        np.array([
-                            np.random.uniform(-2, 2),
-                            np.random.uniform(-2, 2),
-                            0
-                        ])
-                    ).scale(0.5).set_opacity(0)
-                    for letter in title
-                ],
-                lag_ratio=0.1,
-                run_time=2
+        # Color Palette
+        NEON_CYAN = "#00F0FF"
+        NEON_PINK = "#FF0055"
+        NEON_GREEN = "#00FF66"
+        DARK_BLUE = "#111827"
+
+        # Helper function for generating beautiful boxes
+        def make_box(val):
+            box = RoundedRectangle(
+                corner_radius=0.2, width=1.2, height=1.2, 
+                stroke_color=BLUE_D, stroke_width=3,
+                fill_color=DARK_BLUE, fill_opacity=0.8
             )
-        )
-        self.wait(0.5)
+            num = Text(str(val), font_size=36, weight=BOLD, color=WHITE)
+            return VGroup(box, num)
+
+        # =========================================================
+        # PHASE 1: THE SCATTER TITLE INTRO
+        # =========================================================
         
-        # ========================================
-        # STEP 2: CAMERA SETUP
-        # ========================================
-        self.set_camera_orientation(
-            phi=75 * DEGREES, 
-            theta=-45 * DEGREES, 
-            distance=10
-        )
+        TITLE_SIZE = 64
+        title = Text("Bubble Sort", font_size=TITLE_SIZE, color=WHITE, weight=BOLD).move_to(ORIGIN)
         
-        # ========================================
-        # STEP 3: AXES
-        # ========================================
-        axes = ThreeDAxes(
-            x_range=[-3, 3, 1],
-            y_range=[-3, 3, 1],
-            z_range=[-2, 2, 1],
-            x_length=7,
-            y_length=7,
-            z_length=4,
-        )
-        
-        self.play(Create(axes), run_time=2)
-        self.wait(0.5)
-        
-        # Axis labels
-        x_label = axes.get_x_axis_label(MathTex("x", font_size=LABEL_SIZE))
-        y_label = axes.get_y_axis_label(MathTex("y", font_size=LABEL_SIZE))
-        z_label = axes.get_z_axis_label(MathTex("z", font_size=LABEL_SIZE))
-        
-        self.play(
-            Write(x_label), 
-            Write(y_label), 
-            Write(z_label), 
-            run_time=1
-        )
-        self.wait(0.5)
-        
-        # ========================================
-        # STEP 4: EQUATION
-        # ========================================
-        equation = MathTex(
-            r"z = x^2 - y^2", 
-            font_size=EQUATION_SIZE, 
-            color=WHITE
-        )
-        equation.to_edge(UP, buff=0.6).to_edge(LEFT, buff=LEFT_BUFFER)
-        equation.set_opacity(0)
-        
-        # Fix to camera frame
-        self.add_fixed_in_frame_mobjects(equation)
-        
-        self.play(equation.animate.set_opacity(1), run_time=1.5)
-        self.wait(0.5)
-        
-        # ========================================
-        # STEP 5: SURFACE
-        # ========================================
-        surface = Surface(
-            lambda u, v: np.array([u, v, u**2 - v**2]),
-            u_range=[-1.5, 1.5], 
-            v_range=[-1.5, 1.5],
-            resolution=(40, 40),
-            fill_color=BLUE_D,
-            stroke_color=BLUE_E,
-        )
-        surface.move_to(ORIGIN)
-        
-        # Set opacity AFTER creation
-        surface.set_fill_opacity(0.8)
-        surface.set_stroke_opacity(0.5)
-        
-        self.play(Create(surface), run_time=3)
-        self.wait(1)
-        
-        # ========================================
-        # STEP 6: ROTATION
-        # ========================================
-        group = VGroup(surface, axes, x_label, y_label, z_label)
-        
-        self.play(
-            Rotate(group, angle=TAU, axis=Z_AXIS, run_time=6, rate_func=linear)
-        )
-        self.wait(2)
-
-# 3d Surface Plot
-```python
-from manim import *
-import numpy as np
-
-class Animation_xxxxx(ThreeDScene):
-    def construct(self):
-        # ========================================
-        # CONSTANTS
-        # ========================================
-        TITLE_SIZE = 60
-        EQUATION_SIZE = 36
-        LABEL_SIZE = 28
-        LEFT_BUFFER = config.frame_width * 0.05
-        
-        # Background
-        self.camera.background_color = BLACK
-        
-        # ========================================
-        # STEP 1: TITLE (Center → Fade Out)
-        # ========================================
-        title = Text("3D Surface Plot", font_size=TITLE_SIZE, color=WHITE)
-        title.move_to(ORIGIN)
-        
-        self.play(Write(title), run_time=1.5)
-        self.wait(1)
-        
-        # Star explosion fade out
-        self.play(
-            LaggedStart(
-                *[
-                    letter.animate.shift(
-                        np.array([
-                            np.random.uniform(-2, 2),
-                            np.random.uniform(-2, 2),
-                            0
-                        ])
-                    ).scale(0.5).set_opacity(0)
-                    for letter in title
-                ],
-                lag_ratio=0.1,
-                run_time=2
-            )
-        )
-        self.wait(0.5)
-        
-        # ========================================
-        # STEP 2: CAMERA SETUP
-        # ========================================
-        self.set_camera_orientation(
-            phi=75 * DEGREES, 
-            theta=-45 * DEGREES, 
-            distance=10
-        )
-        
-        # ========================================
-        # STEP 3: AXES
-        # ========================================
-        axes = ThreeDAxes(
-            x_range=[-3, 3, 1],
-            y_range=[-3, 3, 1],
-            z_range=[-2, 2, 1],
-            x_length=7,
-            y_length=7,
-            z_length=4,
-        )
-        
-        self.play(Create(axes), run_time=2)
-        self.wait(0.5)
-        
-        # Axis labels
-        x_label = axes.get_x_axis_label(MathTex("x", font_size=LABEL_SIZE))
-        y_label = axes.get_y_axis_label(MathTex("y", font_size=LABEL_SIZE))
-        z_label = axes.get_z_axis_label(MathTex("z", font_size=LABEL_SIZE))
-        
-        self.play(
-            Write(x_label), 
-            Write(y_label), 
-            Write(z_label), 
-            run_time=1
-        )
-        self.wait(0.5)
-        
-        # ========================================
-        # STEP 4: EQUATION (Fixed, Always Visible)
-        # ========================================
-        equation = MathTex(
-            r"f(x, y) = \sin(x) \cos(y)", 
-            font_size=EQUATION_SIZE, 
-            color=WHITE
-        )
-        equation.to_edge(UP, buff=0.6).to_edge(LEFT, buff=LEFT_BUFFER)
-        equation.set_opacity(0)
-        
-        # Fix to camera frame
-        self.add_fixed_in_frame_mobjects(equation)
-        
-        self.play(equation.animate.set_opacity(1), run_time=1.5)
-        self.wait(0.5)
-        
-        # ========================================
-        # STEP 5: SURFACE
-        # ========================================
-        surface = Surface(
-            lambda u, v: np.array([u, v, np.sin(u) * np.cos(v)]),
-            u_range=[-3, 3],
-            v_range=[-3, 3],
-            resolution=(40, 40),
-            fill_color=BLUE_D,
-            stroke_color=BLUE_E,
-        )
-        surface.move_to(ORIGIN)
-        
-        # Set opacity AFTER creation
-        surface.set_fill_opacity(0.8)
-        surface.set_stroke_opacity(0.5)
-        
-        self.play(Create(surface), run_time=3)
-        self.wait(1)
-        
-        # ========================================
-        # STEP 6: ROTATION (Equation stays fixed)
-        # ========================================
-        group = VGroup(surface, axes, x_label, y_label, z_label)
-        
-        self.play(
-            Rotate(group, angle=TAU, axis=Z_AXIS, run_time=6, rate_func=linear)
-        )
-        self.wait(2)
-```
-
----
-
-## Validation Checklist
-
-- ✅ Title appears at center first
-- ✅ Title fades out with animation effect
-- ✅ Axes created after title fades
-- ✅ Equation positioned at top corner
-- ✅ Equation uses `add_fixed_in_frame_mobjects()`
-- ✅ Equation stays visible (unless scene is too crowded)
-- ✅ Surface centered at ORIGIN
-- ✅ Opacity set AFTER surface creation
-- ✅ Camera distance appropriate for scene
-- ✅ All text readable throughout
-
----
-
-## Key Principles
-
-1. **Sequence is sacred:** Title → Axes → Equation → Surface
-2. **Equation visibility:** Keep visible unless space is critically limited
-3. **Fixed frame text:** All text must be fixed to camera
-4. **Opacity timing:** Always set after object creation
-5. **Center everything:** Use ORIGIN for 3D objects
-
-```
-<3D Scenes and Graph Rule Only/>
-
-"""
-
-COMPUTER_DATASTRUCTURE="""
-<Computer Data Structure Rule Only>
-### Mandatory Structure
-0. **Gap** A 5% gap from all edges.
-1. **Title Placement**: Always centered (not top). Must appear first, then fade out completely before any new object or text appears. Avoid including equations or expressions in the title.
-2. **Numeric Formatting**: Prefer integers; if decimals are needed, use two-decimal precision. Avoid π or symbolic constants in numeric labels.
-3. **Text Placement**: Place texts near screen corners (UL, UR, DL, DR) or top edge, maintaining a 5% screen margin. Ensure texts do not overlap any existing objects; if overlap occurs, fade the text out instead of repositioning unsafely.
-4. **Margin Enforcement**: Maintain 5% margin on all screen sides — top, bottom, left, and right.
-5. **Graph/Object**: Object should not overlap with the text or anything maintain 1% gap
-5. **Scene Sequence**: Must follow this strict order → **Title → FadeOut → Text (Adaptive) → Graph/Object**. No parallel animation that interrupts this order.
-
----
-
-### 🚨 OVERLAP PREVENTION CHECKLIST (MANDATORY)
-
-#### Rule 1: Sequential Text Display at Same Location
-**If multiple texts need to appear in the same location:**
-
-```python
-# CORRECT - Sequential with complete fadeout
-text1 = Text("First Message", font_size=TEXT_SIZE)
-text1.move_to([0, 3, 0])
-self.play(FadeIn(text1), run_time=0.5)
-self.wait(1.5)
-self.play(FadeOut(text1), run_time=0.5)
-self.wait(0.2)  # Buffer time
-
-text2 = Text("Second Message", font_size=TEXT_SIZE)
-text2.move_to([0, 3, 0])  # Same position as text1
-self.play(FadeIn(text2), run_time=0.5)
-self.wait(1.5)
-self.play(FadeOut(text2), run_time=0.5)
-
-**Timing Pattern:**
-```
-FadeIn(0.5s) → Wait(1.5s) → FadeOut(0.5s) → Buffer(0.2s) → Next Text
-```
-
-**RULE: One location = One text at a time. Previous must fade out completely before next appears.**
-
----
-
-#### Rule 2: Corner Distribution for Simultaneous Texts
-**If multiple texts must be visible simultaneously:**
-
-```python
-# CORRECT - Distributed to corners
-text1 = Text("DFS Preorder", font_size=TEXT_SIZE)
-text1.to_corner(UL, buff=0.5)  # Upper-Left
-
-text2 = Text("Traversal: Left→Right", font_size=TEXT_SIZE)
-text2.to_corner(UR, buff=0.5)  # Upper-Right
-
-text3 = Text("Stack: [1, 2, 4]", font_size=TEXT_SIZE)
-text3.to_corner(DL, buff=0.5)  # Down-Left
-
-text4 = Text("Visited: [1]", font_size=TEXT_SIZE)
-text4.to_corner(DR, buff=0.5)  # Down-Right
-
-self.play(
-    FadeIn(text1), FadeIn(text2), 
-    FadeIn(text3), FadeIn(text4),
-    run_time=1
-)
-
-
----
-
-#### Rule 3: Vertical Stacking (Alternative)
-**For top-aligned multiple texts:**
-
-```python
-TOP_BUFFER = config.frame_height * 0.05
-VERTICAL_SPACING = 0.8  # Minimum 8% screen height
-
-top_y = config.frame_height/2 - TOP_BUFFER
-
-text1 = Text("Line 1", font_size=TEXT_SIZE)
-text1.move_to([0, top_y, 0])
-
-text2 = Text("Line 2", font_size=TEXT_SIZE)
-text2.move_to([0, top_y - VERTICAL_SPACING, 0])  # Stack below
-
-text3 = Text("Line 3", font_size=TEXT_SIZE)
-text3.move_to([0, top_y - 2*VERTICAL_SPACING, 0])  # Stack below
-
-self.play(FadeIn(text1), FadeIn(text2), FadeIn(text3), run_time=1)
-```
-
----
-
-#### Rule 4: Object-Text Collision Detection
-**Before placing any text, verify no collision with graph/object:**
-
-```python
-# CORRECT - Check bounding boxes
-graph_top = graph.get_top()[1]
-graph_bottom = graph.get_bottom()[1]
-graph_left = graph.get_left()[0]
-graph_right = graph.get_right()[0]
-
-# Place text safely above graph
-label_y = graph_top + 0.5  # 0.5 unit gap
-label = Text("Graph Label", font_size=LABEL_SIZE)
-label.move_to([0, label_y, 0])
-
-# Verify no overlap
-if label.get_bottom()[1] > graph_top:
-    # Safe - no overlap
-    self.play(FadeIn(label))
-else:
-    # Overlap detected - reposition or fade out conflicting object
-    label.move_to([0, graph_top + 1, 0])
-```
-
-**Minimum Gap Rules:**
-- Text ↔ Graph: 1% screen height = `config.frame_height * 0.01`
-- Text ↔ Text: 8% screen height = `config.frame_height * 0.08`
-- Text ↔ Edge: 5% margin from screen border
-
----
-
-#### Rule 5: Dynamic Text Abbreviation
-**If text is too long and causes overlap:**
-
-```python
-# CORRECT - Abbreviate or reduce font
-original_text = "Depth First Search Preorder Traversal (Recursive)"
-
-# Option A: Abbreviate
-short_text = Text("DFS Preorder (Recursive)", font_size=TEXT_SIZE)
-
-# Option B: Reduce font dynamically
-if len(original_text) > 30:
-    font_size = TEXT_SIZE * 0.8  # 80% of original
-else:
-    font_size = TEXT_SIZE
-
-label = Text(original_text, font_size=font_size)
-
-# Option C: Multi-line
-label = Text(
-    "Depth First Search\nPreorder Traversal", 
-    font_size=TEXT_SIZE,
-    line_spacing=1.2
-)
-```
-
----
-
-#### Rule 6: Pre-Animation Overlap Check
-**Always verify positions before animating:**
-
-```python
-def check_overlap(obj1, obj2, min_gap=0.1):
-    # Check if two objects overlap with minimum gap
-    box1 = obj1.get_bounding_box_vertices()
-    box2 = obj2.get_bounding_box_vertices()
-    
-    # Get bounds
-    obj1_right = box1[2][0]
-    obj1_left = box1[0][0]
-    obj1_top = box1[1][1]
-    obj1_bottom = box1[0][1]
-    
-    obj2_right = box2[2][0]
-    obj2_left = box2[0][0]
-    obj2_top = box2[1][1]
-    obj2_bottom = box2[0][1]
-    
-    # Check horizontal overlap
-    h_overlap = not (obj1_right + min_gap < obj2_left or 
-                     obj2_right + min_gap < obj1_left)
-    
-    # Check vertical overlap
-    v_overlap = not (obj1_top + min_gap < obj2_bottom or 
-                     obj2_top + min_gap < obj1_bottom)
-    
-    return h_overlap and v_overlap
-
-# Usage
-text1 = Text("Label 1", font_size=TEXT_SIZE).move_to([0, 2, 0])
-text2 = Text("Label 2", font_size=TEXT_SIZE).move_to([0, 2, 0])
-
-if check_overlap(text1, text2):
-    # Collision detected - use sequential display
-    self.play(FadeIn(text1), run_time=0.5)
-    self.wait(1)
-    self.play(FadeOut(text1), run_time=0.5)
-    self.play(FadeIn(text2), run_time=0.5)
-else:
-    # Safe to show simultaneously
-    self.play(FadeIn(text1), FadeIn(text2), run_time=0.5)
-```
-
----
-
-#### Rule 7: Group Management for Complex Scenes
-**Use VGroup to manage related objects:**
-
-```python
-# CORRECT - Group and manage together
-top_labels = VGroup()
-
-label1 = Text("Method: DFS", font_size=TEXT_SIZE)
-label1.to_corner(UL, buff=0.5)
-top_labels.add(label1)
-
-label2 = Text("Order: Preorder", font_size=TEXT_SIZE)
-label2.to_corner(UR, buff=0.5)
-top_labels.add(label2)
-
-# Show all together
-self.play(FadeIn(top_labels), run_time=1)
-
-# Clear all together before next scene
-self.play(FadeOut(top_labels), run_time=0.5)
-self.wait(0.2)
-
-# Now safe to add new labels
-new_label = Text("New Scene", font_size=TEXT_SIZE)
-new_label.to_corner(UL, buff=0.5)
-self.play(FadeIn(new_label), run_time=0.5)
-```
-
----
-
-#### Rule 8: Scene Transition Protocol
-**Between major scene changes:**
-
-```python
-# CORRECT - Complete fadeout before new scene
-# Scene 1: Show graph with labels
-graph = ...
-labels = VGroup(label1, label2, label3)
-self.play(Create(graph), FadeIn(labels))
-self.wait(2)
-
-# Transition: Clear everything
-self.play(
-    FadeOut(graph), 
-    FadeOut(labels),
-    run_time=1
-)
-self.wait(0.5)  # Buffer
-
-# Scene 2: New content (no overlap risk)
-new_graph = ...
-new_labels = VGroup(new_label1, new_label2)
-self.play(Create(new_graph), FadeIn(new_labels))
-```
-
----
-
-### OVERLAP PREVENTION SUMMARY
-
-**MUST DO:**
-1. Sequential display if same location (FadeOut → Wait → FadeIn)
-2. Corner distribution if simultaneous (UL, UR, DL, DR)
-3. Vertical stacking with 8% spacing minimum
-4. 1% gap between text and graph/objects
-5. 5% margin from screen edges
-6. Complete fadeout before scene transitions
-7. Group related objects with VGroup
-8. Abbreviate long text to prevent overflow
-
----
-
-### Deprecated → New (Manim v0.19+)
-
----
-
-## Common Deprecated → New
-
-* `to_edge(...)` still works, but prefer `.next_to()` for finer control.
-* `to_corner(...)` → use `.align_on_border(...)`.
-* `axes.to_center()` → use `axes.move_to(ORIGIN)` or `axes.center()`.
-* `shift(x*RIGHT)` still valid.
-* `scale_in_place(factor)` → use `.scale(factor, about_point=...)`.
-* `fade_in` / `fade_out` methods → use animations: `FadeIn(mobj)` / `FadeOut(mobj)`.
-* `ShowCreation(mobj)`  → `Create(mobj)`.
-* `Write(mobj, run_time=...)`  still valid.
-* `Transform(m1, m2)`  still valid.
-* `SurroundingRectangle(..., buff=0.1)`  still valid.
-* `.start_point or .end_point` -> use `.get_start()` or `.get_end()`.
-
----
-
-## Colors / Styles
-
-- `stroke_width` → still valid.
-- `stroke_opacity=...` in constructor → not allowed. Use `.set_stroke(opacity=...)`.
-- `fill_opacity=...` in constructor → still valid.
-- `line_arg_dict` → deprecated.  Use: 
-  - `axis_config={...}` → for styling axes 
-  - `background_line_style={...}` → **only inside Axes or NumberPlane**.
-- `stroke_dash_length` → not valid. Use `DashedLine(...)` or `DashedVMobject(...)`.
-
----
-
-## Text / Labels
-
-* `TextMobject(...)` → use `Tex(...)`.
-* `TexMobject(...)` → use `Tex(...)`.
-* `edge_buffer` argument (e.g., in `Text`) → not valid. Replace with `.next_to(..., buff=...)` or `.align_on_border(...)`.
-* `Text(..., t2c=...)` → still valid. 
-* `t2s` (text-to-style) → replaced by `.set_color_by_t2s()`.
-
----
-
-## Shapes
-
-* `ArcBetweenPoints(..., radius=...)` → `ArcBetweenPoints(..., angle=...)`.
-* `Sector(inner_radius=...)` → replaced with `AnnularSector(inner_radius=...)`.
-
----
-
-## NumberLine
-
-* `NumberLine(default_numbers_to_display=...)` → removed. Use `include_numbers=True` and control with `numbers_to_include=[...]` or `decimal_number_config={...}`.
-* `exclude_zero_from_default_numbers` → removed. Must explicitly control numbers via `numbers_to_include`.
-
----
-
-## Camera / Scene
-
-* `ThreeDScene.set_camera_orientation(...)` → still valid.
-* `self.camera.animate.set(phi=..., theta=...)` → replaces old `self.move_camera(...)`.
-* `self.set_camera_orientation(...)` → replaces old `set_camera_position(...)`.
-* `self.set_camera_orientation(phi=..., theta=...)` → still valid; `gamma` is no longer supported.
-
-
----
-
-## Geometry / Mobject Methods
-
-* `.start_point` / `.end_point` → replaced with `.get_start()` / `.get_end()`.
-* `.point_from_proportion(alpha)` → still valid.
-* `scale_in_place(factor)` → deprecated. Use `.scale(factor, about_point=...)`.
-* `.fade_in` / `.fade_out` (methods) → removed. Use `FadeIn(mobj)` / `FadeOut(mobj)` animations.
-* `next_to(...)` → still valid and preferred over `to_edge(...)` for finer control.
-* `to_corner(...)` → replaced with `.align_on_border(...)`.
-* `.center()` or `.move_to(ORIGIN)` → replaces older `.to_center()`.
-* `rotate(angle, axis=...)` → still valid.
-* `.get_midpoint()` → preferred over manual midpoint calculations.
-* `.get_vertices()` → still valid for polygons.
-* `.copy()` → still valid.
-
-## Summary of New Errors Fixed
-
-* `TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'length'` → use `line_length`.
-* `TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_val'` → use `x`.
-* `TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'edge_buffer'` → replace with `.next_to(..., buff=...)`.
-* `AttributeError: Axes object has no attribute 'y_axis_labels'` → use `axes.get_axis_labels()`.
-* `AttributeError: NumberLine object has no attribute 'default_numbers_to_display'` → use `include_numbers=True` with `numbers_to_include`.
-* `TypeError: ... got an unexpected keyword argument 'stroke_opacity'` → set via `.set_stroke(opacity=...)`.
-* `AttributeError: NumberLine has no attribute 'exclude_zero_from_default_numbers'` → must use `numbers_to_include`.
-* `TypeError: ... got an unexpected keyword argument 'gamma'` → camera no longer supports gamma.
-* `NameError: name 'UP_LEFT' is not defined` → Use `UL` (UP + LEFT), `UR`, `DL`, `DR` instead.
-
-### Font Size Rules (adjustable based on content length)
-TITLE_SIZE = 46       # not fixed, can change based on title length
-TEXT_SIZE = 28          # not fixed, can change based on TEXT_SIZE length
-LABEL_SIZE = 24       # not fixed, can change based on axis label length
-DESC_SIZE = 20       # not fixed, can change based on description length
-
-Text(...) →  font_size works.
-MathTex(...) →  font_size works.
-Axes(..., axis_config={"font_size": ...}) →  font_size works.
-axes.get_graph_label(...) →  font_size not allowed. Use: axes.get_graph_label(graph, label=MathTex(r"x^2", font_size=24))
-```
-
-### Mandatory Spacing Rules
-```python
-TOP_BUFFER = config.frame_height * 0.05      # 5% space from top
-BOTTOM_BUFFER = config.frame_height * 0.05   # 5% space from bottom
-LEFT_BUFFER = config.frame_width * 0.05      # 5% space from left
-RIGHT_BUFFER = config.frame_width * 0.05     # 5% space from right
-```
-## Mandatory avoid these 
-
-1. NameError: name 'LIGHT_BLUE' is not defined
-    Use valid built-ins (from manim):
-    from manim import BLUE, GREEN, TEAL, YELLOW, RED, ORANGE, PURPLE
-    Or define your own shades:
-    LIGHT_BLUE = "#87CEFA"   # hex for light sky blue
-    LIGHT_GREEN = "#90EE90"  # hex for light green
-
-    Then your code works:
-    self.play(f1.animate.set_color(LIGHT_BLUE).set_opacity(0.4))
-
-    
-2. Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'color'
-    Fix: Import form the manim 
-    from manim import Scene, MathTex, Axes, Write, WHITE
-    or
-    from manim import *
-
-3. NameError: name 'BOTTOM' is not defined
-    Fix: UP, DOWN, LEFT, RIGHT, ORIGIN are valid.
-
-4. NameError: name 'WiggleOutThenIn' is not defined
-    At the top of your script add:
-    from manim import *
-    or,
-    from manim import Scene, Axes, MathTex, FadeIn, WiggleOutThenIn
-
-5.  Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_range'
-    Fix: graph_sin_x = plane.plot(lambda x: np.sin(x), x_range=[-7, 7], color=BLUE)
-
-6. TypeError: Mobject.__init__() got an unexpected keyword argument 'line_arg_dict'
-    Fix: replace it with:
-    background_line_style={...}
-    Use axis_config={...} for Axes.
-
-7. Error Message: Found `stroke_opacity` set in the constructor for `envelope_pos` and `envelope_neg`. According to the validation rules, opacity-related parameters should not be set in the constructor; use `.set_stroke(opacity=...)` or `.set_opacity()` after creation.
-
-8. TypeError: Mobject.__init__() got an unexpected keyword argument 'stroke_dash_length'
-    Fix: 
-    # Option A: directly make dashed
-    line1 = DashedLine(LEFT, RIGHT, dash_length=0.2, num_dashes=20)
-
-
-    # Option B: wrap an existing object
-    base = Line(LEFT, RIGHT)
-    line2 = DashedVMobject(base, dash_length=0.2, num_dashes=20)
-
-
-9. AttributeError: Axes object has no attribute 'to_center'
-    Fix: 
-    axes.move_to(ORIGIN)
-    # or
-    axes.center()
-
-10. TypeError: Mobject.__init__() got an unexpected keyword argument 'background_line_style'
-    Fix:
-    background_line_style is only valid in NumberPlane or Axes, not in general Mobject.
-    So you must pass it when constructing axes/plane, like this:
-
-    axes = Axes(
-        x_range=[-5, 5],
-        y_range=[-3, 3],
-        axis_config={"color": BLUE},              # style for main axes
-        background_line_style={                   # style for grid lines
-            "stroke_color": GREY,
-            "stroke_width": 1,
-            "stroke_opacity": 0.5,
-        }
-    )
-
-11. Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'length'
-    Fix: axes.get_tangent_line(graph_sin, x_tracker.get_value(), line_length=3)
-
-12. TypeError: Mobject.__init__() got an unexpected keyword argument 'x_axis_config'
-    Axes does not accept x_axis_config or y_axis_config as keyword arguments at the top level of Axes(...)
-    Fix:
-    axes = Axes(
-    x_range=[-5, 5, 1],
-    y_range=[-3, 3, 1],
-    axis_config={"font_size": 24},
-    )
-
-    or, if you need separate configs:
-
-    axes = Axes(
-        x_range=[-5, 5, 1],
-        y_range=[-3, 3, 1],
-        x_axis_config={"font_size": 24},
-        y_axis_config={"font_size": 30},
-    )
-
-13. AxisError: axis 1 is out of bounds for array of dimension 1
-    fix:
-    curve1 = axes.plot_parametric_curve(
-        lambda t: (x_func1(t), y_func1(t)),
-        t_range=[0, 2*np.pi, 0.01],
-        color=BLUE
-    )
-
-14. AttributeError: MathTex object has no attribute 'is_about_to_overlap' is_about_to_overlap() doesn't exist in ManimCE.
-
-15. Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 't_range'
-    Fix:
-    curve = axes.plot_parametric_curve(
-        lambda t: np.array([t, np.sin(t), 0]),
-        t_range=[-PI, PI, 0.05],
-        color=BLUE
-    )
-
-16. AttributeError: ParametricFunction object has no attribute 'x_to_alpha'
-    Fix: x_to_alpha works only on Axes.plot, not on ParametricFunction.
-    tangent_line = always_redraw(
-        lambda: TangentLine(graph_sin, x=x_tracker.get_value(), length=4)
-    )
-
-17. AttributeError: Axes object has no attribute 'x_to_proportion'
-    In new Manim (v0.19+), Axes has no x_to_proportion.
-    Fix: 
-    tangent_line = always_redraw(
-        lambda: TangentLine(graph_sin, x=x_tracker.get_value(), length=4)
-    )
-
-18. TypeError: Mobject.__init__() got an unexpected keyword argument 'dash_length'
-    Fix: 
-    envelope_pos_graph = axes.plot(lambda x: np.sin(x), x_range=[-7,7], color=BLUE)
-    envelope_pos = DashedVMobject(envelope_pos_graph)
-    envelope_pos.set_dash(dash_length=0.1, dashed_ratio=0.5)
-
-19. IndexError: list index out of range
-    use a tiny visible placeholder, e.g.:
-
-    MathTex(r"\;", font_size=LABEL_SIZE)  # thin space
-    # or
-    MathTex(r"0", font_size=LABEL_SIZE)
-
-20. AttributeError: MathTex object has no attribute 'bounding_box'
-    Fix: use properties or new methods:
-
-    mobj.width
-    mobj.height
-    mobj.get_center()
-    mobj.get_bounding_box_vertices()
-
-21. TypeError: Mobject.__init__() got an unexpected keyword argument 'number_constructor_kwargs'
-    Fix: remove it and customize numbers after creation:
-    axes = Axes(x_range=[-2.5*np.pi, 2.5*np.pi, np.pi/2], y_range=[-1.5, 1.5, 0.5])
-    for x_val in axes.x_axis.numbers:
-        x_val.set_color(BLUE)
-
-22. NameError: name 'FillBetween' is not defined
-    FillBetween isn't auto-imported in v0.19+.
-    Fix: 
-    Add this line:
-    from manim.mobject.graphing.utils import FillBetween
-    Or use axes.get_area() as an alternative.
-
-23. TypeError: Mobject.__init__() got an unexpected keyword argument 'color_map'
-    Fix:
-
-    surface = Surface(..., resolution=(30,30))
-    surface.set_style(fill_color=BLUE, fill_opacity=0.7)
-
-    For gradient:
-    surface.set_fill_by_value(axes=axes, colors=[(BLUE,-1),(GREEN,0),(RED,1)])
-
-24. NameError: name 'ParametricSurface' is not defined
-    Fix:
-    NameError: name 'ParametricSurface' is not defined
-    
-25. TypeError: Mobject.__init__() got an unexpected keyword argument 'res_u'
-    Error comes from res_u / res_v → not valid in v0.19.
-    Fix:
-    resolution=(20, 20)
-
-26. TypeError: Mobject.__init__() got an unexpected keyword argument 'dash_length'
-    Fix for current version: use num_dashes instead:
-    envelope_pos = DashedVMobject(envelope_pos_graph, num_dashes=50, dashed_ratio=0.5)
-    envelope_neg = DashedVMobject(envelope_neg_graph, num_dashes=50, dashed_ratio=0.5)
-
-27. AttributeError: 'Camera' object has no attribute 'frame'
-    Fix:
-    step2_title.to_edge(UP, buff=TOP_BUFFER)
-
-28. AttributeError: VGroup object has no attribute 'last_mobject'
-    Fix:
-    Use this output_num_mobj.next_to(output_numbers_group[-1], RIGHT, buff=0.5)
-
-29. NameError: name 'FONT_SIZE_TEXT' is not defined
-    Fix: either define it at the top:
-    FONT_SIZE_TEXT = 24 (can be less based on the length of the text)
-    or replace it directly in your Text call:
-    new_action_rule_text = Text("Parent is Black. No violation.", font="Montserrat", font_size=24 (can be less based on the length of the text))
-    
-## ANIMATION SEQUENCE (MANDATORY ORDER)
-
-### STEP 1: Title in center only
-title = Text("Your Title Here", font_size=TITLE_SIZE)
-title.move_to(ORIGIN)   # center of screen
-
-self.play(Write(title, run_time=1.5))
-self.wait(3)
-
-## QUICK STATISTICS TEMPLATE
-```python
-from manim import *
-import numpy as np
-
-class BubbleSortAnimation(Scene):
-    def construct(self):
-        # ===== CONSTANTS =====
-        TITLE_SIZE = 46
-        TEXT_SIZE = 36
-        LABEL_SIZE = 28
-        DESC_SIZE = 24
-
-        TOP_BUFFER = config.frame_height * 0.05
-        BOTTOM_BUFFER = config.frame_height * 0.05
-        LEFT_BUFFER = config.frame_width * 0.05
-        RIGHT_BUFFER = config.frame_width * 0.05
-
-        self.camera.background_color = "#0a0a0a"
-
-        # ===== STEP 1: Display the title =====
-        title = Text("Bubble Sort Algorithm", font="Montserrat", font_size=TITLE_SIZE, color=WHITE, weight=BOLD)
-        title.move_to(ORIGIN)
-
         self.play(Write(title, run_time=1.5))
         self.wait(1)
-
-        # Fade out title
-        self.play(FadeOut(title), run_time=1)
-        self.wait(0.5)
-
-        # ===== STEP 2: Setup description and array =====
-        top_y = config.frame_height/2 - TOP_BUFFER
-
-        # Description text at top
-        desc_text = Text(
-            "Compare adjacent elements and swap if in wrong order",
-            font="Montserrat",
-            font_size=DESC_SIZE,
-            color="#87CEFA"
-        )
-        desc_text.move_to([0, top_y - 0.4, 0])
-
-        # Pass counter
-        pass_text = Text("Pass: 0", font="Montserrat", font_size=TEXT_SIZE, color="#90EE90", weight=BOLD)
-        pass_text.move_to([0, top_y - 1.2, 0])
-
-        self.play(Write(desc_text), run_time=1)
-        self.play(Write(pass_text), run_time=0.5)
-        self.wait(0.5)
-
-        # ===== STEP 3: Create the array =====
-        array_values = [64, 34, 25, 12, 22, 11, 90]
-        array_elements = []
         
-        def create_array_element(value, position):
-            # Create a box with number insid
-            box = Rectangle(width=1.0, height=1.0, stroke_color="#4682B4", fill_color="#1e3a5f", fill_opacity=0.8)
-            number = Text(str(value), font="Montserrat", font_size=30, color=WHITE, weight=BOLD)
-            element = VGroup(box, number)
-            element.move_to(position)
-            return element, value
-
-        # Position array in center
-        array_start_x = -3.5
-        array_y = 0
-        spacing = 1.2
-
-        for i, val in enumerate(array_values):
-            pos = [array_start_x + i * spacing, array_y, 0]
-            element, value = create_array_element(val, pos)
-            array_elements.append(element)
-
-        # Show array
         self.play(
-            LaggedStart(*[FadeIn(elem) for elem in array_elements], lag_ratio=0.1),
-            run_time=1.5
+            LaggedStart(
+                *[
+                    letter.animate.shift(
+                        np.array([np.random.uniform(-3, 3), np.random.uniform(-3, 3), 0])
+                    ).scale(0.5).set_opacity(0)
+                    for letter in title
+                ],
+                lag_ratio=0.05,
+                run_time=2
+            )
+        )
+        self.wait(0.5)
+
+        # =========================================================
+        # PHASE 2: THE CONCEPT EXPLANATION
+        # =========================================================
+        
+        concept_title = Text("Concept: Compare & Swap", font_size=40, color=NEON_CYAN).to_edge(UP, buff=1)
+        self.play(FadeIn(concept_title, shift=DOWN*0.3))
+
+        ex_left = make_box(8)
+        ex_right = make_box(3)
+        example_group = VGroup(ex_left, ex_right).arrange(RIGHT, buff=0.5).move_to(ORIGIN)
+        
+        self.play(FadeIn(example_group, shift=UP))
+        
+        focus_box = SurroundingRectangle(example_group, color=NEON_CYAN, corner_radius=0.2, buff=0.2)
+        compare_text = Text("8 > 3 ? (Yes)", font_size=28, color=NEON_CYAN).next_to(focus_box, DOWN)
+        
+        self.play(Create(focus_box), Write(compare_text))
+        self.wait(1)
+
+        self.play(
+            focus_box.animate.set_color(NEON_PINK),
+            compare_text.animate.become(Text("Swap!", font_size=28, color=NEON_PINK).next_to(focus_box, DOWN)),
+            ex_left[0].animate.set_stroke(NEON_PINK, width=5),
+            ex_right[0].animate.set_stroke(NEON_PINK, width=5)
+        )
+        
+        self.play(
+            ex_left.animate(path_arc=-PI/1.5).move_to(ex_right.get_center()),
+            ex_right.animate(path_arc=-PI/1.5).move_to(ex_left.get_center()),
+            run_time=1.2,
+            rate_func=smooth
         )
         self.wait(1)
 
-        # ===== STEP 4: Bubble Sort Algorithm =====
-        n = len(array_values)
+        # =========================================================
+        # PHASE 3: THE MAIN ARRAY
+        # =========================================================
         
-        for pass_num in range(n - 1):
-            # Update pass counter
-            self.play(
-                pass_text.animate.become(
-                    Text(f"Pass: {pass_num + 1}", font="Montserrat", font_size=TEXT_SIZE, color="#90EE90", weight=BOLD).move_to(pass_text.get_center())
-                ),
-                run_time=0.3
-            )
-            self.wait(0.3)
+        camera_target = DOWN * 10
+        self.play(
+            self.camera.frame.animate.move_to(camera_target),
+            run_time=2, rate_func=rate_functions.ease_in_out_sine
+        )
 
-            for i in range(n - pass_num - 1):
-                # Highlight elements being compared
+        values = [42, 23, 14, 35, 8]
+        elements = VGroup(*[make_box(v) for v in values]).arrange(RIGHT, buff=0.3).move_to(camera_target)
+        
+        array_title = Text("Sorting the Array", font_size=40, weight=BOLD).next_to(elements, UP, buff=1.5)
+        self.play(Write(array_title), LaggedStart(*[FadeIn(e, scale=0.5) for e in elements], lag_ratio=0.1))
+        self.wait(1)
+
+        n = len(values)
+        for p in range(n - 1):
+            for i in range(n - p - 1):
                 self.play(
-                    array_elements[i][0].animate.set_stroke(color=YELLOW, width=4),
-                    array_elements[i + 1][0].animate.set_stroke(color=YELLOW, width=4),
+                    elements[i][0].animate.set_stroke(NEON_CYAN, width=5).set_fill(opacity=1),
+                    elements[i+1][0].animate.set_stroke(NEON_CYAN, width=5).set_fill(opacity=1),
                     run_time=0.3
                 )
-                
-                # Show comparison with symbols
-                val1 = array_values[i]
-                val2 = array_values[i + 1]
-                
-                # Position for comparison text (above the elements)
-                comp_y = array_elements[i].get_center()[1] + 1.5
-                comp_x = (array_elements[i].get_center()[0] + array_elements[i + 1].get_center()[0]) / 2
-                
-                if val1 > val2:
-                    comparison = MathTex(f"{val1}", ">", f"{val2}", font_size=32, color=WHITE)
-                    comparison.move_to([comp_x, comp_y, 0])
-                    comparison[1].set_color("#FF6347")  # Red for greater than
-                else:
-                    comparison = MathTex(f"{val1}", r"\leq", f"{val2}", font_size=32, color=WHITE)
-                    comparison.move_to([comp_x, comp_y, 0])
-                    comparison[1].set_color("#90EE90")  # Green for less than or equal
-                
-                self.play(Write(comparison), run_time=0.3)
-                self.wait(0.3)
+                self.wait(0.2)
 
-                # Compare values
-                if array_values[i] > array_values[i + 1]:
-                    # Flash red for swap
+                if values[i] > values[i+1]:
                     self.play(
-                        array_elements[i][0].animate.set_fill(color="#8B0000", opacity=0.9),
-                        array_elements[i + 1][0].animate.set_fill(color="#8B0000", opacity=0.9),
+                        elements[i][0].animate.set_stroke(NEON_PINK),
+                        elements[i+1][0].animate.set_stroke(NEON_PINK),
+                        elements[i].animate.scale(1.1),
+                        elements[i+1].animate.scale(1.1),
                         run_time=0.2
                     )
                     
-                    # Add "SWAP" label
-                    swap_label = Text("SWAP", font="Montserrat", font_size=24, color="#FF6347", weight=BOLD)
-                    swap_label.move_to([comp_x, comp_y - 0.6, 0])
-                    self.play(FadeIn(swap_label), run_time=0.2)
+                    pi, pj = elements[i].get_center(), elements[i+1].get_center()
                     
-                    # Swap animation
-                    elem1_pos = array_elements[i].get_center()
-                    elem2_pos = array_elements[i + 1].get_center()
-                    
-                    # Move elements
                     self.play(
-                        array_elements[i].animate.move_to(elem2_pos + UP * 0.5),
-                        array_elements[i + 1].animate.move_to(elem1_pos + DOWN * 0.5),
-                        run_time=0.4
-                    )
-                    self.play(
-                        array_elements[i].animate.move_to(elem2_pos),
-                        array_elements[i + 1].animate.move_to(elem1_pos),
-                        run_time=0.4
+                        elements[i].animate(path_arc=-PI/2).move_to(pj), 
+                        elements[i+1].animate(path_arc=-PI/2).move_to(pi), 
+                        run_time=0.5
                     )
                     
-                    # Swap in list
-                    array_elements[i], array_elements[i + 1] = array_elements[i + 1], array_elements[i]
-                    array_values[i], array_values[i + 1] = array_values[i + 1], array_values[i]
-                    
-                    # Reset colors and remove labels
                     self.play(
-                        array_elements[i][0].animate.set_fill(color="#1e3a5f", opacity=0.8).set_stroke(color="#4682B4", width=2),
-                        array_elements[i + 1][0].animate.set_fill(color="#1e3a5f", opacity=0.8).set_stroke(color="#4682B4", width=2),
-                        FadeOut(comparison),
-                        FadeOut(swap_label),
-                        run_time=0.2
-                    )
-                else:
-                    # Flash green for no swap
-                    self.play(
-                        array_elements[i][0].animate.set_fill(color="#006400", opacity=0.9),
-                        array_elements[i + 1][0].animate.set_fill(color="#006400", opacity=0.9),
+                        elements[i].animate.scale(1/1.1),
+                        elements[i+1].animate.scale(1/1.1),
                         run_time=0.2
                     )
                     
-                    # Add "NO SWAP" label
-                    no_swap_label = Text("NO SWAP", font="Montserrat", font_size=24, color="#90EE90", weight=BOLD)
-                    no_swap_label.move_to([comp_x, comp_y - 0.6, 0])
-                    self.play(FadeIn(no_swap_label), run_time=0.2)
-                    self.wait(0.2)
-                    
-                    # Reset colors and remove labels
-                    self.play(
-                        array_elements[i][0].animate.set_fill(color="#1e3a5f", opacity=0.8).set_stroke(color="#4682B4", width=2),
-                        array_elements[i + 1][0].animate.set_fill(color="#1e3a5f", opacity=0.8).set_stroke(color="#4682B4", width=2),
-                        FadeOut(comparison),
-                        FadeOut(no_swap_label),
-                        run_time=0.2
-                    )
-                
-                self.wait(0.1)
+                    elements.submobjects[i], elements.submobjects[i+1] = elements.submobjects[i+1], elements.submobjects[i]
+                    values[i], values[i+1] = values[i+1], values[i]
 
-            # Mark sorted element (last element in this pass)
-            sorted_index = n - pass_num - 1
+                self.play(
+                    elements[i][0].animate.set_stroke(BLUE_D, width=3).set_fill(opacity=0.8),
+                    elements[i+1][0].animate.set_stroke(BLUE_D, width=3).set_fill(opacity=0.8), 
+                    run_time=0.2
+                )
+            
+            locked_element = elements[n-p-1]
             self.play(
-                array_elements[sorted_index][0].animate.set_fill(color="#228B22", opacity=0.9).set_stroke(color="#32CD32", width=3),
-                run_time=0.3
+                locked_element[0].animate.set_stroke(NEON_GREEN, width=4).set_fill("#064E3B", opacity=1), 
+                run_time=0.4
             )
-            self.wait(0.3)
-
-        # Mark first element as sorted (it's sorted by default after all passes)
+            
         self.play(
-            array_elements[0][0].animate.set_fill(color="#228B22", opacity=0.9).set_stroke(color="#32CD32", width=3),
-            run_time=0.3
+            elements[0][0].animate.set_stroke(NEON_GREEN, width=4).set_fill("#064E3B", opacity=1), 
+            run_time=0.4
         )
-        self.wait(0.5)
 
-        # ===== STEP 5: Final message =====
-        sorted_text = Text("Array Sorted!", font="Montserrat", font_size=TEXT_SIZE, color="#FFD700", weight=BOLD)
-        sorted_text.move_to([0, array_y - 2, 0])
+        # =========================================================
+        # PHASE 4: THE FINALE
+        # =========================================================
         
-        self.play(Write(sorted_text), run_time=1)
-        self.wait(1)
-
-        # Complexity info
-        complexity_text = Text(
-            "Time Complexity: O(n²)  |  Space Complexity: O(1)",
-            font="Montserrat",
-            font_size=DESC_SIZE,
-            color="#87CEFA"
-        )
-        complexity_text.move_to([0, array_y - 2.8, 0])
+        self.play(ApplyWave(elements, amplitude=0.3, time_width=1), run_time=1.5)
+        done = Text("Array Sorted!", font_size=40, weight=BOLD, color=NEON_GREEN).next_to(elements, DOWN, buff=1)
         
-        self.play(Write(complexity_text), run_time=1)
-        self.wait(2)
+        cx = VGroup(
+            Text("Time: ", font_size=24, color=WHITE),
+            MathTex(r"O(n^2)", font_size=28, color=NEON_CYAN),
+            Text("  |  Space: ", font_size=24, color=WHITE),
+            MathTex(r"O(1)", font_size=28, color=NEON_CYAN)
+        ).arrange(RIGHT, buff=0.1).next_to(done, DOWN, buff=0.3)
 
-        # ===== STEP 6: Cleanup =====
-        self.play(
-            FadeOut(VGroup(*array_elements)),
-            FadeOut(desc_text),
-            FadeOut(pass_text),
-            FadeOut(sorted_text),
-            FadeOut(complexity_text),
-            run_time=1.5
-        )
-        self.wait(1)
-```
-<Computer Data Structure Rule Only/>
+        self.play(Write(done))
+        self.play(FadeIn(cx, shift=UP*0.2))
+        self.wait(3)
+</COMPUTER_DATASTRUCTURE_RULES>
 """
 
-PHYSICS = """
-<Physics Visualization Rule Only>
-## Mandatory way to design
+PHYSICS = r"""
+<PHYSICS_SCENE_RULES>
+Generate a Manim v0.20+ physics visualization.
 
-1. Title: Always at the center (never top). Must appear first and then fade out with a smooth animation (e.g., FadeOut, LaggedStart, star-burst effect).
-2. Axes: Create axes immediately after title fades. Show only relevant axes (x, y) with margins.
-3. Numbers: Use integers mostly; if needed, 2 decimal precision.
-4. Axes style: No grid unless needed. Include only numbers required for visualization.
-5. Legend / Equation: Place formula, mean, variance, or legend in corners. If no space → fade out temporarily.
-6. Margins: Leave a 5% gap at edges.
-7. Sequence: Title → Axes → Legend/Formula → Graph → Dynamic Highlight.
+## DESIGN SEQUENCE (mandatory order)
+1. Title at ORIGIN center → Write → fade out (LaggedStart letter-scatter encouraged).
+2. Axes after title fades. Relevant axes only, no grid unless needed. Integers; 2 decimals if needed.
+3. Equations/parameters in a corner via `.to_corner(UL/UR/DL/DR, buff=...)`. Fade out if no space.
+4. Draw the trajectory/field/object, then animate motion, then highlight key points.
+5. SCALE: If drawing physical objects (e.g., dipole cylinders, magnets, pendulums), explicitly make them large enough to easily see on screen. Do not use tiny default sizes.
+6. 5% margin all edges. Background BLACK unless asked.
 
-## Graph Types Supported
-- BarChart
-- Scatter Plot
-- Line Plot (from dataset)
-- Histogram
-- Boxplot (manual construction)
-- etc
+## SUPPORTED
+Projectile/trajectory motion, pendulums, waves, force/vector diagrams, fields, MoveAlongPath animations, parametric paths.
 
-### Deprecated → New (Manim v0.19+)
+## FONT HIERARCHY (adjust to length)
+TITLE 46 > EQUATION 30-36 > LABEL 26-28 > DESC 22-24.
 
----
+## CORE API (v0.20)
+- Plot: `axes.plot(f, x_range=[...], color=...)`. Parametric path: `axes.plot_parametric_curve(lambda t: np.array([x(t), y(t), 0]), t_range=[a,b,step], color=...)`.
+- Motion: `MoveAlongPath(dot, path)` with `rate_func=linear`.
+- Point mapping: `axes.c2p(x, y)`; reverse `axes.p2c(point)` returns 2D for Axes (unpack 2, not 3).
+- Labels: create axes first, then `axes.get_x_axis_label(MathTex("x"))`. Axis numbers/font via `axis_config={"include_numbers": True, "font_size": 24, "decimal_number_config": {"num_decimal_places": 0}}` — NOT as separate kwargs.
+- Bars: `BarChart(values=..., y_range=[...])`. Line graph: `axes.plot_line_graph(x_values=..., y_values=..., line_color=...)` (no vertex_dots kwarg; add Dots manually).
+- NumberLine: `NumberLine(x_range=[...], length=..., font_size=24)` then `.shift(...)` (no position= / axis_config).
 
-## Common Deprecated → New
+## CONSTRUCTOR RULES (most crashes)
+- stroke opacity NOT in constructor → `.set_stroke(opacity=...)` after. (fill_opacity in constructor OK.)
+- `background_line_style`/`axis_config`/per-axis `x_axis_config` only inside Axes.
+- Dashed: `DashedVMobject(m, num_dashes=50)` (no dash_length kwarg).
+- `from manim import *` + `import numpy as np` always. UL/UR/DL/DR (not UP_LEFT). Custom colors hex.
+- Position: `.move_to(ORIGIN)`/`.center()` (no to_center). to_corner/to_edge/next_to all valid.
 
-* `to_edge(...)` still works, but prefer `.next_to()` for finer control.
-* `to_corner(...)` → use `.align_on_border(...)`.
-* `axes.to_center()` → use `axes.move_to(ORIGIN)` or `axes.center()`.
-* `shift(x*RIGHT)` still valid.
-* `scale_in_place(factor)` → use `.scale(factor, about_point=...)`.
-* `fade_in` / `fade_out` methods → use animations: `FadeIn(mobj)` / `FadeOut(mobj)`.
-* `ShowCreation(mobj)`  → `Create(mobj)`.
-* `Write(mobj, run_time=...)`  still valid.
-* `Transform(m1, m2)`  still valid.
-* `SurroundingRectangle(..., buff=0.1)`  still valid.
-* `.start_point or .end_point` -> use `.get_start()` or `.get_end()`.
+## LaTeX (physics has lots of these failures)
+- All MathTex raw strings. Plain words → Text(), math → MathTex(), never mixed.
+- NEVER put `°` inside MathTex → use `^\circ`. e.g. `MathTex(rf"\theta = {angle}^\circ")`.
+- In f-string MathTex, escape literal braces: `\text{{ m/s}}`.
+- Units: `MathTex(rf"v_0 = {v0}\,\text{{m/s}}")`.
 
----
+## STYLE (cinematic physics)
+- Glow title (layered stroked copy). Fading TracedPath trail behind moving objects (dissipating_time≈0.6). Live always_redraw velocity/force vectors that update with motion. Dashed marker lines to apex/key points. Emphasize with Indicate/Flash. Ground line for grounding. Color-code: trajectory YELLOW, launch GREEN, peak ORANGE, landing PURPLE. ≤4-5 colors. Holds ≥1.5s.
+- Axis labels (get_x/y_axis_label) sit at the axis ENDS. Do NOT place data labels (Range, landing, etc.) near the same end — they collide. Put the range/landing label ABOVE the landing point (UP, shifted LEFT), and keep every label inside the frame (push back if near an edge).
 
-## Axes / Graphs
-
-* `axes.get_graph(f, ...)` → deprecated. Use `axes.plot(f, x_range=[...], color=...)`.
-
-* `axes.get_area(f, ...)` → still valid for one function. For two functions use `FillBetween(...)`.
-
-* `NumberPlane.get_graph(...)` → does not exist. Use `plane.plot(...)`.
-
-* `add_coordinates()` → still valid.
-
-* `axes.get_tangent_line(graph, x=..., line_length=...)` → does not exist. Use `TangentLine(graph, alpha, length=...)` where `alpha ∈ [0,1]`. To map `x` to `alpha`, use helpers like `axes.i2gp`.
-
-* `axes.get_vertical_line(x_val=...)` wrong → invalid. Correct: `axes.get_vertical_line(point, **kwargs)`.
-  (use `axes.c2p(x_value, y_value)` or `axes.i2gp(x_value, graph)` to get the point).
-
-* `axes.y_axis_labels` wrong → no attribute. Use `axes.get_axis_labels()`.
-
-* `y_axis_config` must be passed explicitly inside `Axes(...)`, not accessed as an attribute afterwards.
-
-* `axes.get_x_axis_label(...)` and `axes.get_y_axis_label(...)` → still valid, but prefer `axes.get_axis_labels(x_label, y_label)` for paired labels.
-
----
-
-## Colors / Styles
-
-- `stroke_width` → still valid.
-- `stroke_opacity=...` in constructor → not allowed. Use `.set_stroke(opacity=...)`.
-- `fill_opacity=...` in constructor → still valid.
-- `line_arg_dict` → deprecated.  Use: 
-  - `axis_config={...}` → for styling axes 
-  - `background_line_style={...}` → **only inside Axes or NumberPlane**.
-- `stroke_dash_length` → not valid. Use `DashedLine(...)` or `DashedVMobject(...)`.
-
----
-
-## Text / Labels
-
-* `TextMobject(...)` → use `Tex(...)`.
-* `TexMobject(...)` → use `Tex(...)`.
-* `edge_buffer` argument (e.g., in `Text`) → not valid. Replace with `.next_to(..., buff=...)` or `.align_on_border(...)`.
-* `Text(..., t2c=...)` → still valid. 
-* `t2s` (text-to-style) → replaced by `.set_color_by_t2s()`.
-
----
-
-## Shapes
-
-* `ArcBetweenPoints(..., radius=...)` → `ArcBetweenPoints(..., angle=...)`.
-* `Sector(inner_radius=...)` → replaced with `AnnularSector(inner_radius=...)`.
-
----
-
-## NumberLine
-
-* `NumberLine(default_numbers_to_display=...)` → removed. Use `include_numbers=True` and control with `numbers_to_include=[...]` or `decimal_number_config={...}`.
-* `exclude_zero_from_default_numbers` → removed. Must explicitly control numbers via `numbers_to_include`.
-
----
-
-## Camera / Scene
-
-* `ThreeDScene.set_camera_orientation(...)` → still valid.
-* `self.camera.animate.set(phi=..., theta=...)` → replaces old `self.move_camera(...)`.
-* `self.set_camera_orientation(...)` → replaces old `set_camera_position(...)`.
-* `self.set_camera_orientation(phi=..., theta=...)` → still valid; `gamma` is no longer supported.
-
-
----
-
-## Geometry / Mobject Methods
-
-* `.start_point` / `.end_point` → replaced with `.get_start()` / `.get_end()`.
-* `.point_from_proportion(alpha)` → still valid.
-* `scale_in_place(factor)` → deprecated. Use `.scale(factor, about_point=...)`.
-* `.fade_in` / `.fade_out` (methods) → removed. Use `FadeIn(mobj)` / `FadeOut(mobj)` animations.
-* `next_to(...)` → still valid and preferred over `to_edge(...)` for finer control.
-* `to_corner(...)` → replaced with `.align_on_border(...)`.
-* `.center()` or `.move_to(ORIGIN)` → replaces older `.to_center()`.
-* `rotate(angle, axis=...)` → still valid.
-* `.get_midpoint()` → preferred over manual midpoint calculations.
-* `.get_vertices()` → still valid for polygons.
-* `.copy()` → still valid.
-
-## Summary of New Errors Fixed
-
-* `TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'length'` → use `line_length`.
-* `TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_val'` → use `x`.
-* `TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'edge_buffer'` → replace with `.next_to(..., buff=...)`.
-* `AttributeError: Axes object has no attribute 'y_axis_labels'` → use `axes.get_axis_labels()`.
-* `AttributeError: NumberLine object has no attribute 'default_numbers_to_display'` → use `include_numbers=True` with `numbers_to_include`.
-* `TypeError: ... got an unexpected keyword argument 'stroke_opacity'` → set via `.set_stroke(opacity=...)`.
-* `AttributeError: NumberLine has no attribute 'exclude_zero_from_default_numbers'` → must use `numbers_to_include`.
-* `TypeError: ... got an unexpected keyword argument 'gamma'` → camera no longer supports gamma.
-* `NameError: name 'UP_LEFT' is not defined` → Use `UL` (UP + LEFT), `UR`, `DL`, `DR` instead.
-
-
-## Font Size Rules (adjustable based on content length)
-TITLE_SIZE = 46       # not fixed, can change based on title length
-EQUATION_SIZE = 36    # not fixed, can change based on formula/legend length
-LABEL_SIZE = 28       # not fixed, can change based on axis label length
-DESC_SIZE = 24        # not fixed, can change based on description length
-
-```
-
-## Mandatory Spacing Rules
+## REFERENCE TEMPLATE (study; adapt, don't copy verbatim)
 ```python
-TOP_BUFFER = config.frame_height * 0.05
-BOTTOM_BUFFER = config.frame_height * 0.05
-LEFT_BUFFER = config.frame_width * 0.05
-RIGHT_BUFFER = config.frame_width * 0.05
-AFTER_TITLE_GAP = config.frame_height * 0.05
-```
-
-### Mandatory Spacing Rules
-```python
-TOP_BUFFER = config.frame_height * 0.05      # 5% space from top
-BOTTOM_BUFFER = config.frame_height * 0.05   # 5% space from bottom
-LEFT_BUFFER = config.frame_width * 0.05      # 5% space from left
-RIGHT_BUFFER = config.frame_width * 0.05     # 5% space from right
-```
-## Mandatory avoid these errors when create a manim code
-
-1. NameError: name 'LIGHT_BLUE' is not defined
-    Use valid built-ins (from manim):
-    from manim import BLUE, GREEN, TEAL, YELLOW, RED, ORANGE, PURPLE
-    Or define your own shades:
-    LIGHT_BLUE = "#87CEFA"   # hex for light sky blue
-    LIGHT_GREEN = "#90EE90"  # hex for light green
-
-    Then your code works:
-    self.play(f1.animate.set_color(LIGHT_BLUE).set_opacity(0.4))
-
-    
-2. Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'color'
-    Fix: Import form the manim 
-    from manim import Scene, MathTex, Axes, Write, WHITE
-    or
-    from manim import *
-
-3. NameError: name 'BOTTOM' is not defined
-    Fix: UP, DOWN, LEFT, RIGHT, ORIGIN are valid.
-
-4. NameError: name 'WiggleOutThenIn' is not defined
-    At the top of your script add:
-    from manim import *
-    or,
-    from manim import Scene, Axes, MathTex, FadeIn, WiggleOutThenIn
-
-5.  Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_range'
-    Fix: graph_sin_x = plane.plot(lambda x: np.sin(x), x_range=[-7, 7], color=BLUE)
-
-6. TypeError: Mobject.__init__() got an unexpected keyword argument 'line_arg_dict'
-    Fix: replace it with:
-    background_line_style={...}
-    Use axis_config={...} for Axes.
-
-7. Error Message: Found `stroke_opacity` set in the constructor for `envelope_pos` and `envelope_neg`. According to the validation rules, opacity-related parameters should not be set in the constructor; use `.set_stroke(opacity=...)` or `.set_opacity()` after creation.
-
-8. TypeError: Mobject.__init__() got an unexpected keyword argument 'stroke_dash_length'
-    Fix: 
-    # Option A: directly make dashed
-    line1 = DashedLine(LEFT, RIGHT, dash_length=0.2, num_dashes=20)
-
-
-    # Option B: wrap an existing object
-    base = Line(LEFT, RIGHT)
-    line2 = DashedVMobject(base, dash_length=0.2, num_dashes=20)
-
-
-9. AttributeError: Axes object has no attribute 'to_center'
-    Fix: 
-    axes.move_to(ORIGIN)
-    # or
-    axes.center()
-
-10. TypeError: Mobject.__init__() got an unexpected keyword argument 'background_line_style'
-    Fix:
-    background_line_style is only valid in NumberPlane or Axes, not in general Mobject.
-    So you must pass it when constructing axes/plane, like this:
-
-    axes = Axes(
-        x_range=[-5, 5],
-        y_range=[-3, 3],
-        axis_config={"color": BLUE},              # style for main axes
-        background_line_style={                   # style for grid lines
-            "stroke_color": GREY,
-            "stroke_width": 1,
-            "stroke_opacity": 0.5,
-        }
-    )
-
-11. Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'length'
-    Fix: axes.get_tangent_line(graph_sin, x_tracker.get_value(), line_length=3)
-
-12. TypeError: Mobject.__init__() got an unexpected keyword argument 'x_axis_config'
-    Axes does not accept x_axis_config or y_axis_config as keyword arguments at the top level of Axes(...)
-    Fix:
-    axes = Axes(
-    x_range=[-5, 5, 1],
-    y_range=[-3, 3, 1],
-    axis_config={"font_size": 24},
-    )
-
-    or, if you need separate configs:
-
-    axes = Axes(
-        x_range=[-5, 5, 1],
-        y_range=[-3, 3, 1],
-        x_axis_config={"font_size": 24},
-        y_axis_config={"font_size": 30},
-    )
-
-13. AxisError: axis 1 is out of bounds for array of dimension 1
-    fix:
-    curve1 = axes.plot_parametric_curve(
-        lambda t: (x_func1(t), y_func1(t)),
-        t_range=[0, 2*np.pi, 0.01],
-        color=BLUE
-    )
-
-14. AttributeError: MathTex object has no attribute 'is_about_to_overlap' is_about_to_overlap() doesn’t exist in ManimCE.
-
-15. Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 't_range'
-    Fix:
-    curve = axes.plot_parametric_curve(
-        lambda t: np.array([t, np.sin(t), 0]),
-        t_range=[-PI, PI, 0.05],
-        color=BLUE
-    )
-
-16. AttributeError: ParametricFunction object has no attribute 'x_to_alpha'
-    Fix: x_to_alpha works only on Axes.plot, not on ParametricFunction.
-    tangent_line = always_redraw(
-        lambda: TangentLine(graph_sin, x=x_tracker.get_value(), length=4)
-    )
-
-17. AttributeError: Axes object has no attribute 'x_to_proportion'
-    In new Manim (v0.19+), Axes has no x_to_proportion.
-    Fix: 
-    tangent_line = always_redraw(
-        lambda: TangentLine(graph_sin, x=x_tracker.get_value(), length=4)
-    )
-
-18. TypeError: Mobject.__init__() got an unexpected keyword argument 'dash_length'
-    Fix: 
-    envelope_pos_graph = axes.plot(lambda x: np.sin(x), x_range=[-7,7], color=BLUE)
-    envelope_pos = DashedVMobject(envelope_pos_graph)
-    envelope_pos.set_dash(dash_length=0.1, dashed_ratio=0.5)
-
-19. IndexError: list index out of range
-    use a tiny visible placeholder, e.g.:
-
-    MathTex(r"\;", font_size=LABEL_SIZE)  # thin space
-    # or
-    MathTex(r"0", font_size=LABEL_SIZE)
-
-20. AttributeError: MathTex object has no attribute 'bounding_box'
-    Fix: use properties or new methods:
-
-    mobj.width
-    mobj.height
-    mobj.get_center()
-    mobj.get_bounding_box_vertices()
-
-21. TypeError: Mobject.__init__() got an unexpected keyword argument 'number_constructor_kwargs'
-    Fix: remove it and customize numbers after creation:
-    axes = Axes(x_range=[-2.5*np.pi, 2.5*np.pi, np.pi/2], y_range=[-1.5, 1.5, 0.5])
-    for x_val in axes.x_axis.numbers:
-        x_val.set_color(BLUE)
-
-22. NameError: name 'FillBetween' is not defined
-    FillBetween isn’t auto-imported in v0.19+.
-    Fix: 
-    Add this line:
-    from manim.mobject.graphing.utils import FillBetween
-    Or use axes.get_area() as an alternative.
-
-23. TypeError: Mobject.__init__() got an unexpected keyword argument 'color_map'
-    Fix:
-
-    surface = Surface(..., resolution=(30,30))
-    surface.set_style(fill_color=BLUE, fill_opacity=0.7)
-
-    For gradient:
-    surface.set_fill_by_value(axes=axes, colors=[(BLUE,-1),(GREEN,0),(RED,1)])
-
-24. NameError: name 'ParametricSurface' is not defined
-    Fix:
-    NameError: name 'ParametricSurface' is not defined
-    
-25. TypeError: Mobject.__init__() got an unexpected keyword argument 'res_u'
-    Error comes from res_u / res_v → not valid in v0.19.
-    Fix:
-    resolution=(20, 20)
-
-26. TypeError: Mobject.__init__() got an unexpected keyword argument 'dash_length'
-    Fix for current version: use num_dashes instead:
-    envelope_pos = DashedVMobject(envelope_pos_graph, num_dashes=50, dashed_ratio=0.5)
-    envelope_neg = DashedVMobject(envelope_neg_graph, num_dashes=50, dashed_ratio=0.5)
-
-27. AttributeError: 'ManimConfig' object has no attribute 'camera'
-    Fix:
-        self.camera.frame_width
-        self.camera.frame_height
-    Or better, just use
-    legend.to_edge(UR, buff=TOP_BUFFER)
-
-28. TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'num_decimal_places'
-    Fix:
-    axes = Axes(
-    x_range=[0, 10, 1],
-    y_range=[0, 5, 1],
-    x_length=7,
-    y_length=4,
-    axis_config={
-        "include_numbers": True,
-        "font_size": LABEL_SIZE,
-        "decimal_number_config": {"num_decimal_places": 0}  # <-- set here
-    }
-)
-
-29. TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'font_size'
-    Fix: Set the tick label styles when constructing the axes, using axis_config and decimal_number_config:
-    axes = Axes(
-    x_range=[0, 10, 1],
-    y_range=[0, 5, 1],
-    x_length=7,
-    y_length=4,
-    axis_config={
-        "include_numbers": True,
-        "font_size": LABEL_SIZE,                 # font size for all tick labels
-        "decimal_number_config": {"num_decimal_places": 0},  # decimal precision
-        "color": WHITE                           # color of numbers
-    }
-)
-
-30. TypeError: Mobject.__init__() got an unexpected keyword argument 'vertex_dots'
-    Fix:
-    line_graph = axes.plot_line_graph(
-        x_values=x_values,
-        y_values=y_values,
-        line_color=BLUE,
-    )
-
-    If you want dots at each vertex, you need to add them manually using Dot objects. For example:
-    dots = VGroup(*[
-    Dot(axes.coords_to_point(x, y))
-    for x, y in zip(x_values, y_values)
-])
-self.play(FadeIn(dots))
-
-31. ValueError: not enough values to unpack (expected 3, got 2)
-    Fix:
-    Change this line:
-        x_axis_coord, _, _ = axes.p2c(dot.get_center())
-
-    to
-        x_axis_coord, _ = axes.p2c(dot.get_center())
-
-32. TypeError: Mobject.__init__() got an unexpected keyword argument 'bar_spacing'
-    Fix:
-    chart = BarChart(
-        values=sales_values,
-        y_range=[0, 300, 50],
-        y_length=config.frame_height * 0.6,
-        x_length=config.frame_width * 0.8,
-        # bar_spacing removed
-    )
-
-33. NameError: name 'WiggleOutThenIn' is not defined
-    Fix:
-    Replace with a built-in animation, e.g.:
-
-    self.play(sectors[0].animate.shift(UP*0.2).scale(1.1), run_time=1.5)
-    self.play(sectors[0].animate.shift(DOWN*0.2).scale(0.91), run_time=1.5)
-
-34. NameError: name 'GrowFromBottom' is not defined
-    Fix:
-    self.play(GrowFromEdge(all_bars, edge=DOWN, lag_ratio=0.1), run_time=2)
-
-35. TypeError: Mobject.__init__() got an unexpected keyword argument 'axis_config'
-    Fix: pass style arguments directly.
-    number_line = NumberLine(x_range=[0,10,1], length=12, color=WHITE, stroke_width=2)
-
-36. ValueError: latex error converting to dvi
-    Fixes:
-    Use double braces {{ and }} for LaTeX inside f-strings.
-    Replace ° with ^\circ.
-    Example:
-
-    param_L = MathTex(f"$L = {L:.1f} \\text{{ m}}$", font_size=LABEL_SIZE)
-    param_g = MathTex(f"$g = {g:.1f} \\text{{ m/s}}^2$", font_size=LABEL_SIZE)
-    param_theta0 = MathTex(f"$\\theta_0 = {theta0_deg}^\\circ$", font_size=LABEL_SIZE)
-
-37. TypeError: Mobject.__init__() got an unexpected keyword argument 'position'
-    Fix:Remove position=... — use .shift(DOWN * 2) instead.
-    number_line = NumberLine(x_range=[0, 30, 5], length=config.frame_width * 0.8).shift(DOWN * 2)
-
-38. TypeError: manim.mobject.text.numbers.DecimalNumber() got multiple values for keyword argument 'font_size' 
-    Fix:
-    NumberLine(x_range=[0, 30, 5], font_size=24)
-
-## QUICK STATISTICS TEMPLATE
-```
-python
 from manim import *
 import numpy as np
 
 class ProjectileMotion(Scene):
     def construct(self):
-        # Font sizes (adjustable based on content)
-        TITLE_SIZE = 46
-        EQUATION_SIZE = 30
-        LABEL_SIZE = 26
-        DESC_SIZE = 22
-        
-        # Spacing rules
-        TOP_BUFFER = config.frame_height * 0.05
-        BOTTOM_BUFFER = config.frame_height * 0.05
-        LEFT_BUFFER = config.frame_width * 0.05
-        RIGHT_BUFFER = config.frame_width * 0.05
-        
-        # Physics parameters
-        v0 = 20  # initial velocity (m/s)
-        angle = 60  # launch angle (degrees)
-        g = 9.8  # gravity (m/s^2)
-        
-        # Convert to radians
+        self.camera.background_color = "#0a0a12"
+        TITLE, EQ, LBL, DESC = 46, 30, 26, 22
+
+        v0, angle, g = 20, 60, 9.8
         theta = angle * DEGREES
-        
-        # Calculate trajectory parameters
-        v0x = v0 * np.cos(theta)
-        v0y = v0 * np.sin(theta)
-        t_max = 2 * v0y / g  # time of flight
-        range_x = v0x * t_max  # horizontal range
-        max_height = (v0y ** 2) / (2 * g)  # maximum height
-        
-        # Step 1: Title at center with star explosion fade out
-        title = Text("Projectile Motion", font_size=TITLE_SIZE, color=WHITE)
-        title.move_to(ORIGIN)
-        
-        # Title appear
-        self.play(Write(title, run_time=1.5))
-        self.wait(1.5)
-        
-        # Custom "star explosion" fade out
-        self.play(
-            LaggedStart(
-                *[
-                    letter.animate.shift(
-                        np.array([np.random.uniform(-2, 2), np.random.uniform(-2, 2), 0])
-                    ).scale(0.5).set_opacity(0)
-                    for letter in title
-                ],
-                lag_ratio=0.1,
-                run_time=2
-            )
-        )
-        
-        # Step 2: Create axes
+        v0x, v0y = v0*np.cos(theta), v0*np.sin(theta)
+        t_max = 2*v0y/g
+        range_x = v0x*t_max
+        max_h = v0y**2/(2*g)
+
+        # 1. Glow title -> scatter fade
+        title = Text("Projectile Motion", font_size=TITLE, color=WHITE, weight=BOLD)
+        glow = Text("Projectile Motion", font_size=TITLE, weight=BOLD).set_color(YELLOW).set_stroke(width=12, opacity=0.25)
+        self.play(FadeIn(glow, scale=1.3), Write(title), run_time=1.6); self.wait(1)
+        self.play(LaggedStart(*[l.animate.shift(np.array([np.random.uniform(-2,2), np.random.uniform(-2,2),0])).scale(0.5).set_opacity(0) for l in VGroup(*title, *glow)], lag_ratio=0.08, run_time=1.8))
+
+        # 2. Axes + ground
         axes = Axes(
-            x_range=[0, 40, 5],
-            y_range=[0, 20, 5],
-            x_length=config.frame_width * 0.65,
-            y_length=config.frame_height * 0.55,
-            axis_config={
-                "include_numbers": True,
-                "font_size": LABEL_SIZE - 6,
-                "decimal_number_config": {"num_decimal_places": 0}
-            }
-        )
-        
-        # Position axes with margins - shift right and down to avoid overlaps
-        axes.move_to(ORIGIN).shift(RIGHT * 0.8 + DOWN * 0.5)
-        
-        # Axis labels - position carefully
-        x_label = MathTex(r"Distance(m)", font_size=LABEL_SIZE)
-        x_label.next_to(axes.x_axis, DOWN, buff=0.5).shift(RIGHT * 1.5)
-        
-        y_label = MathTex(r"Height(m)", font_size=LABEL_SIZE)
-        y_label.next_to(axes.y_axis, LEFT, buff=0.4).shift(UP * 1)
-        
-        self.play(Create(axes), Write(x_label), Write(y_label), run_time=1.5)
-        self.wait(0.5)
-        
-        # Step 3: Display equations in top-left corner
-        equation1 = MathTex(
-            r"x(t) = v_0 \cos(\theta) \cdot t",
-            font_size=EQUATION_SIZE
-        )
-        equation2 = MathTex(
-            r"y(t) = v_0 \sin(\theta) \cdot t - \frac{1}{2}gt^2",
-            font_size=EQUATION_SIZE
-        )
-        
-        equations = VGroup(equation1, equation2).arrange(DOWN, buff=0.3, aligned_edge=LEFT)
-        equations.to_corner(UL, buff=TOP_BUFFER)
-        
-        self.play(Write(equations), run_time=1.5)
-        self.wait(0.5)
-        
-        # Step 4: Draw trajectory
-        # Create parametric curve for trajectory
+            x_range=[0,40,5], y_range=[0,20,5],
+            x_length=config.frame_width*0.65, y_length=config.frame_height*0.55,
+            axis_config={"include_numbers": True, "font_size": 20, "decimal_number_config": {"num_decimal_places": 0}},
+        ).move_to(ORIGIN).shift(RIGHT*0.6 + DOWN*0.4)
+        x_lab = axes.get_x_axis_label(Text("Distance (m)", font_size=LBL))
+        y_lab = axes.get_y_axis_label(Text("Height (m)", font_size=LBL))
+        ground = Line(axes.c2p(0,0), axes.c2p(40,0), color=GREY_B, stroke_width=2)
+        self.play(Create(axes), Write(x_lab), Write(y_lab), Create(ground), run_time=1.5)
+
+        # 3. Equations corner
+        eqs = VGroup(
+            MathTex(r"x(t)=v_0\cos(\theta)\,t", font_size=EQ, color=TEAL),
+            MathTex(r"y(t)=v_0\sin(\theta)\,t-\tfrac{1}{2}gt^2", font_size=EQ, color=TEAL),
+        ).arrange(DOWN, buff=0.3, aligned_edge=LEFT).to_corner(UL, buff=0.4)
+        self.play(Write(eqs), run_time=1.5)
+
+        # 4. Trajectory
         path = axes.plot_parametric_curve(
-            lambda t: np.array([v0x * t, v0y * t - 0.5 * g * t * t, 0]),
-            t_range=[0, t_max, 0.01],
-            color=YELLOW
+            lambda t: np.array([v0x*t, v0y*t - 0.5*g*t*t, 0]),
+            t_range=[0, t_max, 0.01], color=YELLOW,
         )
-        
-        self.play(Create(path), run_time=3, rate_func=linear)
-        self.wait(0.5)
-        
-        # Step 5: Add projectile and animate motion
-        projectile = Dot(axes.c2p(0, 0), radius=0.12, color=RED)
-        self.play(FadeIn(projectile))
-        
-        # Animate projectile along path
-        self.play(
-            MoveAlongPath(projectile, path),
-            run_time=4,
-            rate_func=linear
-        )
-        self.wait(0.5)
-        
-        # Step 6: Highlight key points with careful positioning
-        # Launch point
-        launch_dot = Dot(axes.c2p(0, 0), color=GREEN, radius=0.1)
-        launch_label = Text("Launch", font_size=DESC_SIZE, color=GREEN)
-        launch_label.next_to(launch_dot, DOWN + LEFT, buff=0.3)
-        
-        # Maximum height point
-        t_peak = v0y / g
-        peak_x = v0x * t_peak
-        peak_dot = Dot(axes.c2p(peak_x, max_height), color=ORANGE, radius=0.1)
-        peak_label = Text(f"Max Height: {max_height:.1f}m", font_size=DESC_SIZE, color=ORANGE)
-        peak_label.next_to(peak_dot, UP, buff=0.4)
-        
-        # Landing point
-        landing_dot = Dot(axes.c2p(range_x, 0), color=PURPLE, radius=0.1)
-        landing_label = Text(f"Range: {range_x:.1f}m", font_size=DESC_SIZE, color=PURPLE)
-        landing_label.next_to(landing_dot, DOWN + RIGHT, buff=0.3)
-        
-        self.play(
-            FadeIn(launch_dot), Write(launch_label),
-            run_time=0.8
-        )
-        self.wait(0.3)
-        
-        self.play(
-            FadeIn(peak_dot), Write(peak_label),
-            run_time=0.8
-        )
-        self.wait(0.3)
-        
-        self.play(
-            FadeIn(landing_dot), Write(landing_label),
-            run_time=0.8
-        )
-        self.wait(0.5)
-        
-        # Step 7: Display parameters in top-right corner
+        self.play(Create(path), run_time=2, rate_func=smooth)
+
+        # 5. Glowing ball + trail + live velocity vector
+        tt = ValueTracker(0.0)
+        def ball_point():
+            t = tt.get_value()
+            return axes.c2p(v0x*t, v0y*t - 0.5*g*t*t)
+        ball = always_redraw(lambda: Dot(ball_point(), radius=0.12, color=RED))
+        trail = TracedPath(ball_point, stroke_color=ORANGE, stroke_width=5, dissipating_time=0.6)
+        def vel_vector():
+            t = tt.get_value()
+            vx, vy = v0x, v0y - g*t
+            start = ball_point()
+            end = start + np.array([vx, vy, 0])*0.06
+            return Arrow(start, end, color=GREEN, buff=0, stroke_width=4)
+        vel = always_redraw(vel_vector)
+        self.add(trail)
+        self.play(FadeIn(ball), FadeIn(vel), run_time=0.4)
+        self.play(tt.animate.set_value(t_max), run_time=4, rate_func=linear)
+        self.play(FadeOut(vel), run_time=0.3)
+
+        # 6. Key points + apex line
+        peak_pt = axes.c2p(v0x*(v0y/g), max_h)
+        apex_line = DashedLine(axes.c2p(v0x*(v0y/g), 0), peak_pt, color=ORANGE, stroke_width=2)
+        peak = Dot(peak_pt, color=ORANGE, radius=0.1)
+        peak_lab = Text(f"Max Height: {max_h:.1f} m", font_size=DESC, color=ORANGE).next_to(peak, UP, buff=0.3)
+        land = Dot(axes.c2p(range_x, 0), color=PURPLE, radius=0.1)
+        land_lab = Text(f"Range: {range_x:.1f} m", font_size=DESC, color=PURPLE).next_to(land, UR, buff=0.2)
+        self.play(Create(apex_line), FadeIn(peak), Write(peak_lab), run_time=0.8)
+        self.play(Indicate(peak, color=ORANGE), run_time=0.6)
+        self.play(FadeIn(land), Write(land_lab), run_time=0.8)
+        self.play(Flash(land, color=PURPLE, num_lines=12), run_time=0.8)
+
+        # 7. Parameters corner (^\circ, not °)
         params = VGroup(
-            MathTex(rf"v_0 = {v0} \text{{ m/s}}", font_size=EQUATION_SIZE - 2),
-            MathTex(rf"\theta = {angle}°", font_size=EQUATION_SIZE - 2),
-            MathTex(rf"g = {g} \text{{ m/s}}^2", font_size=EQUATION_SIZE - 2)
-        ).arrange(DOWN, buff=0.25, aligned_edge=LEFT)
-        
-        params.to_corner(UR, buff=TOP_BUFFER)
-        
+            MathTex(rf"v_0 = {v0}\,\text{{m/s}}", font_size=EQ-2),
+            MathTex(rf"\theta = {angle}^\circ", font_size=EQ-2),
+            MathTex(rf"g = {g}\,\text{{m/s}}^2", font_size=EQ-2),
+        ).arrange(DOWN, buff=0.25, aligned_edge=LEFT).to_corner(UR, buff=0.4)
         self.play(FadeIn(params, shift=LEFT), run_time=1)
         self.wait(2)
-        
-        # Final pause
-        self.wait(1)
 ```
-<Physics Visualization Rule Only/>
+</PHYSICS_SCENE_RULES>
 """
 
-STATISTICS = """
-<Statistical Visualization Rule Only>
-## Mandatory way to design (Statistics Adapted)
-
-1. Title: Always at the center (never top). Must appear first and then fade out with a smooth animation (e.g., FadeOut, LaggedStart, star-burst effect).
-2. Axes: Create axes immediately after title fades. Show only relevant axes (x, y) with margins.
-3. Numbers: Use integers mostly; if needed, 2 decimal precision.
-4. Axes style: No grid unless needed. Include only numbers required for visualization.
-5. Legend / Equation: Place formula, mean, variance, or legend in corners. If no space → fade out temporarily.
-6. Margins: Leave a 5% gap at edges.
-7. Sequence: Title → Axes → Legend/Formula → Graph → Dynamic Highlight.
-
-## Graph Types Supported
-- BarChart
-- Scatter Plot
-- Line Plot (from dataset)
-- Histogram
-- Boxplot (manual construction)
-- etc
-
-### Deprecated → New (Manim v0.19+)
-
----
-
-## Common Deprecated → New
-
-* `to_edge(...)` still works, but prefer `.next_to()` for finer control.
-* `to_corner(...)` → use `.align_on_border(...)`.
-* `axes.to_center()` → use `axes.move_to(ORIGIN)` or `axes.center()`.
-* `shift(x*RIGHT)` still valid.
-* `scale_in_place(factor)` → use `.scale(factor, about_point=...)`.
-* `fade_in` / `fade_out` methods → use animations: `FadeIn(mobj)` / `FadeOut(mobj)`.
-* `ShowCreation(mobj)`  → `Create(mobj)`.
-* `Write(mobj, run_time=...)`  still valid.
-* `Transform(m1, m2)`  still valid.
-* `SurroundingRectangle(..., buff=0.1)`  still valid.
-* `.start_point or .end_point` -> use `.get_start()` or `.get_end()`.
-
----
-
-## Axes / Graphs
-
-* `axes.get_graph(f, ...)` → deprecated. Use `axes.plot(f, x_range=[...], color=...)`.
-
-* `axes.get_area(f, ...)` → still valid for one function. For two functions use `FillBetween(...)`.
-
-* `NumberPlane.get_graph(...)` → does not exist. Use `plane.plot(...)`.
-
-* `add_coordinates()` → still valid.
-
-* `axes.get_tangent_line(graph, x=..., line_length=...)` → does not exist. Use `TangentLine(graph, alpha, length=...)` where `alpha ∈ [0,1]`. To map `x` to `alpha`, use helpers like `axes.i2gp`.
-
-* `axes.get_vertical_line(x_val=...)` wrong → invalid. Correct: `axes.get_vertical_line(point, **kwargs)`.
-  (use `axes.c2p(x_value, y_value)` or `axes.i2gp(x_value, graph)` to get the point).
-
-* `axes.y_axis_labels` wrong → no attribute. Use `axes.get_axis_labels()`.
-
-* `y_axis_config` must be passed explicitly inside `Axes(...)`, not accessed as an attribute afterwards.
-
-* `axes.get_x_axis_label(...)` and `axes.get_y_axis_label(...)` → still valid, but prefer `axes.get_axis_labels(x_label, y_label)` for paired labels.
-
----
-
-## Colors / Styles
-
-- `stroke_width` → still valid.
-- `stroke_opacity=...` in constructor → not allowed. Use `.set_stroke(opacity=...)`.
-- `fill_opacity=...` in constructor → still valid.
-- `line_arg_dict` → deprecated.  Use: 
-  - `axis_config={...}` → for styling axes 
-  - `background_line_style={...}` → **only inside Axes or NumberPlane**.
-- `stroke_dash_length` → not valid. Use `DashedLine(...)` or `DashedVMobject(...)`.
-
----
-
-## Text / Labels
-
-* `TextMobject(...)` → use `Tex(...)`.
-* `TexMobject(...)` → use `Tex(...)`.
-* `edge_buffer` argument (e.g., in `Text`) → not valid. Replace with `.next_to(..., buff=...)` or `.align_on_border(...)`.
-* `Text(..., t2c=...)` → still valid. 
-* `t2s` (text-to-style) → replaced by `.set_color_by_t2s()`.
-
----
-
-## Shapes
-
-* `ArcBetweenPoints(..., radius=...)` → `ArcBetweenPoints(..., angle=...)`.
-* `Sector(inner_radius=...)` → replaced with `AnnularSector(inner_radius=...)`.
-
----
-
-## NumberLine
-
-* `NumberLine(default_numbers_to_display=...)` → removed. Use `include_numbers=True` and control with `numbers_to_include=[...]` or `decimal_number_config={...}`.
-* `exclude_zero_from_default_numbers` → removed. Must explicitly control numbers via `numbers_to_include`.
-
----
-
-## Camera / Scene
-
-* `ThreeDScene.set_camera_orientation(...)` → still valid.
-* `self.camera.animate.set(phi=..., theta=...)` → replaces old `self.move_camera(...)`.
-* `self.set_camera_orientation(...)` → replaces old `set_camera_position(...)`.
-* `self.set_camera_orientation(phi=..., theta=...)` → still valid; `gamma` is no longer supported.
-
-
----
-
-## Geometry / Mobject Methods
-
-* `.start_point` / `.end_point` → replaced with `.get_start()` / `.get_end()`.
-* `.point_from_proportion(alpha)` → still valid.
-* `scale_in_place(factor)` → deprecated. Use `.scale(factor, about_point=...)`.
-* `.fade_in` / `.fade_out` (methods) → removed. Use `FadeIn(mobj)` / `FadeOut(mobj)` animations.
-* `next_to(...)` → still valid and preferred over `to_edge(...)` for finer control.
-* `to_corner(...)` → replaced with `.align_on_border(...)`.
-* `.center()` or `.move_to(ORIGIN)` → replaces older `.to_center()`.
-* `rotate(angle, axis=...)` → still valid.
-* `.get_midpoint()` → preferred over manual midpoint calculations.
-* `.get_vertices()` → still valid for polygons.
-* `.copy()` → still valid.
-
-## Summary of New Errors Fixed
-
-* `TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'length'` → use `line_length`.
-* `TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_val'` → use `x`.
-* `TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'edge_buffer'` → replace with `.next_to(..., buff=...)`.
-* `AttributeError: Axes object has no attribute 'y_axis_labels'` → use `axes.get_axis_labels()`.
-* `AttributeError: NumberLine object has no attribute 'default_numbers_to_display'` → use `include_numbers=True` with `numbers_to_include`.
-* `TypeError: ... got an unexpected keyword argument 'stroke_opacity'` → set via `.set_stroke(opacity=...)`.
-* `AttributeError: NumberLine has no attribute 'exclude_zero_from_default_numbers'` → must use `numbers_to_include`.
-* `TypeError: ... got an unexpected keyword argument 'gamma'` → camera no longer supports gamma.
-* `NameError: name 'UP_LEFT' is not defined` → Use `UL` (UP + LEFT), `UR`, `DL`, `DR` instead.
-
-
-## Font Size Rules (adjustable based on content length)
-TITLE_SIZE = 46       # not fixed, can change based on title length
-EQUATION_SIZE = 36    # not fixed, can change based on formula/legend length
-LABEL_SIZE = 28       # not fixed, can change based on axis label length
-DESC_SIZE = 24        # not fixed, can change based on description length
-
-```
-
-## Mandatory Spacing Rules
-```python
-TOP_BUFFER = config.frame_height * 0.05
-BOTTOM_BUFFER = config.frame_height * 0.05
-LEFT_BUFFER = config.frame_width * 0.05
-RIGHT_BUFFER = config.frame_width * 0.05
-AFTER_TITLE_GAP = config.frame_height * 0.05
-```
-
-### Mandatory Spacing Rules
-```python
-TOP_BUFFER = config.frame_height * 0.05      # 5% space from top
-BOTTOM_BUFFER = config.frame_height * 0.05   # 5% space from bottom
-LEFT_BUFFER = config.frame_width * 0.05      # 5% space from left
-RIGHT_BUFFER = config.frame_width * 0.05     # 5% space from right
-```
-## Mandatory avoid these errors when create a manim code
-
-1. NameError: name 'LIGHT_BLUE' is not defined
-    Use valid built-ins (from manim):
-    from manim import BLUE, GREEN, TEAL, YELLOW, RED, ORANGE, PURPLE
-    Or define your own shades:
-    LIGHT_BLUE = "#87CEFA"   # hex for light sky blue
-    LIGHT_GREEN = "#90EE90"  # hex for light green
-
-    Then your code works:
-    self.play(f1.animate.set_color(LIGHT_BLUE).set_opacity(0.4))
-
-    
-2. Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'color'
-    Fix: Import form the manim 
-    from manim import Scene, MathTex, Axes, Write, WHITE
-    or
-    from manim import *
-
-3. NameError: name 'BOTTOM' is not defined
-    Fix: UP, DOWN, LEFT, RIGHT, ORIGIN are valid.
-
-4. NameError: name 'WiggleOutThenIn' is not defined
-    At the top of your script add:
-    from manim import *
-    or,
-    from manim import Scene, Axes, MathTex, FadeIn, WiggleOutThenIn
-
-5.  Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'x_range'
-    Fix: graph_sin_x = plane.plot(lambda x: np.sin(x), x_range=[-7, 7], color=BLUE)
-
-6. TypeError: Mobject.__init__() got an unexpected keyword argument 'line_arg_dict'
-    Fix: replace it with:
-    background_line_style={...}
-    Use axis_config={...} for Axes.
-
-7. Error Message: Found `stroke_opacity` set in the constructor for `envelope_pos` and `envelope_neg`. According to the validation rules, opacity-related parameters should not be set in the constructor; use `.set_stroke(opacity=...)` or `.set_opacity()` after creation.
-
-8. TypeError: Mobject.__init__() got an unexpected keyword argument 'stroke_dash_length'
-    Fix: 
-    # Option A: directly make dashed
-    line1 = DashedLine(LEFT, RIGHT, dash_length=0.2, num_dashes=20)
-
-
-    # Option B: wrap an existing object
-    base = Line(LEFT, RIGHT)
-    line2 = DashedVMobject(base, dash_length=0.2, num_dashes=20)
-
-
-9. AttributeError: Axes object has no attribute 'to_center'
-    Fix: 
-    axes.move_to(ORIGIN)
-    # or
-    axes.center()
-
-10. TypeError: Mobject.__init__() got an unexpected keyword argument 'background_line_style'
-    Fix:
-    background_line_style is only valid in NumberPlane or Axes, not in general Mobject.
-    So you must pass it when constructing axes/plane, like this:
-
-    axes = Axes(
-        x_range=[-5, 5],
-        y_range=[-3, 3],
-        axis_config={"color": BLUE},              # style for main axes
-        background_line_style={                   # style for grid lines
-            "stroke_color": GREY,
-            "stroke_width": 1,
-            "stroke_opacity": 0.5,
-        }
-    )
-
-11. Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'length'
-    Fix: axes.get_tangent_line(graph_sin, x_tracker.get_value(), line_length=3)
-
-12. TypeError: Mobject.__init__() got an unexpected keyword argument 'x_axis_config'
-    Axes does not accept x_axis_config or y_axis_config as keyword arguments at the top level of Axes(...)
-    Fix:
-    axes = Axes(
-    x_range=[-5, 5, 1],
-    y_range=[-3, 3, 1],
-    axis_config={"font_size": 24},
-    )
-
-    or, if you need separate configs:
-
-    axes = Axes(
-        x_range=[-5, 5, 1],
-        y_range=[-3, 3, 1],
-        x_axis_config={"font_size": 24},
-        y_axis_config={"font_size": 30},
-    )
-
-13. AxisError: axis 1 is out of bounds for array of dimension 1
-    fix:
-    curve1 = axes.plot_parametric_curve(
-        lambda t: (x_func1(t), y_func1(t)),
-        t_range=[0, 2*np.pi, 0.01],
-        color=BLUE
-    )
-
-14. AttributeError: MathTex object has no attribute 'is_about_to_overlap' is_about_to_overlap() doesn’t exist in ManimCE.
-
-15. Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 't_range'
-    Fix:
-    curve = axes.plot_parametric_curve(
-        lambda t: np.array([t, np.sin(t), 0]),
-        t_range=[-PI, PI, 0.05],
-        color=BLUE
-    )
-
-16. AttributeError: ParametricFunction object has no attribute 'x_to_alpha'
-    Fix: x_to_alpha works only on Axes.plot, not on ParametricFunction.
-    tangent_line = always_redraw(
-        lambda: TangentLine(graph_sin, x=x_tracker.get_value(), length=4)
-    )
-
-17. AttributeError: Axes object has no attribute 'x_to_proportion'
-    In new Manim (v0.19+), Axes has no x_to_proportion.
-    Fix: 
-    tangent_line = always_redraw(
-        lambda: TangentLine(graph_sin, x=x_tracker.get_value(), length=4)
-    )
-
-18. TypeError: Mobject.__init__() got an unexpected keyword argument 'dash_length'
-    Fix: 
-    envelope_pos_graph = axes.plot(lambda x: np.sin(x), x_range=[-7,7], color=BLUE)
-    envelope_pos = DashedVMobject(envelope_pos_graph)
-    envelope_pos.set_dash(dash_length=0.1, dashed_ratio=0.5)
-
-19. IndexError: list index out of range
-    use a tiny visible placeholder, e.g.:
-
-    MathTex(r"\;", font_size=LABEL_SIZE)  # thin space
-    # or
-    MathTex(r"0", font_size=LABEL_SIZE)
-
-20. AttributeError: MathTex object has no attribute 'bounding_box'
-    Fix: use properties or new methods:
-
-    mobj.width
-    mobj.height
-    mobj.get_center()
-    mobj.get_bounding_box_vertices()
-
-21. TypeError: Mobject.__init__() got an unexpected keyword argument 'number_constructor_kwargs'
-    Fix: remove it and customize numbers after creation:
-    axes = Axes(x_range=[-2.5*np.pi, 2.5*np.pi, np.pi/2], y_range=[-1.5, 1.5, 0.5])
-    for x_val in axes.x_axis.numbers:
-        x_val.set_color(BLUE)
-
-22. NameError: name 'FillBetween' is not defined
-    FillBetween isn’t auto-imported in v0.19+.
-    Fix: 
-    Add this line:
-    from manim.mobject.graphing.utils import FillBetween
-    Or use axes.get_area() as an alternative.
-
-23. TypeError: Mobject.__init__() got an unexpected keyword argument 'color_map'
-    Fix:
-
-    surface = Surface(..., resolution=(30,30))
-    surface.set_style(fill_color=BLUE, fill_opacity=0.7)
-
-    For gradient:
-    surface.set_fill_by_value(axes=axes, colors=[(BLUE,-1),(GREEN,0),(RED,1)])
-
-24. NameError: name 'ParametricSurface' is not defined
-    Fix:
-    NameError: name 'ParametricSurface' is not defined
-    
-25. TypeError: Mobject.__init__() got an unexpected keyword argument 'res_u'
-    Error comes from res_u / res_v → not valid in v0.19.
-    Fix:
-    resolution=(20, 20)
-
-26. TypeError: Mobject.__init__() got an unexpected keyword argument 'dash_length'
-    Fix for current version: use num_dashes instead:
-    envelope_pos = DashedVMobject(envelope_pos_graph, num_dashes=50, dashed_ratio=0.5)
-    envelope_neg = DashedVMobject(envelope_neg_graph, num_dashes=50, dashed_ratio=0.5)
-
-27. AttributeError: 'ManimConfig' object has no attribute 'camera'
-    Fix:
-        self.camera.frame_width
-        self.camera.frame_height
-    Or better, just use
-    legend.to_edge(UR, buff=TOP_BUFFER)
-
-28. TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'num_decimal_places'
-    Fix:
-    axes = Axes(
-    x_range=[0, 10, 1],
-    y_range=[0, 5, 1],
-    x_length=7,
-    y_length=4,
-    axis_config={
-        "include_numbers": True,
-        "font_size": LABEL_SIZE,
-        "decimal_number_config": {"num_decimal_places": 0}  # <-- set here
-    }
-)
-
-29. TypeError: Mobject.__getattr__.<locals>.getter() got an unexpected keyword argument 'font_size'
-    Fix: Set the tick label styles when constructing the axes, using axis_config and decimal_number_config:
-    axes = Axes(
-    x_range=[0, 10, 1],
-    y_range=[0, 5, 1],
-    x_length=7,
-    y_length=4,
-    axis_config={
-        "include_numbers": True,
-        "font_size": LABEL_SIZE,                 # font size for all tick labels
-        "decimal_number_config": {"num_decimal_places": 0},  # decimal precision
-        "color": WHITE                           # color of numbers
-    }
-)
-
-30. TypeError: Mobject.__init__() got an unexpected keyword argument 'vertex_dots'
-    Fix:
-    line_graph = axes.plot_line_graph(
-        x_values=x_values,
-        y_values=y_values,
-        line_color=BLUE,
-    )
-
-    If you want dots at each vertex, you need to add them manually using Dot objects. For example:
-    dots = VGroup(*[
-    Dot(axes.coords_to_point(x, y))
-    for x, y in zip(x_values, y_values)
-])
-self.play(FadeIn(dots))
-
-31. ValueError: not enough values to unpack (expected 3, got 2)
-    Fix:
-    Change this line:
-        x_axis_coord, _, _ = axes.p2c(dot.get_center())
-
-    to
-        x_axis_coord, _ = axes.p2c(dot.get_center())
-
-32. TypeError: Mobject.__init__() got an unexpected keyword argument 'bar_spacing'
-    Fix:
-    chart = BarChart(
-        values=sales_values,
-        y_range=[0, 300, 50],
-        y_length=config.frame_height * 0.6,
-        x_length=config.frame_width * 0.8,
-        # bar_spacing removed
-    )
-
-33. NameError: name 'WiggleOutThenIn' is not defined
-    Fix:
-    Replace with a built-in animation, e.g.:
-
-    self.play(sectors[0].animate.shift(UP*0.2).scale(1.1), run_time=1.5)
-    self.play(sectors[0].animate.shift(DOWN*0.2).scale(0.91), run_time=1.5)
-
-34. NameError: name 'GrowFromBottom' is not defined
-    Fix:
-    self.play(GrowFromEdge(all_bars, edge=DOWN, lag_ratio=0.1), run_time=2)
-
-## QUICK STATISTICS TEMPLATE
-
-## Bar Plot
+STATISTICS = r"""
+<STATISTICS_SCENE_RULES>
+Generate a Manim v0.20+ statistical visualization.
+
+## DESIGN SEQUENCE (mandatory order)
+1. Title at ORIGIN center → Write → fade out (LaggedStart letter-scatter encouraged).
+2. Axes/chart after title fades. Relevant axes only, no grid unless needed. Integers; 2 decimals if needed.
+3. Legend/formula (mean, SD, etc.) in a corner via `.to_corner(...)`. Fade out if no space.
+4. Draw the chart, then dynamic highlight of a key value.
+5. 5% margin all edges. Background BLACK unless asked.
+
+## SUPPORTED
+BarChart, scatter, line plot, histogram, pie/donut (AnnularSector), boxplot (manual).
+
+## FONT HIERARCHY (adjust to length)
+TITLE 46 > EQUATION 32-36 > LABEL 24-28 > DESC 22.
+
+## CLIPPING / OVERLAP (the #1 visual bug — obey)
+- Axis labels (get_x/y_axis_label) sit at the axis ENDS. Do NOT place data labels (value/peak/range) near the same end — they collide. Put data labels ABOVE their point (UP, shifted away from edges).
+- Keep every label inside the frame; if near an edge, shift it back. Keep charts ≤70% frame width.
+- Degree symbol: use `^\circ` inside MathTex, never literal `°`. In Text() a literal °C is OK.
+
+## CORE API (v0.20)
+- `BarChart(values=..., bar_names=..., y_range=[lo,hi,step], bar_colors=[...])` (no bar_spacing). Bars: `chart.bars[i]`.
+- Line graph: `axes.plot_line_graph(x_values=..., y_values=..., line_color=...)` (no vertex_dots; add Dots manually).
+- Point mapping: `axes.c2p(x, y)`; `axes.p2c(point)` returns 2D for Axes (unpack 2).
+- Axis numbers/font/decimals via `axis_config={"include_numbers": True, "font_size": 24, "decimal_number_config": {"num_decimal_places": 0}}`.
+- Pie/donut: loop `AnnularSector(outer_radius=.., inner_radius=.., angle=.., start_angle=..)`, accumulate start_angle.
+- Grow bars: `GrowFromEdge(bars, edge=DOWN, lag_ratio=0.1)` (no GrowFromBottom).
+
+## CONSTRUCTOR RULES (most crashes)
+- stroke opacity NOT in constructor → `.set_stroke(opacity=...)` after. (fill_opacity in constructor OK.)
+- `axis_config`/`background_line_style` only inside Axes/NumberPlane.
+- Dashed: `DashedVMobject(m, num_dashes=50)` (no dash_length kwarg).
+- `from manim import *` + `import numpy as np` always. UL/UR/DL/DR (not UP_LEFT). Custom colors hex.
+- Position: `.move_to(ORIGIN)`/`.center()` (no to_center). to_corner/to_edge/next_to all valid.
+
+## STYLE (cinematic stats)
+Glow title (layered stroked copy). Grow bars from the baseline with LaggedStart. Highlight key bar/point with SurroundingRectangle + Indicate/Flash. Value labels above each bar. Smooth color palette (≤4-5). Holds ≥1.5s.
+
+## REFERENCE TEMPLATE (study; adapt, don't copy verbatim)
 ```python
 from manim import *
 import numpy as np
 
-class StatisticsGraph(Scene):
+class StatsBarChart(Scene):
     def construct(self):
-        # ===== CONSTANTS =====
-        TITLE_SIZE = 46
-        EQUATION_SIZE = 36
-        LABEL_SIZE = 28
-        TOP_BUFFER = config.frame_height * 0.05
-        BOTTOM_BUFFER = config.frame_height * 0.05
-        LEFT_BUFFER = config.frame_width * 0.05
-        RIGHT_BUFFER = config.frame_width * 0.05
+        self.camera.background_color = "#0a0a12"
+        TITLE, EQ, LBL = 46, 32, 26
 
-        self.camera.background_color = BLACK
+        # 1. Glow title -> scatter fade
+        title = Text("Sales by Category", font_size=TITLE, color=WHITE, weight=BOLD)
+        glow = Text("Sales by Category", font_size=TITLE, weight=BOLD).set_color(TEAL).set_stroke(width=12, opacity=0.25)
+        self.play(FadeIn(glow, scale=1.3), Write(title), run_time=1.6); self.wait(1)
+        self.play(LaggedStart(*[l.animate.shift(np.array([np.random.uniform(-2,2), np.random.uniform(-2,2),0])).scale(0.5).set_opacity(0) for l in VGroup(*title, *glow)], lag_ratio=0.08, run_time=1.8))
 
-        # ===== STEP 1: Title =====
-        title = Text("Statistics Visualization", font_size=TITLE_SIZE, color=WHITE)
-        title.move_to(ORIGIN)
-        self.play(Write(title, run_time=1.5))
-        self.wait(2)
-
-        self.play(
-            LaggedStart(
-                *[letter.animate.shift([np.random.uniform(-1,1), np.random.uniform(-1,1),0]).scale(0.5).set_opacity(0) for letter in title],
-                lag_ratio=0.1,
-                run_time=2
-            )
-        )
-
-        # ===== STEP 2: Bar Chart =====
+        # 2. Bar chart
         data = [5, 8, 2, 6]
-        categories = ["A", "B", "C", "D"]
-
+        cats = ["A", "B", "C", "D"]
         chart = BarChart(
-            values=data,
-            bar_names=categories,
+            values=data, bar_names=cats,
             y_range=[0, max(data)+2, 1],
-            x_length=config.frame_width * 0.7,
-            y_length=config.frame_height * 0.6,
-            bar_width=0.6,
-            bar_colors=[BLUE, GREEN, RED, ORANGE]
-        )
-        chart.center()
-        
-        # ===== STEP 3: Legend / Formula =====
-        legend = MathTex(r"\text{Mean} = 5, \text{SD} = 2", font_size=EQUATION_SIZE, color=WHITE)
-        legend.to_edge(UR, buff=TOP_BUFFER)
-        
-        self.play(Create(chart))
-        self.play(Write(legend, run_time=1))
+            x_length=config.frame_width*0.65, y_length=config.frame_height*0.55,
+            bar_colors=["#4C9BE0", "#5BD68A", "#E06B6B", "#E0A24C"],
+        ).center().shift(DOWN*0.3)
 
-        # ===== STEP 4: Dynamic Highlight =====
-        highlight = SurroundingRectangle(chart.bars[1], color=YELLOW, buff=0.1)
-        self.play(Create(highlight))
+        # grow bars from baseline
+        self.play(Create(chart.x_axis), Create(chart.y_axis), run_time=1)
+        self.play(GrowFromEdge(chart.bars, edge=DOWN, lag_ratio=0.15), run_time=1.5)
 
-        # ===== STEP 5: Clean Up =====
+        # value labels above each bar
+        val_labels = VGroup(*[
+            Text(str(v), font_size=22, color=WHITE).next_to(bar, UP, buff=0.15)
+            for v, bar in zip(data, chart.bars)
+        ])
+        self.play(LaggedStart(*[FadeIn(l, shift=UP*0.2) for l in val_labels], lag_ratio=0.1), run_time=1)
+
+        # 3. Stats legend (corner)
+        mean = np.mean(data)
+        legend = MathTex(rf"\text{{Mean}} = {mean:.1f}", font_size=EQ, color=WHITE).to_corner(UR, buff=0.4)
+        self.play(Write(legend), run_time=1)
+
+        # 4. Highlight tallest bar
+        i = int(np.argmax(data))
+        box = SurroundingRectangle(chart.bars[i], color=YELLOW, buff=0.05)
+        tag = Text("Top", font_size=22, color=YELLOW).next_to(val_labels[i], UP, buff=0.15)
+        self.play(Create(box), FadeIn(tag), run_time=0.8)
+        self.play(Indicate(chart.bars[i], color=YELLOW), run_time=0.8)
+        self.play(Flash(chart.bars[i].get_top(), color=YELLOW, num_lines=12), run_time=0.8)
         self.wait(2)
-        self.play(FadeOut(chart), FadeOut(legend), FadeOut(highlight))
-        self.wait(1)
 ```
-
-## Pie Chart
-```python
-from manim import *
-
-class PieChartExample(Scene):
-    def construct(self):
-        self.camera.background_color = BLACK
-              
-        # Data: 3 slices
-        values = [45, 30, 25]
-        colors = [BLUE, GREEN, ORANGE]
-        
-        # Create pie chart
-        sectors = VGroup()
-        start_angle = 90 * DEGREES
-        
-        for value, color in zip(values, colors):
-            angle = (value / 100) * TAU
-            sector = AnnularSector(
-                outer_radius=2.0,
-                inner_radius=0,
-                angle=angle,
-                start_angle=start_angle,
-                color=color,
-                fill_opacity=0.8,
-                stroke_color=WHITE,
-                stroke_width=3
-            )
-            sectors.add(sector)
-            start_angle += angle
-        
-        self.play(Create(sectors), run_time=2)
-        self.wait(2)
-        
-        self.play(FadeOut(sectors))
-        self.wait(1)
-```
-
-## Donut shape chart
-```python
-from manim import *
-
-class DonutChartExample(Scene):
-    def construct(self):
-        self.camera.background_color = BLACK
-        
-        # Data: 3 slices
-        values = [45, 30, 25]
-        colors = [BLUE, GREEN, ORANGE]
-        
-        # Create donut chart
-        sectors = VGroup()
-        start_angle = 90 * DEGREES
-        
-        for value, color in zip(values, colors):
-            angle = (value / 100) * TAU
-            sector = AnnularSector(
-                outer_radius=2.0,
-                inner_radius=1.0,
-                angle=angle,
-                start_angle=start_angle,
-                color=color,
-                fill_opacity=0.8,
-                stroke_color=WHITE,
-                stroke_width=3
-            )
-            sectors.add(sector)
-            start_angle += angle
-        
-        self.play(Create(sectors), run_time=2)
-        self.wait(2)
-        
-        self.play(FadeOut(sectors))
-        self.wait(1)
-```
-
-## Line Plot
-```python
-from manim import *
-import numpy as np
-
-class TemperatureLinePlot(Scene):
-    def construct(self):
-        # ===== CONSTANTS =====
-        TITLE_SIZE = 46
-        EQUATION_SIZE = 32
-        LABEL_SIZE = 24
-        TOP_BUFFER = config.frame_height * 0.08
-        BOTTOM_BUFFER = config.frame_height * 0.08
-        LEFT_BUFFER = config.frame_width * 0.08
-        RIGHT_BUFFER = config.frame_width * 0.08
-
-        self.camera.background_color = BLACK
-
-        # ===== STEP 1: Title =====
-        title = Text("Weekly Temperature Changes", font_size=TITLE_SIZE, color=WHITE)
-        title.move_to(ORIGIN)
-        self.play(Write(title, run_time=1.5))
-        self.wait(2)
-
-        self.play(
-            LaggedStart(
-                *[letter.animate.shift([np.random.uniform(-1,1), np.random.uniform(-1,1),0]).scale(0.5).set_opacity(0) for letter in title],
-                lag_ratio=0.1,
-                run_time=2
-            )
-        )
-
-        # ===== STEP 2: Temperature Data =====
-        # Week 1-4 temperature data (in Celsius)
-        weeks = [1, 2, 3, 4]
-        temperatures = [22, 25, 20, 27]  # Weekly average temperatures
-        
-        # ===== STEP 3: Create Axes =====
-        axes = Axes(
-            x_range=[0, 5, 1],
-            y_range=[15, 30, 5],
-            x_length=config.frame_width * 0.7,
-            y_length=config.frame_height * 0.6,
-            axis_config={
-                "include_numbers": True,
-                "font_size": LABEL_SIZE,
-                "color": WHITE
-            },
-            tips=False
-        )
-        axes.center().shift(DOWN * 0.3)
-        
-        # Add axis labels
-        x_label = Text("Week", font_size=LABEL_SIZE).next_to(axes.x_axis, DOWN, buff=0.5)
-        y_label = Text("Temperature (°C)", font_size=LABEL_SIZE).next_to(axes.y_axis, LEFT, buff=0.7).rotate(PI/2)
-        
-        self.play(Create(axes), Write(x_label), Write(y_label), run_time=2)
-        
-        # ===== STEP 4: Legend =====
-        legend = VGroup(
-            Text("Average Weekly Temperature", font_size=EQUATION_SIZE, color=BLUE),
-            Text("Month: January 2025", font_size=EQUATION_SIZE-4, color=GRAY)
-        ).arrange(DOWN, aligned_edge=LEFT, buff=0.2)
-        legend.to_corner(UR, buff=0.5)
-        self.play(Write(legend, run_time=1))
-        
-        # ===== STEP 5: Plot Points =====
-        points = [axes.coords_to_point(w, t) for w, t in zip(weeks, temperatures)]
-        dots = VGroup(*[Dot(point, color=RED, radius=0.08) for point in points])
-        temp_labels = VGroup()
-        
-        # Animate dots appearing one by one
-        for i, dot in enumerate(dots):
-            self.play(FadeIn(dot, scale=0.5), run_time=0.5)
-            # Add temperature label above each dot
-            temp_label = Text(f"{temperatures[i]}°C", font_size=LABEL_SIZE-4, color=YELLOW)
-            temp_label.next_to(dot, UP, buff=0.2)
-            temp_labels.add(temp_label)
-            self.play(Write(temp_label, run_time=0.3))
-            self.wait(0.3)
-        
-        # ===== STEP 6: Draw Line Connecting Points =====
-        # Create line segments between consecutive points
-        lines = VGroup()
-        for i in range(len(points) - 1):
-            line = Line(points[i], points[i+1], color=BLUE, stroke_width=4)
-            lines.add(line)
-        
-        self.play(Create(lines, lag_ratio=0.3), run_time=2)
-        self.wait(1)
-        
-        # ===== STEP 7: Highlight Highest Temperature =====
-        max_temp_idx = temperatures.index(max(temperatures))
-        highlight = Circle(radius=0.15, color=GREEN, stroke_width=5)
-        highlight.move_to(dots[max_temp_idx])
-        
-        highlight_label = Text("Highest", font_size=LABEL_SIZE-4, color=GREEN)
-        highlight_label.next_to(highlight, RIGHT, buff=0.4)
-        
-        self.play(Create(highlight), Write(highlight_label), run_time=1)
-        self.wait(2)
-        
-        # ===== STEP 8: Show Temperature Trend Arrow =====
-        if temperatures[-1] > temperatures[0]:
-            trend_text = Text("Warming Trend ↗", font_size=EQUATION_SIZE-4, color=RED)
-        elif temperatures[-1] < temperatures[0]:
-            trend_text = Text("Cooling Trend ↘", font_size=EQUATION_SIZE-4, color=BLUE)
-        else:
-            trend_text = Text("Stable Trend →", font_size=EQUATION_SIZE-4, color=WHITE)
-        
-        trend_text.to_corner(UR, buff=0.5).shift(DOWN * 2.5)
-        self.play(Write(trend_text, run_time=1))
-        self.wait(2)
-        
-        # ===== STEP 9: Clean Up =====
-        self.play(
-            FadeOut(axes),
-            FadeOut(x_label),
-            FadeOut(y_label),
-            FadeOut(legend),
-            FadeOut(dots),
-            FadeOut(temp_labels),
-            FadeOut(lines),
-            FadeOut(highlight),
-            FadeOut(highlight_label),
-            FadeOut(trend_text),
-            run_time=1.5
-        )
-        self.wait(1)
-```
-<Statistical Visualization Rule Only/>
+</STATISTICS_SCENE_RULES>
 """

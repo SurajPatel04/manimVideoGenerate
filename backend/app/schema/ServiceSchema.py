@@ -2,7 +2,8 @@ from pydantic import BaseModel, Field
 from typing import (
     Optional, 
     List,
-    Literal
+    Literal,
+    Any
 )
 from enum import Enum
 
@@ -60,17 +61,24 @@ class CheckMaimCode(BaseModel):
     errorMessage: str
 
 
+class MatchCheck(BaseModel):
+    matches: bool = Field(description="True if the rendered frame matches the user description, False otherwise")
+    reason: str = Field(description="A short reason explaining why it matches or mismatches")
+    fix_suggestion: Optional[str] = Field(default="", description="If it mismatches, provide exact instructions on how the code should be modified to fix the issue.")
+
 class mainmState(BaseModel):
+    userQuery: str
     description: str
     isCodeGood: Optional[bool] = None
     filename: str
     format: str = Field(default="Red", description="The render file format")
     validationError: Optional[str] = None
     validationErrorHistory: List[str] = Field(default_factory=list)
-    executionErrorHistory: List[str] = Field(default_factory=list)
-    executionError: Optional[str] = None
+    executionErrorHistory: List[Any] = Field(default_factory=list)
+    executionError: Optional[Any] = None
     rewriteAttempts: int = 0 
     executionSuccess: Optional[bool] = None
+    matchesRequest: Optional[bool] = None
     quality: str = "ql"
     createAgain: int = 0
     code: Optional[str] = None

@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Optional
 
 class Settings(BaseSettings):
     LANGSMITH_TRACING: bool = True
@@ -15,7 +16,8 @@ class Settings(BaseSettings):
     REDIS_URL: str
     SUPABASE_URL: str
     SUPABASE_BUCKET: str
-    SUPABASE_SERVICE_ROLE_KEY: str
+    SUPABASE_PUBLISHABLE_KEY: str
+    SUPABASE_SECRET_KEY: str
     MAIL_USERNAME: str
     MAIL_PASSWORD: str
     MAIL_PORT: int
@@ -27,11 +29,11 @@ class Settings(BaseSettings):
     USE_CREDENTIALS: bool = True
     VALIDATE_CERTS: bool = True
     DOMAIN: str
-    GOOGLE_CLIENT_ID: str
-    GOOGLE_CLIENT_SECRET: str
+    GOOGLE_CLIENT_ID: Optional[str] = None
+    GOOGLE_CLIENT_SECRET: Optional[str] = None
     FRONTEND_DOMAIN: str
     ENV: str
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=(".env", "../.env", "app/.env"), extra="ignore")
 
 Config = Settings()

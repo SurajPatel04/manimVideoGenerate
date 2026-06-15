@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import axios from 'axios';
+import api from '@/lib/api';
 
 interface User {
   id: string;
@@ -72,7 +72,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Verify cookie-based session (used by backend Google OAuth flow)
   const verifyAuthSession = async () => {
     try {
-      const response = await axios.get('/api/user/me', {
+      const response = await api.get('/api/user/me', {
         withCredentials: true,
       });
 
@@ -97,7 +97,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLoading(true);
     try {
       // Make API call to login endpoint
-      const response = await axios.post('/api/user/login', {
+      const response = await api.post('/api/user/login', {
         email,
         password,
       }, {
@@ -115,7 +115,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // After backend sets HttpOnly cookies, call /me to fetch user profile
       try {
-        const me = await axios.get('/api/user/me', { withCredentials: true });
+        const me = await api.get('/api/user/me', { withCredentials: true });
         if (me.data && me.data.userId) {
           const userData: User = {
             id: me.data.userId,
@@ -149,7 +149,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLoading(true);
     try {
       // Make API call to signup endpoint
-      const response = await axios.post('/api/user/signUp', {
+      const response = await api.post('/api/user/signUp', {
         firstName: userData.firstName,
         lastName: userData.lastName || '',
         email: userData.email,
@@ -190,7 +190,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     // Call backend logout to clear HttpOnly cookies, then clear local state
     try {
-      axios.post('/api/user/logout', {}, { withCredentials: true }).catch(() => {});
+      api.post('/api/user/logout', {}, { withCredentials: true }).catch(() => {});
     } catch (e) {}
     setUser(null);
     clearTokensFromStorage();
