@@ -1,15 +1,13 @@
 import { useState, useCallback, useMemo, memo, useEffect, useRef } from "react";
 import { PlaceholdersAndVanishInput } from "@/components/ui/placeholders-and-vanish-input";
 import { Sidebar, SidebarBody } from "@/components/ui/sidebar";
-import { BackgroundBeams } from "@/components/ui/background-beams";
 import { CodeBlock } from "@/components/ui/code-block";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { IconPlus, IconUser, IconLogout, IconMenu2, IconDownload, IconCode, IconX, IconHistory, IconCheck } from "@tabler/icons-react";
+import { IconPlus, IconUser, IconLogout, IconMenu2, IconDownload, IconCode, IconX, IconCheck } from "@tabler/icons-react";
 import type { ManimGenerationRequest, UserHistoryItem } from '@/types/api';
 import { ManimApiService } from '@/services/manimApi';
-import { Box, useTheme, useMediaQuery } from '@mui/material';
 import HistorySidebar from '@/components/HistorySidebar';
 import '@/styles/scrollbar.css';
 import { motion, AnimatePresence } from "motion/react";
@@ -827,7 +825,7 @@ export default function MainPage() {
       }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(e.target.value);
   };
 

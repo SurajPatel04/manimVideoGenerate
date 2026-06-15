@@ -1,8 +1,8 @@
 "use client";
 import { cn } from "@/lib/utils";
 import React, { useState, createContext, useContext } from "react";
-import { AnimatePresence, motion } from "motion/react";
-import { IconMenu2, IconX } from "@tabler/icons-react";
+import { motion } from "motion/react";
+import { IconMenu2 } from "@tabler/icons-react";
 import { Link } from "react-router-dom";
 
 interface Links {
