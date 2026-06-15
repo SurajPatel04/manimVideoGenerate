@@ -1,5 +1,5 @@
 import redis
-from app.config import Config
+from app.config.config import Config
 
 REDIS_URL = Config.REDIS_URL
 r = redis.from_url(REDIS_URL, decode_responses=True)

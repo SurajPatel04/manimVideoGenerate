@@ -1,6 +1,6 @@
 from celery import Celery
 import ssl
-from app.config import Config
+from app.config.config import Config
 
 BROKER_URL = Config.REDIS_URL
 
@@ -11,16 +11,20 @@ taskQueue = Celery(
     "taskQueue",
     broker=BROKER_URL,
     backend=BROKER_URL,
-    include=["app.services.manim.manim"] 
+    include=["app.services.manim.manim"],
 )
 
-taskQueue.conf.update(
-    broker_use_ssl={
-        "ssl_cert_reqs": ssl.CERT_NONE
-    },
-    redis_backend_use_ssl={
-        "ssl_cert_reqs": ssl.CERT_NONE
-    },
-    task_acks_late = True,
-    worker_prefetch_multiplier = 1
-)
+use_ssl = BROKER_URL.startswith("rediss://")
+
+base_conf = {
+    "task_acks_late": True,
+    "worker_prefetch_multiplier": 1,
+}
+
+if use_ssl:
+    base_conf.update({
+        "broker_use_ssl": {"ssl_cert_reqs": ssl.CERT_NONE},
+        "redis_backend_use_ssl": {"ssl_cert_reqs": ssl.CERT_NONE},
+    })
+
+taskQueue.conf.update(**base_conf)
