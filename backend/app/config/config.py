@@ -16,8 +16,8 @@ class Settings(BaseSettings):
     REDIS_URL: str
     SUPABASE_URL: str
     SUPABASE_BUCKET: str
-    SUPABASE_PUBLISHABLE_KEY: str # This is your Public / Publishable API Key
-    SUPABASE_SECRET_KEY: str # This is your Secret API Key
+    SUPABASE_PUBLISHABLE_KEY: str
+    SUPABASE_SECRET_KEY: str
     MAIL_USERNAME: str
     MAIL_PASSWORD: str
     MAIL_PORT: int
